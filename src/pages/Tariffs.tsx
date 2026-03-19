@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BynIcon } from '../components/BynIcon';
 import { Check } from 'lucide-react';
 import { useFirebase } from '../components/FirebaseProvider';
-import { db, handleFirestoreError, OperationType } from '../firebase';
-import { doc, updateDoc, addDoc, collection, query, where, onSnapshot } from 'firebase/firestore';
+import { db, handleFirestoreError, OperationType, doc, updateDoc, addDoc, collection, query, where, onSnapshot } from '../firebase';
 import toast from 'react-hot-toast';
 import WebApp from '@twa-dev/sdk';
 

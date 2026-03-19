@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Bell, User, Settings } from 'lucide-react';
 import { useFirebase } from './FirebaseProvider';
-import { db } from '../firebase';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { db, collection, query, where, onSnapshot } from '../firebase';
 
 export default function Header() {
   const { user } = useFirebase();

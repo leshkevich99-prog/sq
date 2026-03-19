@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ArrowRight, ShieldCheck, MapPin, User, Car as CarIcon, Phone, Plus, Clock, CheckCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useFirebase } from '../components/FirebaseProvider';
-import { db, handleFirestoreError, OperationType } from '../firebase';
-import { collection, query, where, onSnapshot, limit, orderBy, getDocs, doc, getDoc } from 'firebase/firestore';
+import { db, handleFirestoreError, OperationType, collection, query, where, onSnapshot, limit, orderBy, getDocs, doc, getDoc } from '../firebase';
 import { TARIFFS, TariffType } from '../config/tariffs';
 
 interface ServiceRequest {

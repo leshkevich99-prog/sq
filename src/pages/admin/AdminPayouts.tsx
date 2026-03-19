@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Check, X, Clock, DollarSign, User, Calendar } from 'lucide-react';
-import { db, handleFirestoreError, OperationType } from '../../firebase';
-import { collection, onSnapshot, doc, updateDoc, query, orderBy } from 'firebase/firestore';
+import { db, handleFirestoreError, OperationType, collection, onSnapshot, doc, updateDoc, query, orderBy } from '../../firebase';
 import toast from 'react-hot-toast';
 
 import { BynIcon } from '../../components/BynIcon';

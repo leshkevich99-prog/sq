@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { db, handleFirestoreError, OperationType } from '../firebase';
-import { collection, query, where, onSnapshot, orderBy, doc, updateDoc, writeBatch } from 'firebase/firestore';
+import { db, handleFirestoreError, OperationType, collection, query, where, onSnapshot, orderBy, doc, updateDoc, writeBatch } from '../firebase';
 import { useFirebase } from '../components/FirebaseProvider';
 import { Bell, Check, Trash2, Clock, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';

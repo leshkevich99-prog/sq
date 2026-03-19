@@ -23,8 +23,7 @@ import {
   ArrowDownRight,
   Filter
 } from 'lucide-react';
-import { db, handleFirestoreError, OperationType } from '../../firebase';
-import { collection, onSnapshot, query, where, orderBy } from 'firebase/firestore';
+import { db, handleFirestoreError, OperationType, collection, onSnapshot, query, where, orderBy } from '../../firebase';
 
 interface RequestData {
   id: string;

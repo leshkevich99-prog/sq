@@ -1,9 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import WebApp from '@twa-dev/sdk';
-import { db, storage, auth, handleFirestoreError, OperationType, createNotification } from '../firebase';
-import { doc, onSnapshot, updateDoc, getDoc, arrayUnion, query, collection, where, getDocs, addDoc } from 'firebase/firestore';
-import { ref, uploadBytesResumable, uploadBytes, uploadString, getDownloadURL } from 'firebase/storage';
+import { db, storage, auth, handleFirestoreError, OperationType, createNotification, doc, onSnapshot, updateDoc, getDoc, arrayUnion, query, collection, where, getDocs, addDoc, ref, uploadBytesResumable, uploadBytes, uploadString, getDownloadURL } from '../firebase';
 import { useFirebase } from '../components/FirebaseProvider';
 import imageCompression from 'browser-image-compression';
 import toast from 'react-hot-toast';

@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { auth } from '../firebase';
 import { useFirebase } from '../components/FirebaseProvider';
-import { signInWithCustomToken } from 'firebase/auth';
 import { Car, MessageCircle, AlertCircle } from 'lucide-react';
 import WebApp from '@twa-dev/sdk';
 import toast from 'react-hot-toast';

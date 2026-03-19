@@ -4,8 +4,7 @@ import { BynIcon } from '../components/BynIcon';
 import { ArrowLeft, Car, Calendar, Clock, MapPin, Check } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useFirebase } from '../components/FirebaseProvider';
-import { db, handleFirestoreError, OperationType } from '../firebase';
-import { collection, addDoc } from 'firebase/firestore';
+import { db, handleFirestoreError, OperationType, collection, addDoc } from '../firebase';
 
 export default function TestDrive() {
   const navigate = useNavigate();

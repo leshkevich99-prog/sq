@@ -15,14 +15,12 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { useFirebase } from '../../components/FirebaseProvider';
-import { auth, db, handleFirestoreError, OperationType } from '../../firebase';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
-import { signOut } from 'firebase/auth';
+import { db, handleFirestoreError, OperationType, doc, getDoc, updateDoc } from '../../firebase';
 import toast from 'react-hot-toast';
 
 export default function PilotSettings() {
   const navigate = useNavigate();
-  const { user } = useFirebase();
+  const { user, logout } = useFirebase();
   const [loading, setLoading] = useState(true);
   const [settings, setSettings] = useState({
     pushNotifications: true,
@@ -68,7 +66,7 @@ export default function PilotSettings() {
 
   const handleLogout = async () => {
     try {
-      await signOut(auth);
+      await logout();
       navigate('/login');
     } catch (error) {
       toast.error('Ошибка при выходе');

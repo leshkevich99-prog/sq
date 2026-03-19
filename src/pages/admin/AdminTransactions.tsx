@@ -10,8 +10,7 @@ import {
   User,
   CreditCard
 } from 'lucide-react';
-import { db, handleFirestoreError, OperationType } from '../../firebase';
-import { collection, onSnapshot, query, orderBy, limit } from 'firebase/firestore';
+import { db, handleFirestoreError, OperationType, collection, onSnapshot, query, orderBy, limit } from '../../firebase';
 
 interface TransactionData {
   id: string;

@@ -12,8 +12,7 @@ import {
   AlertCircle,
   Info
 } from 'lucide-react';
-import { db, handleFirestoreError, OperationType, createNotification } from '../../firebase';
-import { collection, onSnapshot, query, orderBy, limit, getDocs, where } from 'firebase/firestore';
+import { db, handleFirestoreError, OperationType, createNotification, collection, onSnapshot, query, orderBy, limit, getDocs, where, addDoc } from '../../firebase';
 import toast from 'react-hot-toast';
 
 interface SentNotification {
@@ -84,7 +83,6 @@ export default function AdminNotifications() {
       await Promise.all(notificationPromises);
 
       // 3. Save to broadcast history
-      const { addDoc } = await import('firebase/firestore');
       await addDoc(collection(db, 'broadcasts'), {
         title,
         body,

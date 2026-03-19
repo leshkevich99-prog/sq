@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { db, handleFirestoreError, OperationType } from '../firebase';
-import { collection, query, where, orderBy, onSnapshot, addDoc, getDoc, doc, limit } from 'firebase/firestore';
+import { db, handleFirestoreError, OperationType, collection, query, where, orderBy, onSnapshot, addDoc, getDoc, doc, limit } from '../firebase';
 import { useFirebase } from '../components/FirebaseProvider';
 import { ArrowLeft, Send } from 'lucide-react';
 import toast from 'react-hot-toast';

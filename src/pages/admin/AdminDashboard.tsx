@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { db, handleFirestoreError, OperationType, createNotification } from '../../firebase';
-import { collection, onSnapshot, doc, updateDoc, query, where, getDoc, orderBy, limit } from 'firebase/firestore';
+import React, { useState, useEffect, useCallback } from 'react';
+import { db, handleFirestoreError, OperationType, createNotification, collection, onSnapshot, doc, updateDoc, query, where, getDoc, orderBy, limit } from '../../firebase';
 import { Link } from 'react-router-dom';
 import { BynIcon } from '../../components/BynIcon';
 import { 

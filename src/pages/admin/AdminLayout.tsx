@@ -14,11 +14,9 @@ import {
   BarChart3
 } from 'lucide-react';
 import { useFirebase } from '../../components/FirebaseProvider';
-import { auth } from '../../firebase';
-import { signOut } from 'firebase/auth';
 
 export default function AdminLayout() {
-  const { user } = useFirebase();
+  const { user, logout } = useFirebase();
   const navigate = useNavigate();
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
 
@@ -62,7 +60,7 @@ export default function AdminLayout() {
   }, []);
 
   const handleLogout = async () => {
-    await signOut(auth);
+    await logout();
     navigate('/login');
   };
 

@@ -3,8 +3,7 @@ import { BynIcon } from '../components/BynIcon';
 import { MapPin, Calendar, Clock, ChevronRight, Car, Truck, Droplets, Wrench, Key, FileText, SquareParking, Check, X } from 'lucide-react';
 import WebApp from '@twa-dev/sdk';
 import { useFirebase } from '../components/FirebaseProvider';
-import { db, handleFirestoreError, OperationType, createNotification } from '../firebase';
-import { collection, query, where, getDocs, addDoc, onSnapshot, updateDoc, doc, orderBy, limit } from 'firebase/firestore';
+import { db, handleFirestoreError, OperationType, createNotification, collection, query, where, getDocs, addDoc, onSnapshot, updateDoc, doc, orderBy, limit } from '../firebase';
 import toast from 'react-hot-toast';
 
 interface CarData {

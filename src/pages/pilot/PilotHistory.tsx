@@ -12,8 +12,7 @@ import {
   Clock
 } from 'lucide-react';
 import { useFirebase } from '../../components/FirebaseProvider';
-import { db, handleFirestoreError, OperationType } from '../../firebase';
-import { collection, query, where, orderBy, onSnapshot, limit, getDoc, doc } from 'firebase/firestore';
+import { db, handleFirestoreError, OperationType, collection, query, where, orderBy, onSnapshot, limit, getDoc, doc } from '../../firebase';
 
 interface RequestData {
   id: string;

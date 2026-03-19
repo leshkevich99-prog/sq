@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Settings, AlertCircle, Calendar, Plus, X, Wrench, ShieldCheck, FileText, Trash2, Camera, Loader2, CheckCircle, History, ExternalLink } from 'lucide-react';
 import { useFirebase } from '../components/FirebaseProvider';
-import { db, handleFirestoreError, OperationType } from '../firebase';
-import { collection, query, where, onSnapshot, addDoc, updateDoc, deleteDoc, doc, orderBy, serverTimestamp } from 'firebase/firestore';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { db, handleFirestoreError, OperationType, collection, query, where, onSnapshot, addDoc, updateDoc, deleteDoc, doc, orderBy, getStorage, ref, uploadBytes, getDownloadURL } from '../firebase';
 import imageCompression from 'browser-image-compression';
 import toast from 'react-hot-toast';
 

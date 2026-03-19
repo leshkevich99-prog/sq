@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Check, X, Car, Info } from 'lucide-react';
 import WebApp from '@twa-dev/sdk';
-import { db, handleFirestoreError, OperationType } from '../../firebase';
-import { collection, onSnapshot, doc, updateDoc, deleteDoc, query, where } from 'firebase/firestore';
+import { db, handleFirestoreError, OperationType, collection, onSnapshot, doc, updateDoc, deleteDoc, query, where } from '../../firebase';
 import toast from 'react-hot-toast';
 
 interface CarData {

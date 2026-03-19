@@ -1,14 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useFirebase } from '../components/FirebaseProvider';
-import { auth, db, handleFirestoreError, OperationType } from '../firebase';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
-import { signOut } from 'firebase/auth';
+import { db, handleFirestoreError, OperationType, doc, getDoc, updateDoc } from '../firebase';
 import { User, Phone, Save, ArrowLeft, LogOut, Check } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
 export default function Profile() {
-  const { user } = useFirebase();
+  const { user, logout } = useFirebase();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -94,7 +92,8 @@ export default function Profile() {
 
   const handleLogout = async () => {
     try {
-      await signOut(auth);
+      await logout();
+      navigate('/login');
     } catch (error) {
       console.error("Error signing out:", error);
     }

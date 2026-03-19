@@ -15,8 +15,7 @@ import {
   Navigation
 } from 'lucide-react';
 import { useFirebase } from '../../components/FirebaseProvider';
-import { db, handleFirestoreError, OperationType, createNotification } from '../../firebase';
-import { collection, query, where, onSnapshot, doc, updateDoc, getDoc, orderBy, limit } from 'firebase/firestore';
+import { db, handleFirestoreError, OperationType, createNotification, collection, query, where, onSnapshot, doc, updateDoc, getDoc, orderBy, limit } from '../../firebase';
 
 interface RequestData {
   id: string;

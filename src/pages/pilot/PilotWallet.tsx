@@ -14,8 +14,7 @@ import {
 } from 'lucide-react';
 import { BynIcon } from '../../components/BynIcon';
 import { useFirebase } from '../../components/FirebaseProvider';
-import { db, handleFirestoreError, OperationType } from '../../firebase';
-import { collection, query, where, orderBy, onSnapshot, addDoc, limit } from 'firebase/firestore';
+import { db, handleFirestoreError, OperationType, collection, query, where, orderBy, onSnapshot, addDoc, limit } from '../../firebase';
 import { 
   BarChart, 
   Bar, 

@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BynIcon } from '../../components/BynIcon';
 import { Save, Shield, Percent, DollarSign, Info, Plus, Trash2 } from 'lucide-react';
-import { db, handleFirestoreError, OperationType } from '../../firebase';
-import { doc, onSnapshot, setDoc, collection, getDocs } from 'firebase/firestore';
+import { db, handleFirestoreError, OperationType, doc, onSnapshot, setDoc, collection, getDocs } from '../../firebase';
 import toast from 'react-hot-toast';
 
 interface TariffConfig {

@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Star, MapPin, Clock, Shield, ChevronRight, UserCheck, UserX, Wallet } from 'lucide-react';
 import { BynIcon } from '../../components/BynIcon';
-import { db, handleFirestoreError, OperationType } from '../../firebase';
-import { collection, onSnapshot, query, where, doc, updateDoc } from 'firebase/firestore';
+import { db, handleFirestoreError, OperationType, collection, onSnapshot, query, where, doc, updateDoc } from '../../firebase';
 import toast from 'react-hot-toast';
 
 interface PilotData {

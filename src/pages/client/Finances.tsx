@@ -3,8 +3,7 @@ import { Wallet, ArrowUpRight, ArrowDownRight, CreditCard, X, Check } from 'luci
 import { BynIcon } from '../../components/BynIcon';
 import WebApp from '@twa-dev/sdk';
 import { useFirebase } from '../../components/FirebaseProvider';
-import { db, handleFirestoreError, OperationType } from '../../firebase';
-import { collection, query, where, onSnapshot, addDoc } from 'firebase/firestore';
+import { db, handleFirestoreError, OperationType, collection, query, where, onSnapshot, addDoc } from '../../firebase';
 import toast from 'react-hot-toast';
 
 interface Transaction {

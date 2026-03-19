@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { db, handleFirestoreError, OperationType, createNotification } from '../../firebase';
-import { collection, addDoc, onSnapshot, query, where, orderBy, updateDoc, doc, getDocs } from 'firebase/firestore';
+import { db, handleFirestoreError, OperationType, createNotification, collection, addDoc, onSnapshot, query, where, orderBy, updateDoc, doc, getDocs } from '../../firebase';
 import { useFirebase } from '../../components/FirebaseProvider';
 import { AlertTriangle, CheckCircle } from 'lucide-react';
 import toast from 'react-hot-toast';

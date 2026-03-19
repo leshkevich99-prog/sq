@@ -12,8 +12,7 @@ import {
   ChevronRight
 } from 'lucide-react';
 import { useFirebase } from '../../components/FirebaseProvider';
-import { db, handleFirestoreError, OperationType } from '../../firebase';
-import { collection, query, where, orderBy, onSnapshot, limit, getDocs } from 'firebase/firestore';
+import { db, handleFirestoreError, OperationType, collection, query, where, orderBy, onSnapshot, limit, getDocs } from '../../firebase';
 
 interface Review {
   id: string;
