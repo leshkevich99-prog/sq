@@ -1,16 +1,186 @@
+import React, { useState, useEffect } from 'react';
 import { Check } from 'lucide-react';
+import { useFirebase } from '../components/FirebaseProvider';
+import { db, handleFirestoreError, OperationType } from '../firebase';
+import { doc, updateDoc, addDoc, collection, query, where, onSnapshot } from 'firebase/firestore';
+import toast from 'react-hot-toast';
+import WebApp from '@twa-dev/sdk';
+
+const TARIFF_PRICES: Record<string, number> = {
+  'TELEMETRY': 1400,
+  'PIT STOP': 2400,
+  'SQUADRA FAMILY': 4000,
+};
 
 export default function Tariffs() {
+  const { user } = useFirebase();
+  const [purchasing, setPurchasing] = useState<string | null>(null);
+  const [balance, setBalance] = useState(0);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const q = query(
+      collection(db, 'transactions'), 
+      where('userId', '==', user.uid)
+    );
+    
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      let currentBalance = 0;
+      snapshot.forEach(doc => {
+        const tx = doc.data();
+        if (tx.type === 'deposit') currentBalance += tx.amount;
+        if (tx.type === 'deposit_deduction') currentBalance -= tx.amount;
+      });
+      setBalance(currentBalance);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'transactions');
+    });
+
+    return () => unsubscribe();
+  }, [user]);
+
+  const handlePurchase = async (tariffName: string, price: number, quotas: any) => {
+    if (!user) return;
+    
+    const currentTariff = user.subscription || '';
+    const currentPrice = TARIFF_PRICES[currentTariff] || 0;
+    const priceDifference = Math.max(0, price - currentPrice);
+    
+    let payableAmount = priceDifference;
+    let balanceDeduction = 0;
+
+    if (priceDifference > 0) {
+      balanceDeduction = Math.min(priceDifference, balance);
+      payableAmount = priceDifference - balanceDeduction;
+    } else {
+      // Downgrade or same price - no charge, no refund
+      payableAmount = 0;
+      balanceDeduction = 0;
+    }
+
+    let confirmMsg = '';
+    if (priceDifference === 0) {
+      confirmMsg = `Перейти на тариф ${tariffName}?`;
+    } else if (payableAmount === 0) {
+      confirmMsg = `Сменить тариф на ${tariffName}? С вашего депозита будет списано ${balanceDeduction.toFixed(2)} BYN.`;
+    } else if (balanceDeduction > 0) {
+      confirmMsg = `Сменить тариф на ${tariffName}? С депозита спишется ${balanceDeduction.toFixed(2)} BYN, к оплате останется ${payableAmount.toFixed(2)} BYN.`;
+    } else {
+      confirmMsg = `Оплатить переход на тариф ${tariffName} за ${payableAmount.toFixed(2)} BYN?`;
+    }
+    
+    const proceed = await new Promise<boolean>((resolve) => {
+      try {
+        WebApp.showConfirm(confirmMsg, (ok) => resolve(ok));
+      } catch (e) {
+        resolve(window.confirm(confirmMsg));
+      }
+    });
+
+    if (!proceed) return;
+
+    setPurchasing(tariffName);
+    
+    // Case 1: No payment needed (downgrade or fully covered by balance)
+    if (payableAmount === 0) {
+      const toastId = toast.loading('Обновление тарифа...');
+      try {
+        // 1. Deduct from balance if needed
+        if (balanceDeduction > 0) {
+          await addDoc(collection(db, 'transactions'), {
+            userId: user.uid,
+            type: 'deposit_deduction',
+            amount: balanceDeduction,
+            description: `Доплата за переход на тариф ${tariffName}`,
+            createdAt: new Date().toISOString()
+          });
+        }
+
+        // 2. Update user subscription
+        await updateDoc(doc(db, 'users', user.uid), {
+          subscription: tariffName,
+          quotas: quotas
+        });
+
+        toast.success(`Тариф ${tariffName} успешно активирован!`, { id: toastId });
+        WebApp.HapticFeedback.notificationOccurred('success');
+      } catch (error) {
+        console.error('Tariff update error:', error);
+        toast.error('Ошибка при обновлении тарифа', { id: toastId });
+      } finally {
+        setPurchasing(null);
+      }
+      return;
+    }
+
+    // Case 2: Payment needed via bePaid
+    const toastId = toast.loading('Создание счета...');
+
+    try {
+      // 1. Create invoice link via backend
+      const response = await fetch('/api/payments/bepaid/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.uid,
+          amount: payableAmount,
+          type: 'subscription',
+          tariffName,
+          quotas,
+          balanceDeduction, // Pass this to backend so bot can handle it after successful payment
+          description: `Доплата за тариф ${tariffName} (с учетом списания ${balanceDeduction.toFixed(2)} BYN с депозита)`
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create invoice');
+      }
+
+      const { payment_url } = await response.json();
+
+      // 2. Open Telegram Invoice
+      try {
+        WebApp.openInvoice(payment_url, (status) => {
+          if (status === 'paid') {
+            toast.success(`Тариф ${tariffName} успешно оплачен!`, { id: toastId });
+            WebApp.HapticFeedback.notificationOccurred('success');
+          } else if (status === 'cancelled') {
+            toast.error('Оплата отменена', { id: toastId });
+          } else if (status === 'failed') {
+            toast.error('Ошибка при оплате', { id: toastId });
+          } else {
+            toast.dismiss(toastId);
+          }
+        });
+      } catch (e) {
+        // Fallback for non-telegram environments
+        window.open(payment_url, '_blank');
+        toast.success('Счет открыт в новой вкладке', { id: toastId });
+      }
+
+    } catch (error) {
+      console.error('Payment error:', error);
+      toast.error('Ошибка при создании счета', { id: toastId });
+    } finally {
+      setPurchasing(null);
+    }
+  };
+
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
       <header className="mb-6 mt-2">
-        <h1 className="text-2xl font-bold tracking-tighter uppercase">Уровни сопровождения</h1>
+        <h1 className="text-3xl font-serif font-normal tracking-wide uppercase">Уровни сопровождения</h1>
         <p className="text-zinc-400 text-sm mt-1">Выберите подходящий объем обслуживания</p>
       </header>
 
       <div className="space-y-4">
         <TariffCard 
           name="TELEMETRY"
+          price={1400}
+          isActive={user?.subscription === 'TELEMETRY'}
+          isPurchasing={purchasing === 'TELEMETRY'}
+          onPurchase={() => handlePurchase('TELEMETRY', 1400, { logistics: 1, wash: 2 })}
           features={[
             "Бортовой журнал автомобиля",
             "1 логистическое поручение",
@@ -20,7 +190,10 @@ export default function Tariffs() {
         />
         <TariffCard 
           name="PIT STOP"
-          isActive
+          price={2400}
+          isActive={user?.subscription === 'PIT STOP'}
+          isPurchasing={purchasing === 'PIT STOP'}
+          onPurchase={() => handlePurchase('PIT STOP', 2400, { logistics: 2, wash: 4 })}
           features={[
             "Бортовой журнал автомобиля",
             "2 логистических поручения",
@@ -30,6 +203,10 @@ export default function Tariffs() {
         />
         <TariffCard 
           name="SQUADRA FAMILY"
+          price={4000}
+          isActive={user?.subscription === 'SQUADRA FAMILY'}
+          isPurchasing={purchasing === 'SQUADRA FAMILY'}
+          onPurchase={() => handlePurchase('SQUADRA FAMILY', 4000, { logistics: 4, wash: 8 })}
           features={[
             "Бортовой журнал для двух авто",
             "4 логистических поручения",
@@ -42,11 +219,28 @@ export default function Tariffs() {
   );
 }
 
-function TariffCard({ name, features, isActive }: { name: string; features: string[]; isActive?: boolean }) {
+function TariffCard({ 
+  name, 
+  price,
+  features, 
+  isActive, 
+  isPurchasing,
+  onPurchase 
+}: { 
+  name: string; 
+  price: number;
+  features: string[]; 
+  isActive?: boolean;
+  isPurchasing?: boolean;
+  onPurchase: () => void;
+}) {
   return (
     <div className={`rounded-2xl p-5 border ${isActive ? 'bg-zinc-900 border-zinc-700' : 'bg-black border-zinc-800'}`}>
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-bold tracking-tight">{name}</h2>
+      <div className="flex justify-between items-start mb-4">
+        <div>
+          <h2 className="text-xl font-bold tracking-tight">{name}</h2>
+          <p className="text-accent font-medium mt-1">{price.toFixed(2)} BYN / мес</p>
+        </div>
         {isActive && (
           <span className="text-[10px] uppercase tracking-wider px-2 py-1 bg-white text-black font-bold rounded">
             Текущий
@@ -61,12 +255,16 @@ function TariffCard({ name, features, isActive }: { name: string; features: stri
           </li>
         ))}
       </ul>
-      <button className={`w-full py-3 rounded-xl text-sm font-medium uppercase tracking-wider transition-colors ${
-        isActive 
-          ? 'bg-zinc-800 text-zinc-400 cursor-default' 
-          : 'bg-white text-black hover:bg-zinc-200 active:scale-[0.98]'
-      }`}>
-        {isActive ? 'Активен' : 'Выбрать тариф'}
+      <button 
+        onClick={onPurchase}
+        disabled={isActive || isPurchasing}
+        className={`w-full py-3 rounded-xl text-sm font-medium uppercase tracking-wider transition-colors ${
+          isActive 
+            ? 'bg-zinc-800 text-zinc-400 cursor-default' 
+            : 'bg-white text-black hover:bg-zinc-200 active:scale-[0.98] disabled:opacity-50'
+        }`}
+      >
+        {isActive ? 'Активен' : isPurchasing ? 'Оплата...' : 'Выбрать тариф'}
       </button>
     </div>
   );

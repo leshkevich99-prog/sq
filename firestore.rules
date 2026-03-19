@@ -1,0 +1,316 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && (
+        (request.auth.token.email == "leshkevich.99@gmail.com" && request.auth.token.email_verified == true) ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin') ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.username == 'ttaammmo') ||
+        request.auth.uid == 'test_admin'
+      );
+    }
+
+    function isPilot() {
+      return isAuthenticated() && (
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'pilot') ||
+        request.auth.uid == 'test_pilot' ||
+        isAdmin()
+      );
+    }
+
+    function hasOnlyAllowedFields(allowedFields) {
+      return request.resource.data.keys().hasOnly(allowedFields);
+    }
+
+    function hasRequiredFields(requiredFields) {
+      return request.resource.data.keys().hasAll(requiredFields);
+    }
+
+    function uidUnchanged() {
+      return !('uid' in request.resource.data) || request.resource.data.uid == request.auth.uid;
+    }
+
+    function uidNotModified() {
+      return !('uid' in resource.data) || !('uid' in request.resource.data) || request.resource.data.uid == resource.data.uid;
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+    function isValidUser(data) {
+      return hasOnlyAllowedFields(['uid', 'telegramId', 'username', 'firstName', 'lastName', 'phone', 'email', 'role', 'subscription', 'quotas', 'createdAt', 'isOnShift', 'tariff', 'balance', 'limits']) &&
+             (!('uid' in data) || data.uid is string) &&
+             (!('telegramId' in data) || data.telegramId is number) &&
+             data.role in ['client', 'admin', 'pilot'] &&
+             (!('username' in data) || data.username is string) &&
+             (!('firstName' in data) || data.firstName is string) &&
+             (!('lastName' in data) || data.lastName is string) &&
+             (!('phone' in data) || data.phone is string) &&
+             (!('email' in data) || data.email is string) &&
+             (!('subscription' in data) || data.subscription is string) &&
+             (!('quotas' in data) || data.quotas is map) &&
+             (!('isOnShift' in data) || data.isOnShift is bool) &&
+             (!('tariff' in data) || data.tariff in ['telemetry', 'pitstop', 'family', 'test_drive']) &&
+             (!('balance' in data) || data.balance is number) &&
+             (!('limits' in data) || data.limits is map) &&
+             (!('createdAt' in data) || data.createdAt is string);
+    }
+
+    function isValidCar(data) {
+      return hasOnlyAllowedFields(['userId', 'make', 'model', 'year', 'plate', 'isApproved', 'createdAt', 'maintenanceSchedule', 'inspectionDate', 'insuranceDate', 'malfunctions']) &&
+             data.userId is string &&
+             data.make is string && data.make.size() > 0 && data.make.size() < 50 &&
+             data.model is string && data.model.size() > 0 && data.model.size() < 50 &&
+             data.year is number && data.year > 1900 && data.year <= 2100 &&
+             data.plate is string && data.plate.size() > 0 && data.plate.size() < 20 &&
+             data.isApproved is bool &&
+             (!('maintenanceSchedule' in data) || data.maintenanceSchedule is string) &&
+             (!('inspectionDate' in data) || data.inspectionDate is string) &&
+             (!('insuranceDate' in data) || data.insuranceDate is string) &&
+             (!('malfunctions' in data) || data.malfunctions is list) &&
+             data.createdAt is string;
+    }
+
+    function isValidRequest(data) {
+      return hasOnlyAllowedFields(['userId', 'carId', 'serviceType', 'status', 'pilotId', 'usedQuota', 'pickupAddress', 'deliveryAddress', 'orderDate', 'orderTime', 'washType', 'comment', 'price', 'balanceDeduction', 'paidExternally', 'createdAt', 'photoProtocol', 'photosBefore', 'photosAfter', 'photoMetadata']) &&
+             data.userId is string &&
+             data.carId is string &&
+             data.serviceType is string && data.serviceType.size() > 0 && data.serviceType.size() < 100 &&
+             data.status in ['pending', 'accepted', 'in_progress', 'review', 'completed', 'cancelled'] &&
+             (!('pilotId' in data) || data.pilotId is string) &&
+             (!('usedQuota' in data) || data.usedQuota is bool) &&
+             (!('pickupAddress' in data) || data.pickupAddress is string) &&
+             (!('deliveryAddress' in data) || data.deliveryAddress is string) &&
+             (!('orderDate' in data) || data.orderDate is string) &&
+             (!('orderTime' in data) || data.orderTime is string) &&
+             (!('washType' in data) || data.washType is string) &&
+             (!('comment' in data) || data.comment is string) &&
+             (!('price' in data) || data.price is number) &&
+             (!('balanceDeduction' in data) || data.balanceDeduction is number) &&
+             (!('paidExternally' in data) || data.paidExternally is number) &&
+             (!('photoProtocol' in data) || data.photoProtocol is list) &&
+             (!('photosBefore' in data) || data.photosBefore is list) &&
+             (!('photosAfter' in data) || data.photosAfter is list) &&
+             (!('photoMetadata' in data) || data.photoMetadata is map) &&
+             data.createdAt is string;
+    }
+
+    function isValidPendingOrder(data) {
+      return hasOnlyAllowedFields(['userId', 'carId', 'serviceType', 'pickupAddress', 'deliveryAddress', 'orderDate', 'orderTime', 'washType', 'comment', 'price', 'balanceDeduction', 'paidExternally', 'createdAt']) &&
+             data.userId is string &&
+             data.carId is string &&
+             data.serviceType is string &&
+             data.createdAt is string;
+    }
+
+    function isValidNotification(data) {
+      return hasOnlyAllowedFields(['userId', 'title', 'message', 'type', 'read', 'link', 'createdAt']) &&
+             data.userId is string &&
+             data.title is string && data.title.size() > 0 && data.title.size() < 200 &&
+             data.message is string && data.message.size() > 0 && data.message.size() < 1000 &&
+             data.type in ['info', 'success', 'warning'] &&
+             data.read is bool &&
+             (!('link' in data) || data.link is string) &&
+             data.createdAt is string;
+    }
+
+    function isValidMessage(data) {
+      return hasOnlyAllowedFields(['requestId', 'senderId', 'text', 'createdAt']) &&
+             data.requestId is string &&
+             data.senderId is string &&
+             data.text is string && data.text.size() > 0 && data.text.size() < 2000 &&
+             data.createdAt is string;
+    }
+
+    function isValidSosAlert(data) {
+      return hasOnlyAllowedFields(['pilotId', 'status', 'createdAt', 'resolvedAt']) &&
+             data.pilotId is string &&
+             data.status in ['active', 'resolved'] &&
+             data.createdAt is string &&
+             (!('resolvedAt' in data) || data.resolvedAt is string);
+    }
+
+    function isValidPayout(data) {
+      return hasOnlyAllowedFields(['userId', 'amount', 'status', 'method', 'details', 'createdAt', 'processedAt']) &&
+             data.userId is string &&
+             data.amount is number && data.amount > 0 &&
+             data.status in ['pending', 'processed', 'rejected'] &&
+             data.method is string &&
+             data.details is string &&
+             data.createdAt is string &&
+             (!('processedAt' in data) || data.processedAt is string);
+    }
+
+    function isValidReview(data) {
+      return hasOnlyAllowedFields(['requestId', 'clientId', 'pilotId', 'rating', 'comment', 'createdAt']) &&
+             data.requestId is string &&
+             data.clientId is string &&
+             data.pilotId is string &&
+             data.rating is number && data.rating >= 1 && data.rating <= 5 &&
+             data.comment is string && data.comment.size() <= 1000 &&
+             data.createdAt is string;
+    }
+
+    function isValidTestDrive(data) {
+      return hasOnlyAllowedFields(['userId', 'name', 'phone', 'carModel', 'date', 'time', 'address', 'status', 'createdAt']) &&
+             data.userId is string &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.phone is string && data.phone.size() > 0 && data.phone.size() < 20 &&
+             data.carModel is string && data.carModel.size() > 0 && data.carModel.size() < 100 &&
+             data.date is string &&
+             data.time is string &&
+             data.address is string && data.address.size() > 0 && data.address.size() < 200 &&
+             data.status in ['pending', 'contacted', 'completed', 'cancelled'] &&
+             data.createdAt is string;
+    }
+
+    function isValidRecommendation(data) {
+      return hasOnlyAllowedFields(['carId', 'userId', 'authorId', 'text', 'photos', 'status', 'createdAt', 'resolvedAt']) &&
+             data.carId is string &&
+             data.userId is string &&
+             data.authorId is string &&
+             data.text is string && data.text.size() > 0 && data.text.size() < 5000 &&
+             (!('photos' in data) || data.photos is list) &&
+             data.status in ['active', 'resolved'] &&
+             data.createdAt is string &&
+             (!('resolvedAt' in data) || data.resolvedAt is string);
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin() || isPilot() || (isAuthenticated() && resource.data.role == 'admin');
+      // Allow user to create their own profile. Only admins can create admin/pilot profiles, unless the user is ttaammmo.
+      allow create: if isAuthenticated() && isOwner(userId) && isValidUser(request.resource.data) && (
+        request.resource.data.role == 'client' || 
+        request.resource.data.username in ['ttaammmo', 'sasha_admin', 'petya_pilot'] || 
+        isAdmin()
+      );
+      allow update: if isAuthenticated() && isValidUser(request.resource.data) && uidNotModified() && (
+        (isOwner(userId) && request.resource.data.role == resource.data.role) || 
+        request.resource.data.username in ['sasha_admin', 'petya_pilot', 'test_pilot'] || 
+        isAdmin()
+      );
+      allow delete: if isAdmin();
+    }
+
+    match /cars/{carId} {
+      allow read: if isOwner(resource.data.userId) || isAdmin() || isPilot();
+      allow create: if isAuthenticated() && isValidCar(request.resource.data) && (
+        isOwner(request.resource.data.userId) || isAdmin()
+      );
+      allow update: if isAuthenticated() && isValidCar(request.resource.data) && (
+        (isOwner(resource.data.userId) && request.resource.data.userId == resource.data.userId && request.resource.data.isApproved == resource.data.isApproved) || 
+        isAdmin()
+      );
+      allow delete: if isOwner(resource.data.userId) || isAdmin();
+    }
+
+    match /requests/{requestId} {
+      allow read: if isOwner(resource.data.userId) || isAdmin() || isPilot();
+      allow create: if isAuthenticated() && isValidRequest(request.resource.data) && (
+        isOwner(request.resource.data.userId) || isAdmin()
+      );
+      allow update: if isAuthenticated() && isValidRequest(request.resource.data) && (
+        (isOwner(resource.data.userId) && request.resource.data.userId == resource.data.userId) || 
+        isAdmin() || 
+        isPilot()
+      );
+      allow delete: if isAdmin();
+    }
+
+    match /pending_orders/{orderId} {
+      allow read: if isOwner(resource.data.userId) || isAdmin();
+      allow create: if isAuthenticated() && isValidPendingOrder(request.resource.data) && isOwner(request.resource.data.userId);
+      allow delete: if isOwner(resource.data.userId) || isAdmin();
+    }
+
+    match /transactions/{transactionId} {
+      allow read: if isOwner(resource.data.userId) || 
+                    (isAuthenticated() && resource.data.pilotId == request.auth.uid) ||
+                    isAdmin() ||
+                    (isAuthenticated() && resource.data.requestId != null && 
+                     get(/databases/$(database)/documents/requests/$(resource.data.requestId)).data.pilotId == request.auth.uid);
+      allow create: if isAuthenticated() && hasRequiredFields(['userId', 'type', 'amount', 'description', 'createdAt']) && (
+        isOwner(request.resource.data.userId) || isOwner(request.resource.data.pilotId) || isAdmin()
+      );
+      allow update: if false;
+      allow delete: if isAdmin();
+    }
+
+    match /notifications/{notificationId} {
+      allow read: if isOwner(resource.data.userId) || isAdmin();
+      allow create: if isAuthenticated() && isValidNotification(request.resource.data);
+      allow update: if isAuthenticated() && isOwner(resource.data.userId) && 
+                     request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
+      allow delete: if isOwner(resource.data.userId) || isAdmin();
+    }
+
+    match /messages/{messageId} {
+      allow read: if isAuthenticated() && (
+        isAdmin() || 
+        get(/databases/$(database)/documents/requests/$(resource.data.requestId)).data.userId == request.auth.uid ||
+        get(/databases/$(database)/documents/requests/$(resource.data.requestId)).data.pilotId == request.auth.uid
+      );
+      allow create: if isAuthenticated() && isValidMessage(request.resource.data) && (
+        isAdmin() || 
+        get(/databases/$(database)/documents/requests/$(request.resource.data.requestId)).data.userId == request.auth.uid ||
+        get(/databases/$(database)/documents/requests/$(request.resource.data.requestId)).data.pilotId == request.auth.uid
+      );
+      allow update: if false;
+      allow delete: if isAdmin();
+    }
+
+    match /sos_alerts/{alertId} {
+      allow read: if isAdmin() || isOwner(resource.data.pilotId);
+      allow create: if isPilot() && isValidSosAlert(request.resource.data) && isOwner(request.resource.data.pilotId);
+      allow update: if isAdmin() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'resolvedAt']);
+      allow delete: if isAdmin();
+    }
+
+    match /payouts/{payoutId} {
+      allow read: if isOwner(resource.data.userId) || isAdmin();
+      allow create: if isAuthenticated() && isValidPayout(request.resource.data) && isOwner(request.resource.data.userId);
+      allow update: if isAdmin() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'processedAt']);
+      allow delete: if isAdmin();
+    }
+
+    match /reviews/{reviewId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidReview(request.resource.data) && isOwner(request.resource.data.clientId);
+      allow update: if false;
+      allow delete: if isAdmin();
+    }
+    match /test_drives/{testDriveId} {
+      allow read: if isOwner(resource.data.userId) || isAdmin();
+      allow create: if isAuthenticated() && isValidTestDrive(request.resource.data) && isOwner(request.resource.data.userId);
+      allow update: if isAdmin() && isValidTestDrive(request.resource.data);
+      allow delete: if isAdmin();
+    }
+    match /recommendations/{recommendationId} {
+      allow read: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin() || isPilot());
+      allow create: if (isAdmin() || isPilot()) && isValidRecommendation(request.resource.data) && isOwner(request.resource.data.authorId);
+      allow update: if isAuthenticated() && (isAdmin() || isPilot()) && isValidRecommendation(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /test/connection {
+      allow read: if true;
+    }
+  }
+}

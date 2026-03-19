@@ -1,1 +1,32 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Montserrat:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
+
+@theme {
+  --font-sans: "Montserrat", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Cormorant Garamond", ui-serif, Georgia, serif;
+  
+  /* Override amber to match Squadra's signature orange/rust from the website */
+  --color-amber-400: #ff6b33;
+  --color-amber-500: #ff4d00;
+  --color-amber-600: #cc3e00;
+  
+  --color-accent: #ff4d00;
+}
+
+body {
+  background-color: #000000;
+  color: #ffffff;
+  font-family: var(--font-sans);
+  /* Prevent pull-to-refresh and overscroll glow */
+  overscroll-behavior-y: none;
+}
+
+/* Prevent iOS auto-zoom on input focus */
+input, textarea, select {
+  font-size: 16px !important;
+}
+
+/* Prevent double-tap to zoom */
+button, a, input, select, textarea {
+  touch-action: manipulation;
+}

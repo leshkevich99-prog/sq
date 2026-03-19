@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, NavLink } from 'react-router-dom';
-import { Home, Car, Shield, PlusCircle, Wallet } from 'lucide-react';
-import { useFirebase } from './FirebaseProvider';
-import Header from './Header';
+import { ListTodo, AlertTriangle, History } from 'lucide-react';
+import Header from '../../components/Header';
 
-export default function Layout() {
-  const { user } = useFirebase();
+export default function PilotLayout() {
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
 
   useEffect(() => {
@@ -48,19 +46,16 @@ export default function Layout() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-black text-white pb-20 font-sans selection:bg-zinc-800 relative flex flex-col">
+    <div className="min-h-screen bg-black text-white pb-20 font-sans relative flex flex-col">
       <Header />
-
       <main className="flex-1 p-4">
         <Outlet />
       </main>
 
       <nav className={`${isKeyboardVisible ? 'hidden' : 'fixed'} bottom-0 left-0 right-0 bg-zinc-950 border-t border-zinc-900 px-1 py-3 flex justify-around items-center z-50 pb-safe`}>
-        <NavItem to="/" icon={<Home size={22} />} label="Главная" />
-        <NavItem to="/garage" icon={<Car size={22} />} label="Гараж" />
-        <NavItem to="/order" icon={<PlusCircle size={22} />} label="Заказ" />
-        <NavItem to="/finances" icon={<Wallet size={22} />} label="Депозит" />
-        <NavItem to="/tariffs" icon={<Shield size={22} />} label="Тарифы" />
+        <NavItem to="/" icon={<ListTodo size={22} />} label="Задачи" />
+        <NavItem to="/history" icon={<History size={22} />} label="История" />
+        <NavItem to="/sos" icon={<AlertTriangle size={22} className="text-red-500" />} label="SOS" />
       </nav>
     </div>
   );
@@ -68,9 +63,9 @@ export default function Layout() {
 
 function NavItem({ to, icon, label }: { to: string; icon: React.ReactNode; label: string }) {
   return (
-    <NavLink
-      to={to}
-      className={({ isActive }) =>
+    <NavLink 
+      to={to} 
+      className={({ isActive }) => 
         `flex flex-col items-center gap-1 transition-colors flex-1 min-w-0 ${
           isActive ? 'text-white' : 'text-zinc-600 hover:text-zinc-400'
         }`

@@ -1,0 +1,354 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "A user of the application, linked to their Telegram account.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Firebase Auth UID"
+        },
+        "telegramId": {
+          "type": "number",
+          "description": "Telegram User ID"
+        },
+        "username": {
+          "type": "string",
+          "description": "Telegram Username"
+        },
+        "firstName": {
+          "type": "string",
+          "description": "Telegram First Name"
+        },
+        "role": {
+          "type": "string",
+          "enum": ["client", "admin", "pilot"],
+          "description": "User role in the system"
+        },
+        "tariff": {
+          "type": "string",
+          "enum": ["telemetry", "pitstop", "family", "test_drive"],
+          "description": "User's active tariff"
+        },
+        "balance": {
+          "type": "number",
+          "description": "User's operational deposit balance"
+        },
+        "limits": {
+          "type": "object",
+          "properties": {
+            "wash": { "type": "number" },
+            "logistics": { "type": "number" },
+            "valet": { "type": "number" },
+            "parking": { "type": "number" },
+            "bureaucracy": { "type": "number" }
+          },
+          "description": "User's service limits"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp of creation"
+        }
+      },
+      "required": ["uid", "telegramId", "role", "createdAt"]
+    },
+    "Car": {
+      "title": "Car",
+      "description": "A car in the user's garage.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Firebase Auth UID of the owner"
+        },
+        "make": {
+          "type": "string",
+          "description": "Car make (e.g., BMW)"
+        },
+        "model": {
+          "type": "string",
+          "description": "Car model (e.g., X5)"
+        },
+        "year": {
+          "type": "number",
+          "description": "Manufacturing year"
+        },
+        "plate": {
+          "type": "string",
+          "description": "License plate number"
+        },
+        "isApproved": {
+          "type": "boolean",
+          "description": "Whether the car is approved by moderation"
+        },
+        "maintenanceSchedule": {
+          "type": "string",
+          "description": "Date of next maintenance (TO)"
+        },
+        "inspectionDate": {
+          "type": "string",
+          "description": "Date of next inspection"
+        },
+        "insuranceDate": {
+          "type": "string",
+          "description": "Date of insurance expiration"
+        },
+        "malfunctions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "List of malfunctions"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp of creation"
+        }
+      },
+      "required": ["userId", "make", "model", "year", "plate", "isApproved", "createdAt"]
+    },
+    "ServiceRequest": {
+      "title": "ServiceRequest",
+      "description": "A request for auto service/pilot.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Firebase Auth UID of the client"
+        },
+        "carId": {
+          "type": "string",
+          "description": "ID of the car"
+        },
+        "serviceType": {
+          "type": "string",
+          "description": "Type of service requested"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["pending", "accepted", "in_progress", "completed", "cancelled"],
+          "description": "Current status of the request"
+        },
+        "pilotId": {
+          "type": "string",
+          "description": "Firebase Auth UID of the assigned pilot (optional)"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp of creation"
+        }
+      },
+      "required": ["userId", "carId", "serviceType", "status", "createdAt"]
+    },
+    "Transaction": {
+      "title": "Transaction",
+      "description": "A billing transaction for a user.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Firebase Auth UID of the client"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["deposit_deduction", "wash_limit", "task_limit", "external_invoice"],
+          "description": "Type of transaction"
+        },
+        "amount": {
+          "type": "number",
+          "description": "Amount or value deducted"
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the transaction"
+        },
+        "receiptUrl": {
+          "type": "string",
+          "description": "URL to the photo receipt (optional)"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp of creation"
+        }
+      },
+      "required": ["userId", "type", "amount", "description", "createdAt"]
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "A notification for a user.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Firebase Auth UID of the recipient"
+        },
+        "title": {
+          "type": "string",
+          "description": "Title of the notification"
+        },
+        "message": {
+          "type": "string",
+          "description": "Message content"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["info", "success", "warning"],
+          "description": "Type of notification"
+        },
+        "read": {
+          "type": "boolean",
+          "description": "Whether the notification has been read"
+        },
+        "link": {
+          "type": "string",
+          "description": "Optional link to navigate to"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp of creation"
+        }
+      },
+      "required": ["userId", "title", "message", "type", "read", "createdAt"]
+    },
+    "Recommendation": {
+      "title": "Recommendation",
+      "description": "A service recommendation or malfunction report for a car.",
+      "type": "object",
+      "properties": {
+        "carId": {
+          "type": "string",
+          "description": "ID of the car"
+        },
+        "userId": {
+          "type": "string",
+          "description": "UID of the car owner"
+        },
+        "authorId": {
+          "type": "string",
+          "description": "UID of the pilot or admin who created the recommendation"
+        },
+        "text": {
+          "type": "string",
+          "description": "Description of the issue or recommendation"
+        },
+        "photos": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Photos of the issue"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["active", "resolved"],
+          "description": "Current status of the recommendation"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp of creation"
+        },
+        "resolvedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when resolved"
+        }
+      },
+      "required": ["carId", "userId", "authorId", "text", "status", "createdAt"]
+    },
+    "TestDrive": {
+      "title": "TestDrive",
+      "description": "A request for a test drive.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Firebase Auth UID of the client"
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the client"
+        },
+        "phone": {
+          "type": "string",
+          "description": "Phone number of the client"
+        },
+        "carModel": {
+          "type": "string",
+          "description": "Requested car model"
+        },
+        "date": {
+          "type": "string",
+          "description": "Requested date"
+        },
+        "time": {
+          "type": "string",
+          "description": "Requested time"
+        },
+        "address": {
+          "type": "string",
+          "description": "Pickup address"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["pending", "contacted", "completed", "cancelled"],
+          "description": "Current status of the request"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp of creation"
+        }
+      },
+      "required": ["userId", "name", "phone", "carModel", "date", "time", "address", "status", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": {
+        "$ref": "#/entities/User"
+      },
+      "description": "Collection of users."
+    },
+    "/cars/{carId}": {
+      "schema": {
+        "$ref": "#/entities/Car"
+      },
+      "description": "Collection of cars."
+    },
+    "/requests/{requestId}": {
+      "schema": {
+        "$ref": "#/entities/ServiceRequest"
+      },
+      "description": "Collection of service requests."
+    },
+    "/transactions/{transactionId}": {
+      "schema": {
+        "$ref": "#/entities/Transaction"
+      },
+      "description": "Collection of billing transactions."
+    },
+    "/notifications/{notificationId}": {
+      "schema": {
+        "$ref": "#/entities/Notification"
+      },
+      "description": "Collection of user notifications."
+    },
+    "/test_drives/{testDriveId}": {
+      "schema": {
+        "$ref": "#/entities/TestDrive"
+      },
+      "description": "Collection of test drive requests."
+    },
+    "/recommendations/{recommendationId}": {
+      "schema": {
+        "$ref": "#/entities/Recommendation"
+      },
+      "description": "Collection of car recommendations and malfunctions."
+    }
+  }
+}

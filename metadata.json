@@ -1,5 +1,5 @@
 {
   "name": "Squadra Telegram Mini App",
   "description": "Telegram Mini App for squadra.by",
-  "requestFramePermissions": []
+  "requestFramePermissions": ["geolocation"]
 }
