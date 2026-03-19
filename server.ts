@@ -8,7 +8,7 @@ import multer from 'multer';
 import { v4 as uuidv4 } from 'uuid';
 import { fileURLToPath } from 'url';
 import { initBot, sendNotification, getBot } from './server/bot.js';
-import db from './server/db.js';
+import { firestore } from './server/db.js';
 import { generateToken, authenticateToken, AuthRequest, isAdmin } from './server/auth.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -83,27 +83,32 @@ async function startServer() {
       if (!userStr) return res.status(400).json({ error: 'Missing user data' });
       const tgUser = JSON.parse(userStr);
 
-      // Check if user exists in local DB
-      let user = db.prepare('SELECT * FROM users WHERE telegramId = ?').get(tgUser.id.toString()) as any;
+      // Check if user exists in Firestore
+      let user = await firestore.collection('users').all([{ type: 'where', field: 'telegramId', op: '==', value: tgUser.id.toString() }]);
+      let userData = user[0];
 
-      if (!user) {
+      if (!userData) {
         const id = uuidv4();
         // Default admin check
         const role = (tgUser.username?.toLowerCase() === 'ttaammmo' || tgUser.id.toString() === '123456789') ? 'admin' : 'client';
-        db.prepare(`
-          INSERT INTO users (id, telegramId, username, firstName, lastName, photoUrl, role)
-          VALUES (?, ?, ?, ?, ?, ?, ?)
-        `).run(id, tgUser.id.toString(), tgUser.username || '', tgUser.first_name || '', tgUser.last_name || '', tgUser.photo_url || '', role);
-        user = db.prepare('SELECT * FROM users WHERE id = ?').get(id);
+        userData = await firestore.collection('users').set(id, {
+          telegramId: tgUser.id.toString(),
+          username: tgUser.username || '',
+          firstName: tgUser.first_name || '',
+          lastName: tgUser.last_name || '',
+          photoUrl: tgUser.photo_url || '',
+          role
+        });
       } else {
-        db.prepare(`
-          UPDATE users SET username = ?, firstName = ?, lastName = ?, photoUrl = ?, updatedAt = CURRENT_TIMESTAMP
-          WHERE id = ?
-        `).run(tgUser.username || '', tgUser.first_name || '', tgUser.last_name || '', tgUser.photo_url || '', user.id);
-        user = db.prepare('SELECT * FROM users WHERE id = ?').get(user.id);
+        userData = await firestore.collection('users').set(userData.id, {
+          username: tgUser.username || '',
+          firstName: tgUser.first_name || '',
+          lastName: tgUser.last_name || '',
+          photoUrl: tgUser.photo_url || ''
+        });
       }
 
-      const token = generateToken({ id: user.id, telegramId: user.telegramId, role: user.role });
+      const token = generateToken({ id: userData.id, telegramId: userData.telegramId, role: userData.role });
 
       res.cookie('token', token, {
         httpOnly: true,
@@ -119,8 +124,8 @@ async function startServer() {
     }
   });
 
-  app.get('/api/auth/me', authenticateToken, (req: AuthRequest, res) => {
-    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.user?.id);
+  app.get('/api/auth/me', authenticateToken, async (req: AuthRequest, res) => {
+    const user = await firestore.collection('users').get(req.user?.id!);
     if (!user) return res.status(404).json({ error: 'User not found' });
     res.json({ user });
   });
@@ -131,37 +136,29 @@ async function startServer() {
   });
 
   // Cars API
-  app.get('/api/cars', authenticateToken, (req: AuthRequest, res) => {
-    const cars = db.prepare('SELECT * FROM cars WHERE userId = ?').all(req.user?.id);
-    res.json({ cars: cars.map((c: any) => ({ ...c, photos: JSON.parse(c.photos || '[]') })) });
+  app.get('/api/cars', authenticateToken, async (req: AuthRequest, res) => {
+    const cars = await firestore.collection('cars').all([{ type: 'where', field: 'userId', op: '==', value: req.user?.id }]);
+    res.json({ cars: cars.map((c: any) => ({ ...c, photos: typeof c.photos === 'string' ? JSON.parse(c.photos || '[]') : (c.photos || []) })) });
   });
 
-  app.post('/api/cars', authenticateToken, (req: AuthRequest, res) => {
+  app.post('/api/cars', authenticateToken, async (req: AuthRequest, res) => {
     const id = uuidv4();
-    const { brand, model, year, vin, plateNumber, color, mileage, engineType, engineVolume, transmission, driveType, notes, photos } = req.body;
-    db.prepare(`
-      INSERT INTO cars (id, userId, brand, model, year, vin, plateNumber, color, mileage, engineType, engineVolume, transmission, driveType, notes, photos)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(id, req.user?.id, brand, model, year, vin, plateNumber, color, mileage, engineType, engineVolume, transmission, driveType, notes, JSON.stringify(photos || []));
-    const car = db.prepare('SELECT * FROM cars WHERE id = ?').get(id) as any;
-    res.json({ car: { ...car, photos: JSON.parse(car.photos || '[]') } });
+    const data = req.body;
+    const car = await firestore.collection('cars').set(id, { ...data, userId: req.user?.id });
+    res.json({ car: { ...car, photos: typeof car.photos === 'string' ? JSON.parse(car.photos || '[]') : (car.photos || []) } });
   });
 
   // Requests API
-  app.get('/api/requests', authenticateToken, (req: AuthRequest, res) => {
-    const requests = db.prepare('SELECT * FROM requests WHERE userId = ?').all(req.user?.id);
-    res.json({ requests: requests.map((r: any) => ({ ...r, photos: JSON.parse(r.photos || '[]') })) });
+  app.get('/api/requests', authenticateToken, async (req: AuthRequest, res) => {
+    const requests = await firestore.collection('requests').all([{ type: 'where', field: 'userId', op: '==', value: req.user?.id }]);
+    res.json({ requests: requests.map((r: any) => ({ ...r, photos: typeof r.photos === 'string' ? JSON.parse(r.photos || '[]') : (r.photos || []) })) });
   });
 
-  app.post('/api/requests', authenticateToken, (req: AuthRequest, res) => {
+  app.post('/api/requests', authenticateToken, async (req: AuthRequest, res) => {
     const id = uuidv4();
-    const { carId, type, description, priority, scheduledDate, photos } = req.body;
-    db.prepare(`
-      INSERT INTO requests (id, userId, carId, type, description, priority, scheduledDate, photos)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(id, req.user?.id, carId, type, description, priority, scheduledDate, JSON.stringify(photos || []));
-    const request = db.prepare('SELECT * FROM requests WHERE id = ?').get(id) as any;
-    res.json({ request: { ...request, photos: JSON.parse(request.photos || '[]') } });
+    const data = req.body;
+    const request = await firestore.collection('requests').set(id, { ...data, userId: req.user?.id });
+    res.json({ request: { ...request, photos: typeof request.photos === 'string' ? JSON.parse(request.photos || '[]') : (request.photos || []) } });
   });
 
   // File Upload
@@ -172,25 +169,25 @@ async function startServer() {
   });
 
   // Notifications
-  app.get('/api/notifications', authenticateToken, (req: AuthRequest, res) => {
-    const notifications = db.prepare('SELECT * FROM notifications WHERE userId = ? ORDER BY createdAt DESC LIMIT 50').all(req.user?.id);
+  app.get('/api/notifications', authenticateToken, async (req: AuthRequest, res) => {
+    const notifications = await firestore.collection('notifications').all([
+      { type: 'where', field: 'userId', op: '==', value: req.user?.id },
+      { type: 'orderBy', field: 'createdAt', dir: 'desc' },
+      { type: 'limit', limit: 50 }
+    ]);
     res.json({ notifications });
   });
 
-  app.post('/api/notifications', authenticateToken, (req: AuthRequest, res) => {
+  app.post('/api/notifications', authenticateToken, async (req: AuthRequest, res) => {
     const id = uuidv4();
-    const { userId, title, message, type, link } = req.body;
-    db.prepare(`
-      INSERT INTO notifications (id, userId, title, message, type, link)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `).run(id, userId || req.user?.id, title, message, type || 'info', link || null);
-    const notification = db.prepare('SELECT * FROM notifications WHERE id = ?').get(id);
+    const data = req.body;
+    const notification = await firestore.collection('notifications').set(id, { ...data, userId: data.userId || req.user?.id });
     res.json(notification);
   });
 
-  app.put('/api/notifications/:id', authenticateToken, (req: AuthRequest, res) => {
+  app.put('/api/notifications/:id', authenticateToken, async (req: AuthRequest, res) => {
     const { read } = req.body;
-    db.prepare('UPDATE notifications SET read = ? WHERE id = ? AND userId = ?').run(read ? 1 : 0, req.params.id, req.user?.id);
+    await firestore.collection('notifications').update(req.params.id, { read: !!read });
     res.json({ success: true });
   });
 
@@ -204,167 +201,133 @@ async function startServer() {
   });
 
   // Settings
-  app.get('/api/settings/:key', (req, res) => {
-    const setting = db.prepare('SELECT * FROM settings WHERE key = ?').get(req.params.key) as any;
+  app.get('/api/settings/:key', async (req, res) => {
+    const setting = await firestore.collection('settings').get(req.params.key);
     res.json(setting ? JSON.parse(setting.value) : {});
   });
 
-  app.put('/api/settings/:key', authenticateToken, isAdmin, (req, res) => {
+  app.put('/api/settings/:key', authenticateToken, isAdmin, async (req, res) => {
     const value = JSON.stringify(req.body);
-    db.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)').run(req.params.key, value);
+    await firestore.collection('settings').set(req.params.key, { value });
     res.json({ success: true });
   });
 
   // Transactions
-  app.get('/api/transactions', authenticateToken, (req: AuthRequest, res) => {
-    const transactions = db.prepare('SELECT * FROM transactions WHERE userId = ? ORDER BY createdAt DESC').all(req.user?.id);
+  app.get('/api/transactions', authenticateToken, async (req: AuthRequest, res) => {
+    const transactions = await firestore.collection('transactions').all([
+      { type: 'where', field: 'userId', op: '==', value: req.user?.id },
+      { type: 'orderBy', field: 'createdAt', dir: 'desc' }
+    ]);
     res.json({ transactions });
   });
 
-  app.post('/api/transactions', authenticateToken, (req: AuthRequest, res) => {
+  app.post('/api/transactions', authenticateToken, async (req: AuthRequest, res) => {
     const id = uuidv4();
-    const { amount, type, description, status, requestId } = req.body;
-    db.prepare(`
-      INSERT INTO transactions (id, userId, amount, type, description, status, requestId)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `).run(id, req.user?.id, amount, type, description, status || 'completed', requestId);
-    const tx = db.prepare('SELECT * FROM transactions WHERE id = ?').get(id);
+    const data = req.body;
+    const tx = await firestore.collection('transactions').set(id, { ...data, userId: req.user?.id, status: data.status || 'completed' });
     res.json(tx);
   });
 
   // Messages
-  app.get('/api/messages', authenticateToken, (req: AuthRequest, res) => {
+  app.get('/api/messages', authenticateToken, async (req: AuthRequest, res) => {
     const { requestId } = req.query;
-    const messages = db.prepare('SELECT * FROM messages WHERE requestId = ? ORDER BY createdAt ASC').all(requestId);
+    const messages = await firestore.collection('messages').all([
+      { type: 'where', field: 'requestId', op: '==', value: requestId },
+      { type: 'orderBy', field: 'createdAt', dir: 'asc' }
+    ]);
     res.json({ messages });
   });
 
-  app.post('/api/messages', authenticateToken, (req: AuthRequest, res) => {
+  app.post('/api/messages', authenticateToken, async (req: AuthRequest, res) => {
     const id = uuidv4();
-    const { requestId, text, type, senderId } = req.body;
-    db.prepare(`
-      INSERT INTO messages (id, requestId, text, type, senderId)
-      VALUES (?, ?, ?, ?, ?)
-    `).run(id, requestId, text, type || 'text', senderId || req.user?.id);
-    const msg = db.prepare('SELECT * FROM messages WHERE id = ?').get(id);
+    const data = req.body;
+    const msg = await firestore.collection('messages').set(id, { ...data, senderId: data.senderId || req.user?.id, type: data.type || 'text' });
     res.json(msg);
   });
 
   // Recommendations
-  app.get('/api/recommendations', authenticateToken, (req: AuthRequest, res) => {
-    const recommendations = db.prepare('SELECT * FROM recommendations WHERE carId IN (SELECT id FROM cars WHERE userId = ?)').all(req.user?.id);
+  app.get('/api/recommendations', authenticateToken, async (req: AuthRequest, res) => {
+    const cars = await firestore.collection('cars').all([{ type: 'where', field: 'userId', op: '==', value: req.user?.id }]);
+    const carIds = cars.map(c => c.id);
+    
+    if (carIds.length === 0) return res.json({ recommendations: [] });
+    
+    // Firestore doesn't support 'IN' with many values easily in this helper, 
+    // but we can fetch all and filter or do multiple queries.
+    // For simplicity, let's fetch all recommendations and filter in memory if needed,
+    // or just fetch by carId if we have few cars.
+    const allRecs = await firestore.collection('recommendations').all();
+    const recommendations = allRecs.filter((r: any) => carIds.includes(r.carId));
+    
     res.json({ recommendations });
   });
 
-  app.post('/api/recommendations', authenticateToken, (req: AuthRequest, res) => {
+  app.post('/api/recommendations', authenticateToken, async (req: AuthRequest, res) => {
     const id = uuidv4();
-    const { carId, title, description, type, priority, status } = req.body;
-    db.prepare(`
-      INSERT INTO recommendations (id, carId, title, description, type, priority, status)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `).run(id, carId, title, description, type, priority, status || 'pending');
-    const rec = db.prepare('SELECT * FROM recommendations WHERE id = ?').get(id);
+    const data = req.body;
+    const rec = await firestore.collection('recommendations').set(id, { ...data, status: data.status || 'pending' });
     res.json(rec);
   });
 
   // Admin Routes
-  app.get('/api/admin/users', authenticateToken, isAdmin, (req, res) => {
-    const users = db.prepare('SELECT * FROM users').all();
+  app.get('/api/admin/users', authenticateToken, isAdmin, async (req, res) => {
+    const users = await firestore.collection('users').all();
     res.json({ users });
   });
 
-  app.get('/api/admin/requests', authenticateToken, isAdmin, (req, res) => {
-    const requests = db.prepare(`
-      SELECT r.*, u.username, u.firstName, u.lastName, c.brand, c.model, c.plateNumber
-      FROM requests r
-      JOIN users u ON r.userId = u.id
-      JOIN cars c ON r.carId = c.id
-      ORDER BY r.createdAt DESC
-    `).all();
-    res.json({ requests: requests.map((r: any) => ({ ...r, photos: JSON.parse(r.photos || '[]') })) });
+  app.get('/api/admin/requests', authenticateToken, isAdmin, async (req, res) => {
+    const requests = await firestore.collection('requests').all([{ type: 'orderBy', field: 'createdAt', dir: 'desc' }]);
+    res.json({ requests: requests.map((r: any) => ({ ...r, photos: typeof r.photos === 'string' ? JSON.parse(r.photos || '[]') : (r.photos || []) })) });
   });
 
-  app.get('/api/admin/transactions', authenticateToken, isAdmin, (req, res) => {
-    const transactions = db.prepare(`
-      SELECT t.*, u.username, u.firstName, u.lastName
-      FROM transactions t
-      JOIN users u ON t.userId = u.id
-      ORDER BY t.createdAt DESC
-    `).all();
+  app.get('/api/admin/transactions', authenticateToken, isAdmin, async (req, res) => {
+    const transactions = await firestore.collection('transactions').all([{ type: 'orderBy', field: 'createdAt', dir: 'desc' }]);
     res.json({ transactions });
   });
 
-  // Generic CRUD for mocked Firestore
-  app.get('/api/:collection', authenticateToken, (req: AuthRequest, res) => {
+  // Generic CRUD for Firestore
+  app.get('/api/:collection', authenticateToken, async (req: AuthRequest, res) => {
     const { collection } = req.params;
     try {
-      // Basic validation of collection name to prevent SQL injection
-      if (!/^[a-z_]+$/.test(collection)) {
-        return res.status(400).json({ error: 'Invalid collection name' });
-      }
-      const items = db.prepare(`SELECT * FROM ${collection}`).all();
+      const items = await firestore.collection(collection).all();
       res.json({ [collection]: items });
     } catch (e) {
-      res.status(400).json({ error: 'Invalid collection or database error' });
+      res.status(400).json({ error: 'Database error' });
     }
   });
 
-  app.post('/api/:collection', authenticateToken, (req: AuthRequest, res) => {
+  app.post('/api/:collection', authenticateToken, async (req: AuthRequest, res) => {
     const { collection } = req.params;
     const data = req.body;
     const id = data.id || uuidv4();
     
     try {
-      if (!/^[a-z_]+$/.test(collection)) {
-        return res.status(400).json({ error: 'Invalid collection name' });
-      }
-
-      // Get table info to filter keys
-      const tableInfo = db.prepare(`PRAGMA table_info(${collection})`).all() as any[];
-      const validColumns = tableInfo.map(c => c.name);
-      
-      const keys = Object.keys(data).filter(k => k !== 'id' && validColumns.includes(k));
-      const columns = ['id', ...keys].join(', ');
-      const placeholders = ['?', ...keys.map(() => '?')].join(', ');
-      const values = [id, ...keys.map(k => typeof data[k] === 'object' ? JSON.stringify(data[k]) : data[k])];
-
-      db.prepare(`INSERT INTO ${collection} (${columns}) VALUES (${placeholders})`).run(...values);
-      const created = db.prepare(`SELECT * FROM ${collection} WHERE id = ?`).get(id);
+      const created = await firestore.collection(collection).set(id, data);
       res.json(created);
     } catch (e) {
-      console.error(`Error creating item in ${collection}:`, e);
       res.status(400).json({ error: 'Failed to create item' });
     }
   });
 
-  app.get('/api/:collection/:id', authenticateToken, (req: AuthRequest, res) => {
+  app.get('/api/:collection/:id', authenticateToken, async (req: AuthRequest, res) => {
     const { collection, id } = req.params;
     try {
-      if (!/^[a-z_]+$/.test(collection)) {
-        return res.status(400).json({ error: 'Invalid collection name' });
-      }
-      const item = db.prepare(`SELECT * FROM ${collection} WHERE id = ?`).get(id);
+      const item = await firestore.collection(collection).get(id);
       if (!item) return res.status(404).json({ error: 'Not found' });
       res.json(item);
     } catch (e) {
-      res.status(400).json({ error: 'Invalid collection or database error' });
+      res.status(400).json({ error: 'Database error' });
     }
   });
 
-  app.put('/api/:collection/:id', authenticateToken, (req: AuthRequest, res) => {
+  app.put('/api/:collection/:id', authenticateToken, async (req: AuthRequest, res) => {
     const { collection, id } = req.params;
     const data = req.body;
     
     try {
-      if (!/^[a-z_]+$/.test(collection)) {
-        return res.status(400).json({ error: 'Invalid collection name' });
-      }
-
-      // Check if user is allowed to update this item
-      const item = db.prepare(`SELECT * FROM ${collection} WHERE id = ?`).get(id) as any;
+      const item = await firestore.collection(collection).get(id);
       if (!item) return res.status(404).json({ error: 'Not found' });
       
-      // Basic security: only owner or admin can update
       if (item.userId && item.userId !== req.user?.id && req.user?.role !== 'admin') {
         return res.status(403).json({ error: 'Forbidden' });
       }
@@ -372,49 +335,24 @@ async function startServer() {
         return res.status(403).json({ error: 'Forbidden' });
       }
 
-      // Get table info to filter keys
-      const tableInfo = db.prepare(`PRAGMA table_info(${collection})`).all() as any[];
-      const validColumns = tableInfo.map(c => c.name);
-
-      const keys = Object.keys(data).filter(k => 
-        k !== 'id' && 
-        k !== 'createdAt' && 
-        k !== 'updatedAt' && 
-        validColumns.includes(k)
-      );
-      
-      if (keys.length === 0) {
-        return res.json(item);
-      }
-
-      const sets = keys.map(k => `${k} = ?`).join(', ');
-      const values = keys.map(k => typeof data[k] === 'object' ? JSON.stringify(data[k]) : data[k]);
-      
-      db.prepare(`UPDATE ${collection} SET ${sets}, updatedAt = CURRENT_TIMESTAMP WHERE id = ?`).run(...values, id);
-      const updated = db.prepare(`SELECT * FROM ${collection} WHERE id = ?`).get(id);
+      const updated = await firestore.collection(collection).update(id, data);
       res.json(updated);
     } catch (e) {
-      console.error(`Error updating item in ${collection}:`, e);
       res.status(400).json({ error: 'Failed to update item' });
     }
   });
 
-  app.delete('/api/:collection/:id', authenticateToken, (req: AuthRequest, res) => {
+  app.delete('/api/:collection/:id', authenticateToken, async (req: AuthRequest, res) => {
     const { collection, id } = req.params;
     try {
-      if (!/^[a-z_]+$/.test(collection)) {
-        return res.status(400).json({ error: 'Invalid collection name' });
-      }
-      
-      // Check if user is allowed to delete this item
-      const item = db.prepare(`SELECT * FROM ${collection} WHERE id = ?`).get(id) as any;
+      const item = await firestore.collection(collection).get(id);
       if (!item) return res.status(404).json({ error: 'Not found' });
       
       if (item.userId && item.userId !== req.user?.id && req.user?.role !== 'admin') {
         return res.status(403).json({ error: 'Forbidden' });
       }
 
-      db.prepare(`DELETE FROM ${collection} WHERE id = ?`).run(id);
+      await firestore.collection(collection).delete(id);
       res.json({ success: true });
     } catch (e) {
       res.status(400).json({ error: 'Failed to delete item' });

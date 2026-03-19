@@ -305,7 +305,7 @@ export default function Home() {
               </div>
             )}
             <p className="text-zinc-400 text-sm mb-4">
-              {user?.subscription ? 'Управляйте вашими лимитами и услугами' : 'Попробуйте наш сервис бесплатно'}
+              {user?.subscription ? 'Управляйте вашими лимитами и услугами' : 'Попробуйте наш сервис за 500 Br'}
             </p>
             <Link 
               to="/tariffs"

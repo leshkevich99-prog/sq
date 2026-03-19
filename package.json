@@ -17,7 +17,6 @@
     "@twa-dev/sdk": "^8.0.2",
     "@types/node-telegram-bot-api": "^0.64.14",
     "@vitejs/plugin-react": "^5.0.4",
-    "better-sqlite3": "^12.8.0",
     "browser-image-compression": "^2.0.2",
     "cookie-parser": "^1.4.7",
     "dotenv": "^17.2.3",

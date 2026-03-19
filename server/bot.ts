@@ -1,6 +1,6 @@
 import TelegramBot from 'node-telegram-bot-api';
 import fs from 'node:fs';
-import db from './db.js';
+import { firestore } from './db.js';
 import { v4 as uuidv4 } from 'uuid';
 
 let bot: TelegramBot | null = null;
@@ -95,66 +95,62 @@ export async function initBot() {
       if (userId) {
         if (type === 'subscription') {
           console.log(`Updating subscription for user ${userId} to ${tariffName}`);
-          db.prepare(`
-            UPDATE users 
-            SET subscription = ?, quotas = ?, usedQuotas = NULL, limits = NULL, updatedAt = CURRENT_TIMESTAMP
-            WHERE id = ?
-          `).run(tariffName, JSON.stringify(quotas), userId);
+          await firestore.collection('users').set(userId, {
+            subscription: tariffName,
+            quotas: quotas,
+            usedQuotas: null,
+            limits: null
+          });
 
           if (balanceDeduction && balanceDeduction > 0) {
             console.log(`Recording balance deduction of ${balanceDeduction} for user ${userId}`);
-            db.prepare(`
-              INSERT INTO transactions (id, userId, type, amount, description, createdAt)
-              VALUES (?, ?, ?, ?, ?, ?)
-            `).run(uuidv4(), userId, 'deposit_deduction', balanceDeduction, `Доплата за переход на тариф ${tariffName} (списано с депозита)`, new Date().toISOString());
+            await firestore.collection('transactions').add({
+              userId,
+              type: 'deposit_deduction',
+              amount: balanceDeduction,
+              description: `Доплата за переход на тариф ${tariffName} (списано с депозита)`
+            });
           }
         } else if (type === 'service_order' && rawPayload.po) {
           const pendingOrderId = rawPayload.po;
-          const orderData = db.prepare('SELECT * FROM pending_orders WHERE id = ?').get(pendingOrderId) as any;
+          const orderData = await firestore.collection('pending_orders').get(pendingOrderId);
           
           if (orderData) {
             // 1. Create real request
             const requestId = uuidv4();
-            db.prepare(`
-              INSERT INTO requests (id, userId, carId, type, description, priority, scheduledDate, status, actualCost, createdAt)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            `).run(
-              requestId, 
-              orderData.userId, 
-              orderData.carId, 
-              orderData.serviceType, 
-              orderData.description, 
-              orderData.priority, 
-              orderData.scheduledDate, 
-              'pending', 
-              amount || (payment.total_amount / 100), 
-              new Date().toISOString()
-            );
+            await firestore.collection('requests').set(requestId, {
+              userId: orderData.userId,
+              carId: orderData.carId,
+              type: orderData.serviceType,
+              description: orderData.description,
+              priority: orderData.priority,
+              scheduledDate: orderData.scheduledDate,
+              status: 'pending',
+              actualCost: amount || (payment.total_amount / 100)
+            });
 
             // 2. Deduct from balance if needed
             if (orderData.balanceDeduction > 0) {
-              db.prepare(`
-                INSERT INTO transactions (id, userId, type, amount, description, createdAt)
-                VALUES (?, ?, ?, ?, ?, ?)
-              `).run(uuidv4(), userId, 'deposit_deduction', orderData.balanceDeduction, `Оплата услуги "${orderData.serviceType}" (часть суммы)`, new Date().toISOString());
+              await firestore.collection('transactions').add({
+                userId,
+                type: 'deposit_deduction',
+                amount: orderData.balanceDeduction,
+                description: `Оплата услуги "${orderData.serviceType}" (часть суммы)`
+              });
             }
 
             // 3. Notify admins
-            const admins = db.prepare("SELECT * FROM users WHERE role = 'admin'").all() as any[];
+            const admins = await firestore.collection('users').all([{ type: 'where', field: 'role', op: '==', value: 'admin' }]);
             for (const adminUser of admins) {
               // Add in-app notification
-              db.prepare(`
-                INSERT INTO notifications (id, userId, title, message, type, link, createdAt)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-              `).run(
-                uuidv4(), 
-                adminUser.id, 
-                'Новое оплаченное поручение', 
-                `Поступило оплаченное поручение на "${orderData.serviceType}".`, 
-                'info', 
-                `/task/${requestId}`, 
-                new Date().toISOString()
-              );
+              await firestore.collection('notifications').add({
+                userId: adminUser.id,
+                title: 'Новое оплаченное поручение',
+                message: `Поступило оплаченное поручение на "${orderData.serviceType}".`,
+                type: 'info',
+                link: `/task/${requestId}`,
+                read: false
+              });
 
               // Send Telegram notification
               if (adminUser.telegramId) {
@@ -163,45 +159,36 @@ export async function initBot() {
             }
 
             // 4. Delete pending order
-            db.prepare('DELETE FROM pending_orders WHERE id = ?').run(pendingOrderId);
+            await firestore.collection('pending_orders').delete(pendingOrderId);
           }
         } else if (type === 'test_drive' && rawPayload.po) {
           const pendingOrderId = rawPayload.po;
-          const orderData = db.prepare('SELECT * FROM pending_orders WHERE id = ?').get(pendingOrderId) as any;
+          const orderData = await firestore.collection('pending_orders').get(pendingOrderId);
           
           if (orderData) {
             // 1. Create real test drive request
             const testDriveId = uuidv4();
-            db.prepare(`
-              INSERT INTO test_drives (id, userId, name, phone, carModel, status, paidExternally, createdAt)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            `).run(
-              testDriveId, 
-              orderData.userId, 
-              orderData.name, 
-              orderData.phone, 
-              orderData.carModel, 
-              'pending', 
-              amount || (payment.total_amount / 100), 
-              new Date().toISOString()
-            );
+            await firestore.collection('test_drives').set(testDriveId, {
+              userId: orderData.userId,
+              name: orderData.name,
+              phone: orderData.phone,
+              carModel: orderData.carModel,
+              status: 'pending',
+              paidExternally: amount || (payment.total_amount / 100)
+            });
 
             // 2. Notify admins
-            const admins = db.prepare("SELECT * FROM users WHERE role = 'admin'").all() as any[];
+            const admins = await firestore.collection('users').all([{ type: 'where', field: 'role', op: '==', value: 'admin' }]);
             for (const adminUser of admins) {
               // Add in-app notification
-              db.prepare(`
-                INSERT INTO notifications (id, userId, title, message, type, link, createdAt)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-              `).run(
-                uuidv4(), 
-                adminUser.id, 
-                'Новый тест-драйв', 
-                `Поступила оплаченная заявка на тест-драйв от ${orderData.name}.`, 
-                'info', 
-                `/test-drives`, 
-                new Date().toISOString()
-              );
+              await firestore.collection('notifications').add({
+                userId: adminUser.id,
+                title: 'Новый тест-драйв',
+                message: `Поступила оплаченная заявка на тест-драйв от ${orderData.name}.`,
+                type: 'info',
+                link: `/test-drives`,
+                read: false
+              });
 
               // Send Telegram notification
               if (adminUser.telegramId) {
@@ -210,23 +197,18 @@ export async function initBot() {
             }
 
             // 3. Delete pending order
-            db.prepare('DELETE FROM pending_orders WHERE id = ?').run(pendingOrderId);
+            await firestore.collection('pending_orders').delete(pendingOrderId);
           }
         }
 
         // Create transaction record for the external payment
         console.log(`Creating transaction record for user ${userId}`);
-        db.prepare(`
-          INSERT INTO transactions (id, userId, type, amount, description, createdAt)
-          VALUES (?, ?, ?, ?, ?, ?)
-        `).run(
-          uuidv4(), 
-          userId, 
-          type === 'subscription' ? 'payment' : type === 'service_order' ? 'payment' : type === 'test_drive' ? 'payment' : 'deposit', 
-          amount || (payment.total_amount / 100), 
-          type === 'subscription' ? `Оплата тарифа ${tariffName}` : type === 'service_order' ? `Оплата услуги` : type === 'test_drive' ? `Оплата тест-драйва` : 'Пополнение депозита', 
-          new Date().toISOString()
-        );
+        await firestore.collection('transactions').add({
+          userId,
+          type: 'payment',
+          amount: amount || (payment.total_amount / 100),
+          description: type === 'subscription' ? `Оплата тарифа ${tariffName}` : type === 'service_order' ? `Оплата услуги` : type === 'test_drive' ? `Оплата тест-драйва` : 'Пополнение депозита'
+        });
 
         bot?.sendMessage(chatId, '✅ Оплата прошла успешно! Ваш профиль обновлен.');
       } else {

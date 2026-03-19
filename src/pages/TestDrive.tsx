@@ -120,7 +120,7 @@ export default function TestDrive() {
         </button>
         <div>
           <h1 className="text-xl font-bold uppercase tracking-wider">Тест-драйв</h1>
-          <p className="text-xs text-zinc-500">Попробуйте наш сервис бесплатно</p>
+          <p className="text-xs text-zinc-500">Попробуйте наш сервис за 500 Br</p>
         </div>
       </header>
 
