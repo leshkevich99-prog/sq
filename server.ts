@@ -373,12 +373,23 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server running on http://0.0.0.0:${PORT}`);
-  });
+  if (!process.env.VERCEL) {
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`Server running on http://0.0.0.0:${PORT}`);
+    });
+  }
+
+  return app;
 }
 
-startServer().catch(err => {
+const appPromise = startServer().catch(err => {
   console.error('CRITICAL: Server failed to start:', err);
   process.exit(1);
 });
+
+export default async (req: any, res: any) => {
+  const app = await appPromise;
+  if (app) {
+    app(req, res);
+  }
+};
