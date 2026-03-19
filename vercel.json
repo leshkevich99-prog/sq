@@ -8,12 +8,16 @@
   ],
   "routes": [
     {
-      "src": "/api/(.*)",
-      "dest": "server.ts"
-    },
-    {
       "src": "/uploads/(.*)",
       "dest": "/uploads/$1"
+    },
+    {
+      "src": "/assets/(.*)",
+      "dest": "/dist/assets/$1"
+    },
+    {
+      "src": "/index.html",
+      "dest": "/dist/index.html"
     },
     {
       "src": "/(.*)",
