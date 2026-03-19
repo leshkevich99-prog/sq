@@ -1,12 +1,13 @@
 import TelegramBot from 'node-telegram-bot-api';
-import admin from 'firebase-admin';
-import { getFirestore } from 'firebase-admin/firestore';
 import fs from 'node:fs';
+import db from './db.js';
+import { v4 as uuidv4 } from 'uuid';
 
 let bot: TelegramBot | null = null;
 
 export async function initBot() {
   const token = process.env.TELEGRAM_BOT_TOKEN;
+  const webhookUrl = process.env.WEBHOOK_URL;
   
   if (!token) {
     console.warn('TELEGRAM_BOT_TOKEN is not set. Bot functionality is disabled.');
@@ -22,30 +23,31 @@ export async function initBot() {
     }
   }
 
-  // Use polling for development, webhooks for production if needed
-  bot = new TelegramBot(token, { polling: true });
-
-  // Handle polling errors to avoid noise from 409 conflicts during restarts
-  bot.on('polling_error', (error: any) => {
-    if (error.code === 'ETELEGRAM' && error.message.includes('409 Conflict')) {
-      console.warn('Telegram Bot: Polling conflict (409). Another instance is likely running with the same token. Stopping current polling.');
-      bot?.stopPolling();
-    } else {
-      console.error('Telegram Bot Polling Error:', error);
+  // Use webhooks if WEBHOOK_URL is set, otherwise use polling
+  if (webhookUrl) {
+    console.log(`Telegram Bot: Using webhook at ${webhookUrl}`);
+    bot = new TelegramBot(token, { polling: false });
+    try {
+      await bot.setWebHook(`${webhookUrl}/api/bot/webhook`);
+    } catch (e) {
+      console.error('Failed to set Telegram webhook:', e);
     }
-  });
+  } else {
+    console.log('Telegram Bot: Using polling');
+    bot = new TelegramBot(token, { polling: true });
+
+    // Handle polling errors to avoid noise from 409 conflicts during restarts
+    bot.on('polling_error', (error: any) => {
+      if (error.code === 'ETELEGRAM' && error.message.includes('409 Conflict')) {
+        console.warn('Telegram Bot: Polling conflict (409). Another instance is likely running with the same token. Stopping current polling.');
+        bot?.stopPolling();
+      } else {
+        console.error('Telegram Bot Polling Error:', error);
+      }
+    });
+  }
 
   console.log('Telegram Bot initialized');
-
-  // Load firebase config to get databaseId
-  let firestoreDatabaseId: string | undefined;
-  try {
-    const config = JSON.parse(fs.readFileSync('./firebase-applet-config.json', 'utf8'));
-    firestoreDatabaseId = config.firestoreDatabaseId;
-    console.log(`Bot using Firestore database: ${firestoreDatabaseId}`);
-  } catch (e) {
-    console.warn('Failed to load firebase config for bot, using default db');
-  }
 
   bot.onText(/\/start/, async (msg) => {
     const chatId = msg.chat.id;
@@ -81,10 +83,8 @@ export async function initBot() {
 
     console.log('Successful payment received:', payment);
     
-    // The payload should contain the userId and tariff/amount info
     try {
       const rawPayload = JSON.parse(payment.invoice_payload);
-      // Support both short and long keys for backward compatibility during transition
       const userId = rawPayload.u || rawPayload.userId;
       const type = rawPayload.t || rawPayload.type;
       const tariffName = rawPayload.tn || rawPayload.tariffName;
@@ -93,137 +93,140 @@ export async function initBot() {
       const balanceDeduction = rawPayload.bd || rawPayload.balanceDeduction;
 
       if (userId) {
-        // Update user in Firestore
-        // We need to use the specific database ID from the config
-        const db = firestoreDatabaseId ? getFirestore(admin.app(), firestoreDatabaseId) : getFirestore(admin.app());
-
-        const userRef = db.collection('users').doc(userId);
-        
         if (type === 'subscription') {
           console.log(`Updating subscription for user ${userId} to ${tariffName}`);
-          await userRef.update({
-            subscription: tariffName,
-            quotas: quotas,
-            limits: admin.firestore.FieldValue.delete(),
-            usedQuotas: admin.firestore.FieldValue.delete()
-          });
+          db.prepare(`
+            UPDATE users 
+            SET subscription = ?, quotas = ?, usedQuotas = NULL, limits = NULL, updatedAt = CURRENT_TIMESTAMP
+            WHERE id = ?
+          `).run(tariffName, JSON.stringify(quotas), userId);
 
-          // If there was a balance deduction, record it
           if (balanceDeduction && balanceDeduction > 0) {
             console.log(`Recording balance deduction of ${balanceDeduction} for user ${userId}`);
-            await db.collection('transactions').add({
-              userId,
-              type: 'deposit_deduction',
-              amount: balanceDeduction,
-              description: `Доплата за переход на тариф ${tariffName} (списано с депозита)`,
-              createdAt: new Date().toISOString()
-            });
+            db.prepare(`
+              INSERT INTO transactions (id, userId, type, amount, description, createdAt)
+              VALUES (?, ?, ?, ?, ?, ?)
+            `).run(uuidv4(), userId, 'deposit_deduction', balanceDeduction, `Доплата за переход на тариф ${tariffName} (списано с депозита)`, new Date().toISOString());
           }
         } else if (type === 'service_order' && rawPayload.po) {
           const pendingOrderId = rawPayload.po;
-          const pendingOrderSnap = await db.collection('pending_orders').doc(pendingOrderId).get();
+          const orderData = db.prepare('SELECT * FROM pending_orders WHERE id = ?').get(pendingOrderId) as any;
           
-          if (pendingOrderSnap.exists) {
-            const orderData = pendingOrderSnap.data();
-            if (orderData) {
-              // 1. Create real request
-              const requestRef = await db.collection('requests').add({
-                ...orderData,
-                status: 'pending',
-                paidExternally: amount || (payment.total_amount / 100),
-                createdAt: new Date().toISOString()
-              });
+          if (orderData) {
+            // 1. Create real request
+            const requestId = uuidv4();
+            db.prepare(`
+              INSERT INTO requests (id, userId, carId, type, description, priority, scheduledDate, status, actualCost, createdAt)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `).run(
+              requestId, 
+              orderData.userId, 
+              orderData.carId, 
+              orderData.serviceType, 
+              orderData.description, 
+              orderData.priority, 
+              orderData.scheduledDate, 
+              'pending', 
+              amount || (payment.total_amount / 100), 
+              new Date().toISOString()
+            );
 
-              // 2. Deduct from balance if needed
-              if (orderData.balanceDeduction > 0) {
-                await db.collection('transactions').add({
-                  userId,
-                  type: 'deposit_deduction',
-                  amount: orderData.balanceDeduction,
-                  description: `Оплата услуги "${orderData.serviceType}" (часть суммы)`,
-                  createdAt: new Date().toISOString()
-                });
-              }
-
-              // 3. Notify admins
-              const adminSnaps = await db.collection('users').where('role', '==', 'admin').get();
-              for (const adminDoc of adminSnaps.docs) {
-                const adminData = adminDoc.data();
-                
-                // Add in-app notification
-                await db.collection('notifications').add({
-                  userId: adminDoc.id,
-                  title: 'Новое оплаченное поручение',
-                  message: `Поступило оплаченное поручение на "${orderData.serviceType}".`,
-                  type: 'info',
-                  link: `/task/${requestRef.id}`,
-                  read: false,
-                  createdAt: new Date().toISOString()
-                });
-
-                // Send Telegram notification
-                if (adminData.telegramId) {
-                  await sendNotification(adminData.telegramId, `💰 Новое оплаченное поручение!\n\nУслуга: ${orderData.serviceType}\nОплата: ${orderData.balanceDeduction > 0 ? `Депозит (${orderData.balanceDeduction.toFixed(2)}) + ` : ''}${amount || (payment.total_amount / 100).toFixed(2)} Br\n\nОткройте приложение для деталей.`);
-                }
-              }
-
-              // 4. Delete pending order
-              await db.collection('pending_orders').doc(pendingOrderId).delete();
+            // 2. Deduct from balance if needed
+            if (orderData.balanceDeduction > 0) {
+              db.prepare(`
+                INSERT INTO transactions (id, userId, type, amount, description, createdAt)
+                VALUES (?, ?, ?, ?, ?, ?)
+              `).run(uuidv4(), userId, 'deposit_deduction', orderData.balanceDeduction, `Оплата услуги "${orderData.serviceType}" (часть суммы)`, new Date().toISOString());
             }
+
+            // 3. Notify admins
+            const admins = db.prepare("SELECT * FROM users WHERE role = 'admin'").all() as any[];
+            for (const adminUser of admins) {
+              // Add in-app notification
+              db.prepare(`
+                INSERT INTO notifications (id, userId, title, message, type, link, createdAt)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+              `).run(
+                uuidv4(), 
+                adminUser.id, 
+                'Новое оплаченное поручение', 
+                `Поступило оплаченное поручение на "${orderData.serviceType}".`, 
+                'info', 
+                `/task/${requestId}`, 
+                new Date().toISOString()
+              );
+
+              // Send Telegram notification
+              if (adminUser.telegramId) {
+                await sendNotification(adminUser.telegramId, `💰 Новое оплаченное поручение!\n\nУслуга: ${orderData.serviceType}\nОплата: ${orderData.balanceDeduction > 0 ? `Депозит (${orderData.balanceDeduction.toFixed(2)}) + ` : ''}${amount || (payment.total_amount / 100).toFixed(2)} Br\n\nОткройте приложение для деталей.`);
+              }
+            }
+
+            // 4. Delete pending order
+            db.prepare('DELETE FROM pending_orders WHERE id = ?').run(pendingOrderId);
           }
         } else if (type === 'test_drive' && rawPayload.po) {
           const pendingOrderId = rawPayload.po;
-          const pendingOrderSnap = await db.collection('pending_orders').doc(pendingOrderId).get();
+          const orderData = db.prepare('SELECT * FROM pending_orders WHERE id = ?').get(pendingOrderId) as any;
           
-          if (pendingOrderSnap.exists) {
-            const orderData = pendingOrderSnap.data();
-            if (orderData) {
-              // 1. Create real test drive request
-              const requestRef = await db.collection('test_drives').add({
-                ...orderData,
-                status: 'pending',
-                paidExternally: amount || (payment.total_amount / 100),
-                createdAt: new Date().toISOString()
-              });
+          if (orderData) {
+            // 1. Create real test drive request
+            const testDriveId = uuidv4();
+            db.prepare(`
+              INSERT INTO test_drives (id, userId, name, phone, carModel, status, paidExternally, createdAt)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            `).run(
+              testDriveId, 
+              orderData.userId, 
+              orderData.name, 
+              orderData.phone, 
+              orderData.carModel, 
+              'pending', 
+              amount || (payment.total_amount / 100), 
+              new Date().toISOString()
+            );
 
-              // 2. Notify admins
-              const adminSnaps = await db.collection('users').where('role', '==', 'admin').get();
-              for (const adminDoc of adminSnaps.docs) {
-                const adminData = adminDoc.data();
-                
-                // Add in-app notification
-                await db.collection('notifications').add({
-                  userId: adminDoc.id,
-                  title: 'Новый тест-драйв',
-                  message: `Поступила оплаченная заявка на тест-драйв от ${orderData.name}.`,
-                  type: 'info',
-                  link: `/test-drives`,
-                  read: false,
-                  createdAt: new Date().toISOString()
-                });
+            // 2. Notify admins
+            const admins = db.prepare("SELECT * FROM users WHERE role = 'admin'").all() as any[];
+            for (const adminUser of admins) {
+              // Add in-app notification
+              db.prepare(`
+                INSERT INTO notifications (id, userId, title, message, type, link, createdAt)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+              `).run(
+                uuidv4(), 
+                adminUser.id, 
+                'Новый тест-драйв', 
+                `Поступила оплаченная заявка на тест-драйв от ${orderData.name}.`, 
+                'info', 
+                `/test-drives`, 
+                new Date().toISOString()
+              );
 
-                // Send Telegram notification
-                if (adminData.telegramId) {
-                  await sendNotification(adminData.telegramId, `🚗 Новый тест-драйв!\n\nКлиент: ${orderData.name}\nТелефон: ${orderData.phone}\nАвто: ${orderData.carModel}\nОплата: ${amount || (payment.total_amount / 100).toFixed(2)} Br\n\nОткройте приложение для деталей.`);
-                }
+              // Send Telegram notification
+              if (adminUser.telegramId) {
+                await sendNotification(adminUser.telegramId, `🚗 Новый тест-драйв!\n\nКлиент: ${orderData.name}\nТелефон: ${orderData.phone}\nАвто: ${orderData.carModel}\nОплата: ${amount || (payment.total_amount / 100).toFixed(2)} Br\n\nОткройте приложение для деталей.`);
               }
-
-              // 3. Delete pending order
-              await db.collection('pending_orders').doc(pendingOrderId).delete();
             }
+
+            // 3. Delete pending order
+            db.prepare('DELETE FROM pending_orders WHERE id = ?').run(pendingOrderId);
           }
         }
 
         // Create transaction record for the external payment
         console.log(`Creating transaction record for user ${userId}`);
-        await db.collection('transactions').add({
-          userId,
-          type: type === 'subscription' ? 'payment' : type === 'service_order' ? 'payment' : type === 'test_drive' ? 'payment' : 'deposit',
-          amount: amount || (payment.total_amount / 100),
-          description: type === 'subscription' ? `Оплата тарифа ${tariffName}` : type === 'service_order' ? `Оплата услуги` : type === 'test_drive' ? `Оплата тест-драйва` : 'Пополнение депозита',
-          createdAt: new Date().toISOString(),
-          telegramPaymentId: payment.telegram_payment_charge_id
-        });
+        db.prepare(`
+          INSERT INTO transactions (id, userId, type, amount, description, createdAt)
+          VALUES (?, ?, ?, ?, ?, ?)
+        `).run(
+          uuidv4(), 
+          userId, 
+          type === 'subscription' ? 'payment' : type === 'service_order' ? 'payment' : type === 'test_drive' ? 'payment' : 'deposit', 
+          amount || (payment.total_amount / 100), 
+          type === 'subscription' ? `Оплата тарифа ${tariffName}` : type === 'service_order' ? `Оплата услуги` : type === 'test_drive' ? `Оплата тест-драйва` : 'Пополнение депозита', 
+          new Date().toISOString()
+        );
 
         bot?.sendMessage(chatId, '✅ Оплата прошла успешно! Ваш профиль обновлен.');
       } else {

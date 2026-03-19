@@ -21,6 +21,10 @@ db.exec(`
     lastName TEXT,
     photoUrl TEXT,
     role TEXT DEFAULT 'client',
+    subscription TEXT,
+    quotas TEXT, -- JSON string
+    usedQuotas TEXT, -- JSON string
+    limits TEXT, -- JSON string
     createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
     updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
   );
@@ -72,6 +76,7 @@ db.exec(`
     message TEXT,
     type TEXT,
     read INTEGER DEFAULT 0,
+    link TEXT,
     createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(userId) REFERENCES users(id)
   );
@@ -113,6 +118,34 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS settings (
     key TEXT PRIMARY KEY,
     value TEXT
+  );
+  CREATE TABLE IF NOT EXISTS test_drives (
+    id TEXT PRIMARY KEY,
+    userId TEXT,
+    name TEXT,
+    phone TEXT,
+    carModel TEXT,
+    status TEXT DEFAULT 'pending',
+    paidExternally REAL,
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(userId) REFERENCES users(id)
+  );
+
+  CREATE TABLE IF NOT EXISTS pending_orders (
+    id TEXT PRIMARY KEY,
+    userId TEXT,
+    carId TEXT,
+    serviceType TEXT,
+    description TEXT,
+    priority TEXT,
+    scheduledDate TEXT,
+    balanceDeduction REAL,
+    amount REAL,
+    name TEXT, -- for test drives
+    phone TEXT, -- for test drives
+    carModel TEXT, -- for test drives
+    type TEXT, -- 'service_order' or 'test_drive'
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 `);
 

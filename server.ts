@@ -7,7 +7,7 @@ import cookieParser from 'cookie-parser';
 import multer from 'multer';
 import { v4 as uuidv4 } from 'uuid';
 import { fileURLToPath } from 'url';
-import { initBot, sendNotification } from './server/bot.js';
+import { initBot, sendNotification, getBot } from './server/bot.js';
 import db from './server/db.js';
 import { generateToken, authenticateToken, AuthRequest, isAdmin } from './server/auth.js';
 
@@ -179,11 +179,11 @@ async function startServer() {
 
   app.post('/api/notifications', authenticateToken, (req: AuthRequest, res) => {
     const id = uuidv4();
-    const { userId, title, message, type } = req.body;
+    const { userId, title, message, type, link } = req.body;
     db.prepare(`
-      INSERT INTO notifications (id, userId, title, message, type)
-      VALUES (?, ?, ?, ?, ?)
-    `).run(id, userId || req.user?.id, title, message, type || 'info');
+      INSERT INTO notifications (id, userId, title, message, type, link)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `).run(id, userId || req.user?.id, title, message, type || 'info', link || null);
     const notification = db.prepare('SELECT * FROM notifications WHERE id = ?').get(id);
     res.json(notification);
   });
@@ -192,6 +192,15 @@ async function startServer() {
     const { read } = req.body;
     db.prepare('UPDATE notifications SET read = ? WHERE id = ? AND userId = ?').run(read ? 1 : 0, req.params.id, req.user?.id);
     res.json({ success: true });
+  });
+
+  // Bot Webhook
+  app.post('/api/bot/webhook', (req, res) => {
+    const bot = getBot();
+    if (bot) {
+      bot.processUpdate(req.body);
+    }
+    res.sendStatus(200);
   });
 
   // Settings
@@ -289,10 +298,14 @@ async function startServer() {
   app.get('/api/:collection', authenticateToken, (req: AuthRequest, res) => {
     const { collection } = req.params;
     try {
+      // Basic validation of collection name to prevent SQL injection
+      if (!/^[a-z_]+$/.test(collection)) {
+        return res.status(400).json({ error: 'Invalid collection name' });
+      }
       const items = db.prepare(`SELECT * FROM ${collection}`).all();
       res.json({ [collection]: items });
     } catch (e) {
-      res.status(400).json({ error: 'Invalid collection' });
+      res.status(400).json({ error: 'Invalid collection or database error' });
     }
   });
 
@@ -301,55 +314,106 @@ async function startServer() {
     const data = req.body;
     const id = data.id || uuidv4();
     
-    const keys = Object.keys(data).filter(k => k !== 'id');
-    const columns = ['id', ...keys].join(', ');
-    const placeholders = ['?', ...keys.map(() => '?')].join(', ');
-    const values = [id, ...keys.map(k => typeof data[k] === 'object' ? JSON.stringify(data[k]) : data[k])];
-
     try {
+      if (!/^[a-z_]+$/.test(collection)) {
+        return res.status(400).json({ error: 'Invalid collection name' });
+      }
+
+      // Get table info to filter keys
+      const tableInfo = db.prepare(`PRAGMA table_info(${collection})`).all() as any[];
+      const validColumns = tableInfo.map(c => c.name);
+      
+      const keys = Object.keys(data).filter(k => k !== 'id' && validColumns.includes(k));
+      const columns = ['id', ...keys].join(', ');
+      const placeholders = ['?', ...keys.map(() => '?')].join(', ');
+      const values = [id, ...keys.map(k => typeof data[k] === 'object' ? JSON.stringify(data[k]) : data[k])];
+
       db.prepare(`INSERT INTO ${collection} (${columns}) VALUES (${placeholders})`).run(...values);
       const created = db.prepare(`SELECT * FROM ${collection} WHERE id = ?`).get(id);
       res.json(created);
     } catch (e) {
+      console.error(`Error creating item in ${collection}:`, e);
       res.status(400).json({ error: 'Failed to create item' });
     }
   });
 
   app.get('/api/:collection/:id', authenticateToken, (req: AuthRequest, res) => {
     const { collection, id } = req.params;
-    const item = db.prepare(`SELECT * FROM ${collection} WHERE id = ?`).get(id);
-    if (!item) return res.status(404).json({ error: 'Not found' });
-    res.json(item);
+    try {
+      if (!/^[a-z_]+$/.test(collection)) {
+        return res.status(400).json({ error: 'Invalid collection name' });
+      }
+      const item = db.prepare(`SELECT * FROM ${collection} WHERE id = ?`).get(id);
+      if (!item) return res.status(404).json({ error: 'Not found' });
+      res.json(item);
+    } catch (e) {
+      res.status(400).json({ error: 'Invalid collection or database error' });
+    }
   });
 
   app.put('/api/:collection/:id', authenticateToken, (req: AuthRequest, res) => {
     const { collection, id } = req.params;
     const data = req.body;
     
-    // Check if user is allowed to update this item
-    const item = db.prepare(`SELECT * FROM ${collection} WHERE id = ?`).get(id) as any;
-    if (!item) return res.status(404).json({ error: 'Not found' });
-    
-    // Basic security: only owner or admin can update
-    if (item.userId && item.userId !== req.user?.id && req.user?.role !== 'admin') {
-      return res.status(403).json({ error: 'Forbidden' });
-    }
-    if (collection === 'users' && id !== req.user?.id && req.user?.role !== 'admin') {
-      return res.status(403).json({ error: 'Forbidden' });
-    }
+    try {
+      if (!/^[a-z_]+$/.test(collection)) {
+        return res.status(400).json({ error: 'Invalid collection name' });
+      }
 
-    const keys = Object.keys(data).filter(k => k !== 'id' && k !== 'createdAt' && k !== 'updatedAt');
-    const sets = keys.map(k => `${k} = ?`).join(', ');
-    const values = keys.map(k => typeof data[k] === 'object' ? JSON.stringify(data[k]) : data[k]);
-    
-    db.prepare(`UPDATE ${collection} SET ${sets}, updatedAt = CURRENT_TIMESTAMP WHERE id = ?`).run(...values, id);
-    const updated = db.prepare(`SELECT * FROM ${collection} WHERE id = ?`).get(id);
-    res.json(updated);
+      // Check if user is allowed to update this item
+      const item = db.prepare(`SELECT * FROM ${collection} WHERE id = ?`).get(id) as any;
+      if (!item) return res.status(404).json({ error: 'Not found' });
+      
+      // Basic security: only owner or admin can update
+      if (item.userId && item.userId !== req.user?.id && req.user?.role !== 'admin') {
+        return res.status(403).json({ error: 'Forbidden' });
+      }
+      if (collection === 'users' && id !== req.user?.id && req.user?.role !== 'admin') {
+        return res.status(403).json({ error: 'Forbidden' });
+      }
+
+      // Get table info to filter keys
+      const tableInfo = db.prepare(`PRAGMA table_info(${collection})`).all() as any[];
+      const validColumns = tableInfo.map(c => c.name);
+
+      const keys = Object.keys(data).filter(k => 
+        k !== 'id' && 
+        k !== 'createdAt' && 
+        k !== 'updatedAt' && 
+        validColumns.includes(k)
+      );
+      
+      if (keys.length === 0) {
+        return res.json(item);
+      }
+
+      const sets = keys.map(k => `${k} = ?`).join(', ');
+      const values = keys.map(k => typeof data[k] === 'object' ? JSON.stringify(data[k]) : data[k]);
+      
+      db.prepare(`UPDATE ${collection} SET ${sets}, updatedAt = CURRENT_TIMESTAMP WHERE id = ?`).run(...values, id);
+      const updated = db.prepare(`SELECT * FROM ${collection} WHERE id = ?`).get(id);
+      res.json(updated);
+    } catch (e) {
+      console.error(`Error updating item in ${collection}:`, e);
+      res.status(400).json({ error: 'Failed to update item' });
+    }
   });
 
   app.delete('/api/:collection/:id', authenticateToken, (req: AuthRequest, res) => {
     const { collection, id } = req.params;
     try {
+      if (!/^[a-z_]+$/.test(collection)) {
+        return res.status(400).json({ error: 'Invalid collection name' });
+      }
+      
+      // Check if user is allowed to delete this item
+      const item = db.prepare(`SELECT * FROM ${collection} WHERE id = ?`).get(id) as any;
+      if (!item) return res.status(404).json({ error: 'Not found' });
+      
+      if (item.userId && item.userId !== req.user?.id && req.user?.role !== 'admin') {
+        return res.status(403).json({ error: 'Forbidden' });
+      }
+
       db.prepare(`DELETE FROM ${collection} WHERE id = ?`).run(id);
       res.json({ success: true });
     } catch (e) {

@@ -175,6 +175,7 @@ export const onSnapshot = (pathOrQuery: any, onNext: any, onError?: any) => {
         onNext(data);
       }
     } catch (err) {
+      console.error(`onSnapshot error for ${colPath}:`, err);
       if (onError) onError(err);
     }
   };
@@ -185,7 +186,12 @@ export const onSnapshot = (pathOrQuery: any, onNext: any, onError?: any) => {
 };
 
 export const createNotification = async (userId: string, title: string, message: string, type: string = 'info', link?: string) => {
-  return addDoc('notifications', { userId, title, message, type, link, createdAt: new Date().toISOString() });
+  try {
+    return await addDoc('notifications', { userId, title, message, type, link, createdAt: new Date().toISOString() });
+  } catch (error) {
+    handleFirestoreError(error, OperationType.CREATE, 'notifications');
+    throw error;
+  }
 };
 
 // Storage Mocks
