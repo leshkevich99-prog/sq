@@ -47,9 +47,14 @@ export default function Login() {
           <div className="w-full mb-8">
             <p className="text-zinc-400 text-sm mb-6">
               {!isTelegram 
-                ? 'Пожалуйста, откройте приложение через Telegram для автоматической авторизации.'
+                ? 'Для входа используйте кнопку ниже.'
                 : 'Автоматический вход не удался. Пожалуйста, воспользуйтесь кнопкой ниже или обратитесь к администратору.'}
             </p>
+            {!isTelegram && (
+              <div id="telegram-login-widget" className="flex justify-center">
+                <script async src="https://telegram.org/js/telegram-widget.js?22" data-telegram-login="YOUR_BOT_USERNAME" data-size="large" data-onauth="onTelegramAuth(user)" data-request-access="write"></script>
+              </div>
+            )}
           </div>
         )}
 

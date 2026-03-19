@@ -6,9 +6,9 @@ import cookieParser from 'cookie-parser';
 import multer from 'multer';
 import { v4 as uuidv4 } from 'uuid';
 import { fileURLToPath } from 'url';
-import { initBot, sendNotification, getBot } from './server/bot.js';
-import { firestore } from './server/db.js';
-import { generateToken, authenticateToken, AuthRequest, isAdmin } from './server/auth.js';
+import { initBot, sendNotification, getBot } from '../server/bot.js';
+import { firestore } from '../server/db.js';
+import { generateToken, authenticateToken, AuthRequest, isAdmin } from '../server/auth.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -116,7 +116,7 @@ async function startServer() {
         maxAge: 7 * 24 * 60 * 60 * 1000
       });
 
-      res.json({ user });
+      res.json({ user: userData });
     } catch (error: any) {
       console.error('Telegram login error:', error);
       res.status(500).json({ error: error.message });
@@ -251,10 +251,6 @@ async function startServer() {
     
     if (carIds.length === 0) return res.json({ recommendations: [] });
     
-    // Firestore doesn't support 'IN' with many values easily in this helper, 
-    // but we can fetch all and filter or do multiple queries.
-    // For simplicity, let's fetch all recommendations and filter in memory if needed,
-    // or just fetch by carId if we have few cars.
     const allRecs = await firestore.collection('recommendations').all();
     const recommendations = allRecs.filter((r: any) => carIds.includes(r.carId));
     
@@ -370,12 +366,6 @@ async function startServer() {
     app.use(express.static(distPath));
     app.get('*', (req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
-    });
-  }
-
-  if (!process.env.VERCEL) {
-    app.listen(PORT, '0.0.0.0', () => {
-      console.log(`Server running on http://0.0.0.0:${PORT}`);
     });
   }
 
