@@ -73,8 +73,9 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setUser(mappedUser);
         return true;
       } else {
-        const errData = await response.json().catch(() => ({ error: 'Unknown error' }));
-        setAuthError(errData.error || 'Не удалось войти через Telegram.');
+        const errorText = await response.text();
+        console.error('Telegram login failed, raw response:', errorText);
+        setAuthError(`Ошибка сервера: ${errorText.substring(0, 100)}`);
         return false;
       }
     } catch (err) {
