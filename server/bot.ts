@@ -5,7 +5,7 @@ import fs from 'node:fs';
 
 let bot: TelegramBot | null = null;
 
-export function initBot() {
+export async function initBot() {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   
   if (!token) {
@@ -13,8 +13,27 @@ export function initBot() {
     return null;
   }
 
+  if (bot) {
+    try {
+      console.log('Stopping existing bot polling...');
+      await bot.stopPolling();
+    } catch (e) {
+      console.warn('Error stopping existing bot polling:', e);
+    }
+  }
+
   // Use polling for development, webhooks for production if needed
   bot = new TelegramBot(token, { polling: true });
+
+  // Handle polling errors to avoid noise from 409 conflicts during restarts
+  bot.on('polling_error', (error: any) => {
+    if (error.code === 'ETELEGRAM' && error.message.includes('409 Conflict')) {
+      console.warn('Telegram Bot: Polling conflict (409). Another instance is likely running with the same token. Stopping current polling.');
+      bot?.stopPolling();
+    } else {
+      console.error('Telegram Bot Polling Error:', error);
+    }
+  });
 
   console.log('Telegram Bot initialized');
 
@@ -144,7 +163,7 @@ export function initBot() {
 
                 // Send Telegram notification
                 if (adminData.telegramId) {
-                  await sendNotification(adminData.telegramId, `💰 Новое оплаченное поручение!\n\nУслуга: ${orderData.serviceType}\nОплата: ${orderData.balanceDeduction > 0 ? `Депозит (${orderData.balanceDeduction.toFixed(2)}) + ` : ''}${amount || (payment.total_amount / 100).toFixed(2)} BYN\n\nОткройте приложение для деталей.`);
+                  await sendNotification(adminData.telegramId, `💰 Новое оплаченное поручение!\n\nУслуга: ${orderData.serviceType}\nОплата: ${orderData.balanceDeduction > 0 ? `Депозит (${orderData.balanceDeduction.toFixed(2)}) + ` : ''}${amount || (payment.total_amount / 100).toFixed(2)} Br\n\nОткройте приложение для деталей.`);
                 }
               }
 
@@ -185,7 +204,7 @@ export function initBot() {
 
                 // Send Telegram notification
                 if (adminData.telegramId) {
-                  await sendNotification(adminData.telegramId, `🚗 Новый тест-драйв!\n\nКлиент: ${orderData.name}\nТелефон: ${orderData.phone}\nАвто: ${orderData.carModel}\nОплата: ${amount || (payment.total_amount / 100).toFixed(2)} BYN\n\nОткройте приложение для деталей.`);
+                  await sendNotification(adminData.telegramId, `🚗 Новый тест-драйв!\n\nКлиент: ${orderData.name}\nТелефон: ${orderData.phone}\nАвто: ${orderData.carModel}\nОплата: ${amount || (payment.total_amount / 100).toFixed(2)} Br\n\nОткройте приложение для деталей.`);
                 }
               }
 
@@ -244,7 +263,7 @@ export async function createInvoiceLink(title: string, description: string, payl
   }
 
   try {
-    // amount is in BYN, Telegram expects smallest units (kopeks)
+    // amount is in Br, Telegram expects smallest units (kopeks)
     const telegramAmount = Math.round(amount * 100);
     if (telegramAmount <= 0) {
       console.error(`Invoice creation failed: Invalid amount ${amount}`);

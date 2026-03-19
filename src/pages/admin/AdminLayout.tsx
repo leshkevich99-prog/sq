@@ -107,7 +107,7 @@ export default function AdminLayout() {
       </aside>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col min-h-screen relative">
+      <div className="flex-1 flex flex-col min-h-screen relative pb-28 md:pb-0">
         <main className="flex-1 p-4 md:p-8 max-w-7xl mx-auto w-full">
           <Outlet />
         </main>

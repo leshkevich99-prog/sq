@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { BynIcon } from '../components/BynIcon';
 import { ArrowLeft, Car, Calendar, Clock, MapPin, Check } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useFirebase } from '../components/FirebaseProvider';
@@ -32,7 +33,7 @@ export default function TestDrive() {
       return;
     }
 
-    const confirmMsg = `Стоимость тест-драйва: 500.00 BYN. Оплатить вызов?`;
+    const confirmMsg = `Стоимость тест-драйва: 500.00 Br. Оплатить вызов?`;
     const proceed = await new Promise<boolean>((resolve) => {
       try {
         // @ts-ignore
@@ -113,7 +114,7 @@ export default function TestDrive() {
   };
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
       <header className="mb-6 flex items-center gap-4">
         <button onClick={() => navigate(-1)} className="p-2 bg-zinc-900 rounded-full border border-zinc-800">
           <ArrowLeft size={20} />
@@ -209,7 +210,7 @@ export default function TestDrive() {
         <div className="pt-4 space-y-6">
           <div className="p-4 bg-zinc-900 border border-zinc-800 rounded-xl flex justify-between items-center">
             <span className="text-sm text-zinc-400">Стоимость тест-драйва:</span>
-            <span className="text-lg font-mono font-bold text-white">500.00 BYN</span>
+            <span className="text-lg font-mono font-bold text-white flex items-center gap-1">500.00 <BynIcon size="0.8em" /></span>
           </div>
 
           <label className="flex items-start gap-3 p-4 bg-red-500/10 border border-red-500/20 rounded-xl cursor-pointer">

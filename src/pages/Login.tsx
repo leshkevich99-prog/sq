@@ -58,8 +58,7 @@ export default function Login() {
     <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-6">
       <div className="w-full max-w-sm flex flex-col items-center text-center">
         <div 
-          onClick={handleSecretTap}
-          className="w-20 h-20 bg-zinc-900 rounded-full flex items-center justify-center mb-6 border border-zinc-800 cursor-pointer active:scale-95 transition-transform"
+          className="w-20 h-20 bg-zinc-900 rounded-full flex items-center justify-center mb-6 border border-zinc-800 transition-transform"
         >
           <Car size={40} className="text-amber-500" />
         </div>
@@ -77,7 +76,7 @@ export default function Login() {
             <p className="text-zinc-400 text-sm mb-6">
               {!isTelegram 
                 ? 'Пожалуйста, откройте приложение через Telegram для автоматической авторизации.'
-                : 'Автоматический вход не удался. Вы можете использовать тестовый вход.'}
+                : 'Автоматический вход не удался. Пожалуйста, обратитесь к администратору.'}
             </p>
           </div>
         )}
@@ -99,6 +98,7 @@ export default function Login() {
             <MessageCircle size={18} /> Связаться с админом
           </a>
 
+          {/* Test login temporarily disabled
           {!showCodeInput ? (
             <button
               onClick={() => setShowCodeInput(true)}
@@ -111,7 +111,7 @@ export default function Login() {
               <div className="relative">
                 <input 
                   type="text" 
-                  placeholder="Введите код (ad, pi, cl)" 
+                  placeholder="Введите код (ad, pi, cl, new)" 
                   value={testCode}
                   onChange={(e) => setTestCode(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleCodeLogin()}
@@ -127,6 +127,7 @@ export default function Login() {
               </div>
             </div>
           )}
+          */}
         </div>
       </div>
     </div>

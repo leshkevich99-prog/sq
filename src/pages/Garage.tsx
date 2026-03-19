@@ -76,7 +76,7 @@ export default function Garage() {
   }
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
       <header className="mb-6 mt-2 flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-serif font-normal tracking-wide uppercase">Бортовой журнал</h1>

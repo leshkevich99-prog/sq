@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Wallet, ArrowUpRight, ArrowDownRight, CreditCard, X, DollarSign, Check } from 'lucide-react';
+import { Wallet, ArrowUpRight, ArrowDownRight, CreditCard, X, Check } from 'lucide-react';
+import { BynIcon } from '../../components/BynIcon';
 import WebApp from '@twa-dev/sdk';
 import { useFirebase } from '../../components/FirebaseProvider';
 import { db, handleFirestoreError, OperationType } from '../../firebase';
@@ -141,7 +142,7 @@ export default function Finances() {
   });
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
       <header className="mb-6 mt-2">
         <h1 className="text-3xl font-serif font-normal tracking-wide uppercase">Операционный депозит</h1>
         <p className="text-zinc-400 text-sm mt-1">Управление депозитом и оплата</p>
@@ -196,12 +197,12 @@ export default function Finances() {
       <div className="bg-zinc-900 rounded-2xl p-5 border border-zinc-800 mb-6">
         <div className="text-sm text-zinc-400 mb-1">Операционный депозит</div>
         <div className={`text-4xl font-mono font-bold mb-4 ${balance < 0 ? 'text-red-600' : balance < 400 ? 'text-red-500' : 'text-white'}`}>
-          {balance.toFixed(2)} <span className="text-xl text-zinc-500">BYN</span>
+          {balance.toFixed(2)} <BynIcon size="0.6em" className="text-zinc-500" />
         </div>
         
         {balance < 400 && (
           <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-sm text-red-400">
-            Ваш баланс ниже рекомендуемого минимума (400.00 BYN). Пожалуйста, пополните депозит для бесперебойного обслуживания.
+            Ваш баланс ниже рекомендуемого минимума (400.00 <BynIcon size="0.8em" />). Пожалуйста, пополните депозит для бесперебойного обслуживания.
           </div>
         )}
         
@@ -284,7 +285,7 @@ export default function Finances() {
             <div className="space-y-4">
               <div>
                 <div className="flex justify-between items-center mb-2">
-                  <label className="block text-xs font-bold uppercase tracking-wider text-zinc-500">Сумма (BYN)</label>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-zinc-500">Сумма (<BynIcon size="0.8em" className="inline-block" />)</label>
                   {isInputFocused && (
                     <button 
                       onClick={() => {
@@ -298,7 +299,6 @@ export default function Finances() {
                   )}
                 </div>
                 <div className="relative">
-                  <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={16} />
                   <input 
                     ref={inputRef}
                     type="number" 
@@ -307,7 +307,7 @@ export default function Finances() {
                     onChange={(e) => setTopUpAmount(e.target.value)}
                     onFocus={handleFocus}
                     onBlur={() => setTimeout(() => setIsInputFocused(false), 100)}
-                    className="w-full bg-black border border-zinc-800 rounded-xl py-3 pl-9 pr-4 text-sm focus:outline-none focus:border-accent text-white" 
+                    className="w-full bg-black border border-zinc-800 rounded-xl py-3 px-4 text-sm focus:outline-none focus:border-accent text-white" 
                   />
                 </div>
               </div>
@@ -353,7 +353,7 @@ const TransactionCard: React.FC<{ title: string; date: string; amount: string; t
       </div>
       <div className="text-right shrink-0 ml-2">
         <div className={`font-mono font-medium ${isIncome ? 'text-emerald-500' : 'text-white'}`}>
-          {amount}
+          {amount} <BynIcon size="0.8em" />
         </div>
         {manual && <div className="text-[10px] text-zinc-500 uppercase mt-1">Вне депозита</div>}
       </div>

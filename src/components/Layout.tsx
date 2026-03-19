@@ -48,7 +48,7 @@ export default function Layout() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-black text-white pb-20 font-sans selection:bg-zinc-800 relative flex flex-col">
+    <div className="min-h-screen bg-black text-white pb-28 font-sans selection:bg-zinc-800 relative flex flex-col">
       <Header />
 
       <main className="flex-1 p-4">

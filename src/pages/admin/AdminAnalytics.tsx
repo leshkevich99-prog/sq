@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { BynIcon } from '../../components/BynIcon';
 import { 
   BarChart, 
   Bar, 
@@ -88,7 +89,7 @@ export default function AdminAnalytics() {
   const avgOrderValue = completedRequests.length > 0 ? totalRevenue / completedRequests.length : 0;
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
       <header className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-serif font-normal tracking-wide uppercase">Аналитика</h1>
@@ -113,7 +114,7 @@ export default function AdminAnalytics() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <MetricCard 
           title="Общая выручка" 
-          value={`${totalRevenue.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} BYN`} 
+          value={<div className="flex items-center gap-1">{totalRevenue.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <BynIcon size="1em" /></div>} 
           trend="+15.4%" 
           isUp={true} 
           icon={<TrendingUp size={20} className="text-emerald-500" />}
@@ -127,7 +128,7 @@ export default function AdminAnalytics() {
         />
         <MetricCard 
           title="Средний чек" 
-          value={`${avgOrderValue.toFixed(2)} BYN`} 
+          value={<div className="flex items-center gap-1">{avgOrderValue.toFixed(2)} <BynIcon size="1em" /></div>} 
           trend="-2.1%" 
           isUp={false} 
           icon={<ArrowUpRight size={20} className="text-amber-500" />}
@@ -238,7 +239,7 @@ export default function AdminAnalytics() {
               <tr className="hover:bg-zinc-800/50 transition-colors">
                 <td className="px-6 py-4 text-xs font-bold text-white">Александр П.</td>
                 <td className="px-6 py-4 text-xs text-zinc-400">42</td>
-                <td className="px-6 py-4 text-xs text-zinc-400">1 450.00 BYN</td>
+                <td className="px-6 py-4 text-xs text-zinc-400 flex items-center gap-1">1 450.00 <BynIcon size="1em" /></td>
                 <td className="px-6 py-4 text-xs text-amber-500 font-bold">4.9</td>
                 <td className="px-6 py-4">
                   <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-1 bg-emerald-500/10 text-emerald-500 rounded">Active</span>
@@ -247,7 +248,7 @@ export default function AdminAnalytics() {
               <tr className="hover:bg-zinc-800/50 transition-colors">
                 <td className="px-6 py-4 text-xs font-bold text-white">Дмитрий М.</td>
                 <td className="px-6 py-4 text-xs text-zinc-400">38</td>
-                <td className="px-6 py-4 text-xs text-zinc-400">1 280.00 BYN</td>
+                <td className="px-6 py-4 text-xs text-zinc-400 flex items-center gap-1">1 280.00 <BynIcon size="1em" /></td>
                 <td className="px-6 py-4 text-xs text-amber-500 font-bold">4.8</td>
                 <td className="px-6 py-4">
                   <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-1 bg-emerald-500/10 text-emerald-500 rounded">Active</span>
@@ -261,7 +262,7 @@ export default function AdminAnalytics() {
   );
 }
 
-function MetricCard({ title, value, trend, isUp, icon }: { title: string; value: string | number; trend: string; isUp: boolean; icon: React.ReactNode }) {
+function MetricCard({ title, value, trend, isUp, icon }: { title: string; value: React.ReactNode; trend: string; isUp: boolean; icon: React.ReactNode }) {
   return (
     <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6">
       <div className="flex justify-between items-start mb-4">

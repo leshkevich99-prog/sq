@@ -22,6 +22,7 @@ interface Car {
   plate: string;
 }
 
+import { BynIcon } from '../components/BynIcon';
 import { Skeleton } from '../components/Skeleton';
 
 export default function Home() {
@@ -160,7 +161,7 @@ export default function Home() {
                 </div>
                 <div>
                   <div className="text-sm font-bold text-red-500 uppercase tracking-wider">Низкий баланс</div>
-                  <div className="text-xs text-red-400/80">Остаток: {balance.toFixed(2)} BYN. Пополните депозит.</div>
+                  <div className="text-xs text-red-400/80">Остаток: {balance.toFixed(2)} <BynIcon size="0.6em" className="text-red-400/80" />. Пополните депозит.</div>
                 </div>
               </div>
               <ArrowRight size={20} className="text-red-500" />
@@ -329,7 +330,7 @@ export default function Home() {
             className="w-full bg-amber-500 text-black border border-amber-600 rounded-xl p-4 flex items-center justify-center gap-2 hover:bg-amber-400 transition-colors active:scale-95"
           >
             <CarIcon size={20} />
-            <span className="text-sm font-bold uppercase tracking-wider">Записаться на тест-драйв (500.00 BYN)</span>
+            <span className="text-sm font-bold uppercase tracking-wider">Записаться на тест-драйв (500.00 <BynIcon size="0.6em" className="text-black" />)</span>
           </Link>
         )}
       </section>

@@ -7,6 +7,7 @@ import { ref, uploadBytesResumable, uploadBytes, uploadString, getDownloadURL } 
 import { useFirebase } from '../components/FirebaseProvider';
 import imageCompression from 'browser-image-compression';
 import toast from 'react-hot-toast';
+import { BynIcon } from '../components/BynIcon';
 import { 
   ArrowLeft, 
   Car as CarIcon, 
@@ -67,6 +68,15 @@ interface CarData {
   plate: string;
 }
 
+const SERVICE_LABELS: Record<string, string> = {
+  'logistics': 'Логистика',
+  'valet': 'AIRPORT VALET',
+  'parking': 'Night Drop',
+  'bureaucracy': 'Бюрократия',
+  'wash': 'Мойка',
+  'service': 'СТО / ТО'
+};
+
 export default function TaskDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -74,6 +84,7 @@ export default function TaskDetails() {
   const getSafeUrl = (url: string) => url.replace(/[.#$[\]/]/g, '_');
   const [request, setRequest] = useState<RequestData | null>(null);
   const [client, setClient] = useState<UserData | null>(null);
+  const [pilot, setPilot] = useState<UserData | null>(null);
   const [car, setCar] = useState<CarData | null>(null);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState<string | null>(null); // 'before' or 'after'
@@ -106,6 +117,12 @@ export default function TaskDetails() {
         // Fetch client data
         const clientSnap = await getDoc(doc(db, 'users', data.userId));
         if (clientSnap.exists()) setClient(clientSnap.data() as UserData);
+        
+        // Fetch pilot data if assigned
+        if (data.pilotId) {
+          const pilotSnap = await getDoc(doc(db, 'users', data.pilotId));
+          if (pilotSnap.exists()) setPilot(pilotSnap.data() as UserData);
+        }
         
         // Fetch car data
         const carSnap = await getDoc(doc(db, 'cars', data.carId));
@@ -168,7 +185,8 @@ export default function TaskDetails() {
 
       if (statusLabels[newStatus]) {
         const title = 'Обновление статуса';
-        let body = `Ваше поручение на услугу "${request.serviceType}" ${statusLabels[newStatus]}.`;
+        const serviceName = SERVICE_LABELS[request.serviceType] || request.serviceType;
+        let body = `Ваше поручение на услугу "${serviceName}" ${statusLabels[newStatus]}.`;
         
         if (newStatus === 'in_progress') {
           body = `Ваш автомобиль принят в работу. Фото-протокол приемки доступен для просмотра в деталях поручения.`;
@@ -257,9 +275,36 @@ export default function TaskDetails() {
           useWebWorker: true
         });
         
-        const storageRef = ref(storage, `receipts/${id}_${Date.now()}.jpg`);
-        await uploadBytes(storageRef, compressedFile);
-        receiptUrl = await getDownloadURL(storageRef);
+        const base64Data = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(compressedFile);
+        });
+
+        const fileName = `receipts/${id}_${Date.now()}.jpg`;
+        const currentUser = auth.currentUser;
+        if (!currentUser) throw new Error('Пользователь не авторизован');
+        
+        const token = await currentUser.getIdToken();
+        const bucket = storage.app.options.storageBucket;
+        
+        if (!bucket) throw new Error('Storage Bucket не настроен');
+
+        const response = await fetch('/api/upload-proxy', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ base64Data, fileName, token, bucket })
+        });
+
+        if (!response.ok) {
+          const errData = await response.json().catch(() => ({ error: `Ошибка сервера: ${response.status}` }));
+          throw new Error(errData.error || `Ошибка при загрузке чека`);
+        }
+
+        const data = await response.json();
+        if (!data.url) throw new Error('Сервер не вернул ссылку на файл');
+        receiptUrl = data.url;
       }
 
       const txType = expenseType === 'large_bill_sto' ? 'external_invoice' : 'deposit_deduction';
@@ -474,7 +519,7 @@ export default function TaskDetails() {
   const currentStepIndex = steps.findIndex(s => s.id === request.status);
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex items-center gap-4 mb-6">
         <button onClick={() => navigate(-1)} className="p-2 bg-zinc-900 rounded-full border border-zinc-800">
           <ArrowLeft size={20} />
@@ -607,21 +652,19 @@ export default function TaskDetails() {
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="font-mono font-bold text-amber-500">{exp.amount.toFixed(2)} BYN</div>
+                      <div className="font-mono font-bold text-amber-500 flex items-center justify-end gap-1">{exp.amount.toFixed(2)} <BynIcon size="0.8em" /></div>
                       {exp.status === 'pending' && (
                         <div className="text-[10px] text-amber-500/80 uppercase mt-1">Ожидает оплаты</div>
                       )}
                     </div>
                   </div>
                   {exp.receiptUrl && (
-                    <a 
-                      href={exp.receiptUrl} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-[10px] text-blue-400 hover:underline inline-flex items-center gap-1"
+                    <button 
+                      onClick={() => setSelectedPhoto(exp.receiptUrl)}
+                      className="text-[10px] text-amber-500 hover:underline inline-flex items-center gap-1 mt-1"
                     >
                       <Camera size={10} /> Фото чека
-                    </a>
+                    </button>
                   )}
                 </div>
               ))}
@@ -697,9 +740,9 @@ export default function TaskDetails() {
                             e.stopPropagation();
                             handleDeletePhoto(photo, 'before');
                           }}
-                          className="absolute top-1 right-1 p-1 bg-black/60 rounded-md text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="absolute top-1 right-1 p-1.5 bg-black/60 rounded-md text-red-400"
                         >
-                          <DeleteIcon size={12} />
+                          <DeleteIcon size={14} />
                         </button>
                       )}
                       <div className="absolute bottom-1 right-1 p-0.5 bg-black/40 rounded text-white/60 pointer-events-none">
@@ -779,9 +822,9 @@ export default function TaskDetails() {
                             e.stopPropagation();
                             handleDeletePhoto(photo, 'after');
                           }}
-                          className="absolute top-1 right-1 p-1 bg-black/60 rounded-md text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="absolute top-1 right-1 p-1.5 bg-black/60 rounded-md text-red-400"
                         >
-                          <DeleteIcon size={12} />
+                          <DeleteIcon size={14} />
                         </button>
                       )}
                       <div className="absolute bottom-1 right-1 p-0.5 bg-black/40 rounded text-white/60 pointer-events-none">
@@ -823,7 +866,7 @@ export default function TaskDetails() {
             onClick={() => setSelectedPhoto(null)}
           >
             <div className="flex justify-end p-4 gap-2">
-              {user?.role === 'pilot' && (request.status === 'accepted' || request.status === 'in_progress') && (
+              {user?.role === 'pilot' && (request.status === 'accepted' || request.status === 'in_progress') && (request.photosBefore?.includes(selectedPhoto) || request.photosAfter?.includes(selectedPhoto)) && (
                 <button 
                   onClick={(e) => {
                     e.stopPropagation();
@@ -850,26 +893,28 @@ export default function TaskDetails() {
                 referrerPolicy="no-referrer"
               />
             </div>
-            <div className="p-6 bg-black/40 backdrop-blur-md border-t border-white/5">
-              <div className="flex flex-col items-center gap-2">
-                <div className="text-[10px] text-zinc-400 uppercase tracking-widest font-mono">
-                  {request.photoMetadata?.[getSafeUrl(selectedPhoto)]?.timestamp 
-                    ? new Date(request.photoMetadata[getSafeUrl(selectedPhoto)].timestamp).toLocaleString('ru-RU')
-                    : 'Время не указано'}
+            {(request.photosBefore?.includes(selectedPhoto) || request.photosAfter?.includes(selectedPhoto)) && (
+              <div className="p-6 bg-black/40 backdrop-blur-md border-t border-white/5">
+                <div className="flex flex-col items-center gap-2">
+                  <div className="text-[10px] text-zinc-400 uppercase tracking-widest font-mono">
+                    {request.photoMetadata?.[getSafeUrl(selectedPhoto)]?.timestamp 
+                      ? new Date(request.photoMetadata[getSafeUrl(selectedPhoto)].timestamp).toLocaleString('ru-RU')
+                      : 'Время не указано'}
+                  </div>
+                  {request.photoMetadata?.[getSafeUrl(selectedPhoto)]?.lat && (
+                    <a 
+                      href={`https://www.google.com/maps?q=${request.photoMetadata[getSafeUrl(selectedPhoto)].lat},${request.photoMetadata[getSafeUrl(selectedPhoto)].lng}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="text-[10px] text-amber-500 hover:underline flex items-center gap-1"
+                    >
+                      <MapPin size={10} /> Посмотреть на карте
+                    </a>
+                  )}
                 </div>
-                {request.photoMetadata?.[getSafeUrl(selectedPhoto)]?.lat && (
-                  <a 
-                    href={`https://www.google.com/maps?q=${request.photoMetadata[getSafeUrl(selectedPhoto)].lat},${request.photoMetadata[getSafeUrl(selectedPhoto)].lng}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={(e) => e.stopPropagation()}
-                    className="text-[10px] text-amber-500 hover:underline flex items-center gap-1"
-                  >
-                    <MapPin size={10} /> Посмотреть на карте
-                  </a>
-                )}
               </div>
-            </div>
+            )}
             <div className="p-4 text-center text-zinc-600 text-[10px] uppercase tracking-widest">
               Нажмите в любом месте, чтобы закрыть
             </div>
@@ -911,19 +956,13 @@ export default function TaskDetails() {
                   Вернуться на шаг назад
                 </button>
                 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 gap-3">
                   <button 
                     onClick={() => openNavigation(request.pickupAddress || '')}
                     className="flex items-center justify-center gap-2 py-4 bg-zinc-900 border border-zinc-800 rounded-xl font-bold uppercase tracking-widest text-xs"
                   >
                     <Navigation size={16} /> Маршрут
                   </button>
-                  <a 
-                    href={client?.phone ? `tel:${client.phone}` : '#'}
-                    className="flex items-center justify-center gap-2 py-4 bg-zinc-900 border border-zinc-800 rounded-xl font-bold uppercase tracking-widest text-xs"
-                  >
-                    <Phone size={16} /> Позвонить
-                  </a>
                 </div>
                 
                 <button 
@@ -977,7 +1016,7 @@ export default function TaskDetails() {
         {/* Expense Modal */}
         {showExpenseModal && (
           <div className="fixed inset-0 z-[400] bg-black/80 backdrop-blur-sm flex items-end justify-center animate-in fade-in duration-200">
-            <div className="w-full max-w-md bg-zinc-900 rounded-t-3xl p-6 pb-10 animate-in slide-in-from-bottom-full duration-300 max-h-[90vh] overflow-y-auto">
+            <div className="w-full max-w-md bg-zinc-900 rounded-t-3xl p-6 pb-[max(env(safe-area-inset-bottom),2.5rem)] animate-in slide-in-from-bottom-full duration-300 max-h-[90vh] overflow-y-auto">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-lg font-bold uppercase tracking-widest">Добавить расход</h3>
                 <button onClick={() => setShowExpenseModal(false)} className="p-2 bg-zinc-800 rounded-full">
@@ -1000,9 +1039,10 @@ export default function TaskDetails() {
                 </div>
 
                 <div>
-                  <label className="block text-xs text-zinc-500 uppercase tracking-widest mb-2">Сумма (BYN)</label>
+                  <label className="block text-xs text-zinc-500 uppercase tracking-widest mb-2 flex items-center gap-1">Сумма (<BynIcon size="1em" />)</label>
                   <input 
                     type="number" 
+                    inputMode="decimal"
                     value={expenseAmount}
                     onChange={(e) => setExpenseAmount(e.target.value)}
                     placeholder="0.00"
@@ -1066,7 +1106,7 @@ export default function TaskDetails() {
         {/* Navigation Modal */}
         {showNavModal && (
           <div className="fixed inset-0 z-[400] bg-black/80 backdrop-blur-sm flex items-end justify-center animate-in fade-in duration-200">
-            <div className="w-full max-w-md bg-zinc-900 rounded-t-3xl p-6 pb-10 animate-in slide-in-from-bottom-full duration-300">
+            <div className="w-full max-w-md bg-zinc-900 rounded-t-3xl p-6 pb-[max(env(safe-area-inset-bottom),2.5rem)] animate-in slide-in-from-bottom-full duration-300">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-lg font-bold uppercase tracking-widest">Выбрать навигатор</h3>
                 <button onClick={() => setShowNavModal(false)} className="p-2 bg-zinc-800 rounded-full">
@@ -1118,25 +1158,36 @@ export default function TaskDetails() {
         )}
 
         {/* Action Buttons for Admin */}
-        {user?.role === 'admin' && request.status === 'review' && (
+        {user?.role === 'admin' && (
           <div className="space-y-3 mt-6">
-            <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 mb-4">
-              <p className="text-xs text-amber-500 text-center font-medium">
-                Задача ожидает проверки фото-протокола
-              </p>
-            </div>
             <button 
-              onClick={() => updateStatus('completed')}
-              className="w-full py-4 bg-emerald-500 text-black rounded-xl font-bold uppercase tracking-widest text-sm shadow-lg shadow-emerald-500/20"
+              onClick={() => navigate(`/task/${id}/chat`)}
+              className="w-full flex items-center justify-center gap-2 py-4 bg-zinc-900 border border-zinc-800 rounded-xl font-bold uppercase tracking-widest text-xs"
             >
-              Одобрить и завершить
+              <MessageSquare size={16} /> Чат по поручению
             </button>
-            <button 
-              onClick={() => updateStatus('in_progress')}
-              className="w-full py-4 bg-zinc-800 text-white rounded-xl font-bold uppercase tracking-widest text-sm border border-zinc-700"
-            >
-              Вернуть на доработку
-            </button>
+
+            {request.status === 'review' && (
+              <>
+                <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 mb-4">
+                  <p className="text-xs text-amber-500 text-center font-medium">
+                    Задача ожидает проверки фото-протокола
+                  </p>
+                </div>
+                <button 
+                  onClick={() => updateStatus('completed')}
+                  className="w-full py-4 bg-emerald-500 text-black rounded-xl font-bold uppercase tracking-widest text-sm shadow-lg shadow-emerald-500/20"
+                >
+                  Одобрить и завершить
+                </button>
+                <button 
+                  onClick={() => updateStatus('in_progress')}
+                  className="w-full py-4 bg-zinc-800 text-white rounded-xl font-bold uppercase tracking-widest text-sm border border-zinc-700"
+                >
+                  Вернуть на доработку
+                </button>
+              </>
+            )}
           </div>
         )}
       </div>

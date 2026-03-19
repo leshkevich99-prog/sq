@@ -35,6 +35,7 @@ export default function Profile() {
   const [tapCount, setTapCount] = useState(0);
 
   const handleSecretTap = () => {
+    /*
     const newCount = tapCount + 1;
     setTapCount(newCount);
     if (newCount === 5) {
@@ -42,6 +43,7 @@ export default function Profile() {
       toast.success('Режим разработчика активирован! Обновите страницу.');
       setTapCount(0);
     }
+    */
   };
 
   useEffect(() => {
@@ -107,14 +109,14 @@ export default function Profile() {
   }
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
       <header className="mb-6 mt-2 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <button onClick={() => navigate(-1)} className="p-2 bg-zinc-900 rounded-full hover:bg-zinc-800 transition-colors">
             <ArrowLeft size={20} />
           </button>
           <div>
-            <h1 onClick={handleSecretTap} className="text-3xl font-serif font-normal tracking-wide uppercase cursor-pointer select-none">Профиль</h1>
+            <h1 className="text-3xl font-serif font-normal tracking-wide uppercase select-none">Профиль</h1>
             <p className="text-zinc-400 text-sm mt-1">Личные данные</p>
           </div>
         </div>

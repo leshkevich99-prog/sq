@@ -46,6 +46,33 @@
           },
           "description": "User's service limits"
         },
+        "usedQuotas": {
+          "type": "object",
+          "properties": {
+            "wash": { "type": "number" },
+            "logistics": { "type": "number" },
+            "valet": { "type": "number" },
+            "parking": { "type": "number" },
+            "bureaucracy": { "type": "number" }
+          },
+          "description": "User's used service quotas"
+        },
+        "isVerified": {
+          "type": "boolean",
+          "description": "Whether the user (pilot) is verified"
+        },
+        "completedTasks": {
+          "type": "number",
+          "description": "Number of tasks completed by the pilot"
+        },
+        "rating": {
+          "type": "number",
+          "description": "Average rating of the pilot"
+        },
+        "isOnShift": {
+          "type": "boolean",
+          "description": "Whether the pilot is currently on shift"
+        },
         "createdAt": {
           "type": "string",
           "format": "date-time",
@@ -78,6 +105,18 @@
         "plate": {
           "type": "string",
           "description": "License plate number"
+        },
+        "plateNumber": {
+          "type": "string",
+          "description": "License plate number (alternative field)"
+        },
+        "vin": {
+          "type": "string",
+          "description": "Vehicle Identification Number"
+        },
+        "color": {
+          "type": "string",
+          "description": "Car color"
         },
         "isApproved": {
           "type": "boolean",
@@ -349,6 +388,14 @@
         "$ref": "#/entities/Recommendation"
       },
       "description": "Collection of car recommendations and malfunctions."
+    },
+    "/settings/{settingId}": {
+      "schema": "object",
+      "description": "Global system settings."
+    },
+    "/tariffs/{tariffId}": {
+      "schema": "object",
+      "description": "Tariff definitions."
     }
   }
 }

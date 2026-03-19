@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { BynIcon } from '../components/BynIcon';
 import { Check } from 'lucide-react';
 import { useFirebase } from '../components/FirebaseProvider';
 import { db, handleFirestoreError, OperationType } from '../firebase';
@@ -63,11 +64,11 @@ export default function Tariffs() {
     if (priceDifference === 0) {
       confirmMsg = `Перейти на тариф ${tariffName}?`;
     } else if (payableAmount === 0) {
-      confirmMsg = `Сменить тариф на ${tariffName}? С вашего депозита будет списано ${balanceDeduction.toFixed(2)} BYN.`;
+      confirmMsg = `Сменить тариф на ${tariffName}? С вашего депозита будет списано ${balanceDeduction.toFixed(2)} Br.`;
     } else if (balanceDeduction > 0) {
-      confirmMsg = `Сменить тариф на ${tariffName}? С депозита спишется ${balanceDeduction.toFixed(2)} BYN, к оплате останется ${payableAmount.toFixed(2)} BYN.`;
+      confirmMsg = `Сменить тариф на ${tariffName}? С депозита спишется ${balanceDeduction.toFixed(2)} Br, к оплате останется ${payableAmount.toFixed(2)} Br.`;
     } else {
-      confirmMsg = `Оплатить переход на тариф ${tariffName} за ${payableAmount.toFixed(2)} BYN?`;
+      confirmMsg = `Оплатить переход на тариф ${tariffName} за ${payableAmount.toFixed(2)} Br?`;
     }
     
     const proceed = await new Promise<boolean>((resolve) => {
@@ -129,7 +130,7 @@ export default function Tariffs() {
           tariffName,
           quotas,
           balanceDeduction, // Pass this to backend so bot can handle it after successful payment
-          description: `Доплата за тариф ${tariffName} (с учетом списания ${balanceDeduction.toFixed(2)} BYN с депозита)`
+          description: `Доплата за тариф ${tariffName} (с учетом списания ${balanceDeduction.toFixed(2)} Br с депозита)`
         })
       });
 
@@ -168,7 +169,7 @@ export default function Tariffs() {
   };
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
       <header className="mb-6 mt-2">
         <h1 className="text-3xl font-serif font-normal tracking-wide uppercase">Уровни сопровождения</h1>
         <p className="text-zinc-400 text-sm mt-1">Выберите подходящий объем обслуживания</p>
@@ -239,7 +240,7 @@ function TariffCard({
       <div className="flex justify-between items-start mb-4">
         <div>
           <h2 className="text-xl font-bold tracking-tight">{name}</h2>
-          <p className="text-accent font-medium mt-1">{price.toFixed(2)} BYN / мес</p>
+          <p className="text-accent font-medium mt-1 flex items-center gap-1">{price.toFixed(2)} <BynIcon size="0.8em" /> / мес</p>
         </div>
         {isActive && (
           <span className="text-[10px] uppercase tracking-wider px-2 py-1 bg-white text-black font-bold rounded">

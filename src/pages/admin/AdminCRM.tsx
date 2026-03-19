@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Car, CreditCard, ShieldAlert, X, DollarSign, Edit2, LayoutGrid, List as ListIcon, Users, UserCheck, ShieldCheck, Zap, ChevronDown } from 'lucide-react';
+import { BynIcon } from '../../components/BynIcon';
 import { db, handleFirestoreError, OperationType } from '../../firebase';
 import { collection, onSnapshot, addDoc, doc, updateDoc, deleteField } from 'firebase/firestore';
 import toast from 'react-hot-toast';
@@ -290,7 +291,7 @@ export default function AdminCRM() {
   });
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
       <header className="mb-6 mt-2 flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-serif font-normal tracking-wide uppercase">CRM База</h1>
@@ -589,8 +590,8 @@ export default function AdminCRM() {
                             <div className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">{tx.type}</div>
                             <div className="text-[8px] text-zinc-600">ID: {tx.id.slice(-6)}</div>
                           </div>
-                          <div className={`text-xs font-bold ${tx.type === 'deposit' ? 'text-emerald-500' : 'text-white'}`}>
-                            {tx.type === 'deposit' ? '+' : '-'}{tx.amount.toFixed(2)} BYN
+                          <div className={`text-xs font-bold flex items-center gap-1 ${tx.type === 'deposit' ? 'text-emerald-500' : 'text-white'}`}>
+                            {tx.type === 'deposit' ? '+' : '-'}{tx.amount.toFixed(2)} <BynIcon size="1em" />
                           </div>
                         </div>
                       ))}
@@ -648,7 +649,7 @@ export default function AdminCRM() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-zinc-500 mb-2">Сумма (BYN)</label>
+                <label className="block text-xs font-bold uppercase tracking-wider text-zinc-500 mb-2 flex items-center gap-1">Сумма (<BynIcon size="1em" />)</label>
                 <div className="relative">
                   <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={16} />
                   <input 
@@ -983,7 +984,7 @@ const ClientCard: React.FC<{
             <div className="flex flex-col min-w-0">
               <span className="text-[9px] uppercase text-zinc-500 font-bold tracking-wider truncate">Депозит</span>
               <span className={`font-medium text-xs truncate ${parseFloat(deposit) < 0 ? 'text-red-600' : 'text-emerald-500'}`}>
-                {deposit} BYN
+                {deposit} <BynIcon size="1em" />
               </span>
             </div>
           </div>

@@ -4,6 +4,8 @@ import { db, handleFirestoreError, OperationType } from '../../firebase';
 import { collection, onSnapshot, doc, updateDoc, query, orderBy } from 'firebase/firestore';
 import toast from 'react-hot-toast';
 
+import { BynIcon } from '../../components/BynIcon';
+
 interface PayoutData {
   id: string;
   userId: string;
@@ -81,7 +83,7 @@ export default function AdminPayouts() {
   };
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
       <header className="mb-6 mt-2">
         <h1 className="text-3xl font-serif font-normal tracking-wide uppercase">Выплаты</h1>
         <p className="text-zinc-400 text-sm mt-1">Управление запросами на вывод средств</p>
@@ -124,7 +126,7 @@ export default function AdminPayouts() {
                       </span>
                     </div>
                     <h3 className="text-2xl font-bold text-white">
-                      {payout.amount.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span className="text-sm font-normal text-zinc-500">BYN</span>
+                      {payout.amount.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <BynIcon size="1em" className="text-zinc-500" />
                     </h3>
                   </div>
                   <div className="text-right">

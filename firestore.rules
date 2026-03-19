@@ -16,18 +16,19 @@ service cloud.firestore {
 
     function isAdmin() {
       return isAuthenticated() && (
-        (request.auth.token.email == "leshkevich.99@gmail.com" && request.auth.token.email_verified == true) ||
+        request.auth.token.email == "leshkevich.99@gmail.com" ||
         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin') ||
-        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.username == 'ttaammmo') ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.username in ['ttaammmo', '@ttaammmo', 'sasha_admin']) ||
         request.auth.uid == 'test_admin'
       );
     }
 
     function isPilot() {
       return isAuthenticated() && (
+        isAdmin() ||
         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'pilot') ||
-        request.auth.uid == 'test_pilot' ||
-        isAdmin()
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.username in ['petya_pilot', 'test_pilot']) ||
+        request.auth.uid == 'test_pilot'
       );
     }
 
@@ -51,60 +52,68 @@ service cloud.firestore {
     // Domain Validators
     // ===============================================================
     function isValidUser(data) {
-      return hasOnlyAllowedFields(['uid', 'telegramId', 'username', 'firstName', 'lastName', 'phone', 'email', 'role', 'subscription', 'quotas', 'createdAt', 'isOnShift', 'tariff', 'balance', 'limits']) &&
-             (!('uid' in data) || data.uid is string) &&
-             (!('telegramId' in data) || data.telegramId is number) &&
+      return hasOnlyAllowedFields(['uid', 'telegramId', 'username', 'firstName', 'lastName', 'phone', 'email', 'role', 'subscription', 'quotas', 'createdAt', 'isOnShift', 'tariff', 'balance', 'limits', 'usedQuotas', 'isVerified', 'completedTasks', 'rating']) &&
+             (!('uid' in data) || data.uid is string || data.uid == null) &&
+             (!('telegramId' in data) || data.telegramId is number || data.telegramId == null) &&
              data.role in ['client', 'admin', 'pilot'] &&
-             (!('username' in data) || data.username is string) &&
-             (!('firstName' in data) || data.firstName is string) &&
-             (!('lastName' in data) || data.lastName is string) &&
-             (!('phone' in data) || data.phone is string) &&
-             (!('email' in data) || data.email is string) &&
-             (!('subscription' in data) || data.subscription is string) &&
-             (!('quotas' in data) || data.quotas is map) &&
-             (!('isOnShift' in data) || data.isOnShift is bool) &&
-             (!('tariff' in data) || data.tariff in ['telemetry', 'pitstop', 'family', 'test_drive']) &&
-             (!('balance' in data) || data.balance is number) &&
-             (!('limits' in data) || data.limits is map) &&
-             (!('createdAt' in data) || data.createdAt is string);
+             (!('username' in data) || data.username is string || data.username == null) &&
+             (!('firstName' in data) || data.firstName is string || data.firstName == null) &&
+             (!('lastName' in data) || data.lastName is string || data.lastName == null) &&
+             (!('phone' in data) || data.phone is string || data.phone == null) &&
+             (!('email' in data) || data.email is string || data.email == null) &&
+             (!('subscription' in data) || data.subscription is string || data.subscription == null) &&
+             (!('quotas' in data) || data.quotas is map || data.quotas == null) &&
+             (!('isOnShift' in data) || data.isOnShift is bool || data.isOnShift == null) &&
+             (!('tariff' in data) || data.tariff in ['telemetry', 'pitstop', 'family', 'test_drive'] || data.tariff == null) &&
+             (!('balance' in data) || data.balance is number || data.balance == null) &&
+             (!('limits' in data) || data.limits is map || data.limits == null) &&
+             (!('usedQuotas' in data) || data.usedQuotas is map || data.usedQuotas == null) &&
+             (!('isVerified' in data) || data.isVerified is bool || data.isVerified == null) &&
+             (!('completedTasks' in data) || data.completedTasks is number || data.completedTasks == null) &&
+             (!('rating' in data) || data.rating is number || data.rating == null) &&
+             (!('createdAt' in data) || data.createdAt is string || data.createdAt == null);
     }
 
     function isValidCar(data) {
-      return hasOnlyAllowedFields(['userId', 'make', 'model', 'year', 'plate', 'isApproved', 'createdAt', 'maintenanceSchedule', 'inspectionDate', 'insuranceDate', 'malfunctions']) &&
+      return hasOnlyAllowedFields(['userId', 'make', 'model', 'year', 'plate', 'isApproved', 'createdAt', 'maintenanceSchedule', 'inspectionDate', 'insuranceDate', 'malfunctions', 'vin', 'color', 'plateNumber']) &&
              data.userId is string &&
              data.make is string && data.make.size() > 0 && data.make.size() < 50 &&
              data.model is string && data.model.size() > 0 && data.model.size() < 50 &&
-             data.year is number && data.year > 1900 && data.year <= 2100 &&
-             data.plate is string && data.plate.size() > 0 && data.plate.size() < 20 &&
-             data.isApproved is bool &&
-             (!('maintenanceSchedule' in data) || data.maintenanceSchedule is string) &&
-             (!('inspectionDate' in data) || data.inspectionDate is string) &&
-             (!('insuranceDate' in data) || data.insuranceDate is string) &&
-             (!('malfunctions' in data) || data.malfunctions is list) &&
+             (!('year' in data) || (data.year is number || data.year is string || data.year == null)) &&
+             (!('plate' in data) || data.plate is string || data.plate == null) &&
+             (!('plateNumber' in data) || data.plateNumber is string || data.plateNumber == null) &&
+             (!('vin' in data) || data.vin is string || data.vin == null) &&
+             (!('color' in data) || data.color is string || data.color == null) &&
+             (!('isApproved' in data) || data.isApproved is bool || data.isApproved == null) &&
+             (!('maintenanceSchedule' in data) || data.maintenanceSchedule is string || data.maintenanceSchedule == null) &&
+             (!('inspectionDate' in data) || data.inspectionDate is string || data.inspectionDate == null) &&
+             (!('insuranceDate' in data) || data.insuranceDate is string || data.insuranceDate == null) &&
+             (!('malfunctions' in data) || data.malfunctions is list || data.malfunctions == null) &&
              data.createdAt is string;
     }
 
     function isValidRequest(data) {
-      return hasOnlyAllowedFields(['userId', 'carId', 'serviceType', 'status', 'pilotId', 'usedQuota', 'pickupAddress', 'deliveryAddress', 'orderDate', 'orderTime', 'washType', 'comment', 'price', 'balanceDeduction', 'paidExternally', 'createdAt', 'photoProtocol', 'photosBefore', 'photosAfter', 'photoMetadata']) &&
+      return hasOnlyAllowedFields(['userId', 'carId', 'serviceType', 'status', 'pilotId', 'usedQuota', 'pickupAddress', 'deliveryAddress', 'orderDate', 'orderTime', 'washType', 'comment', 'price', 'balanceDeduction', 'paidExternally', 'createdAt', 'photoProtocol', 'photosBefore', 'photosAfter', 'photoMetadata', 'totalPrice']) &&
              data.userId is string &&
              data.carId is string &&
              data.serviceType is string && data.serviceType.size() > 0 && data.serviceType.size() < 100 &&
              data.status in ['pending', 'accepted', 'in_progress', 'review', 'completed', 'cancelled'] &&
-             (!('pilotId' in data) || data.pilotId is string) &&
-             (!('usedQuota' in data) || data.usedQuota is bool) &&
-             (!('pickupAddress' in data) || data.pickupAddress is string) &&
-             (!('deliveryAddress' in data) || data.deliveryAddress is string) &&
-             (!('orderDate' in data) || data.orderDate is string) &&
-             (!('orderTime' in data) || data.orderTime is string) &&
-             (!('washType' in data) || data.washType is string) &&
-             (!('comment' in data) || data.comment is string) &&
-             (!('price' in data) || data.price is number) &&
-             (!('balanceDeduction' in data) || data.balanceDeduction is number) &&
-             (!('paidExternally' in data) || data.paidExternally is number) &&
-             (!('photoProtocol' in data) || data.photoProtocol is list) &&
-             (!('photosBefore' in data) || data.photosBefore is list) &&
-             (!('photosAfter' in data) || data.photosAfter is list) &&
-             (!('photoMetadata' in data) || data.photoMetadata is map) &&
+             (!('pilotId' in data) || data.pilotId is string || data.pilotId == null) &&
+             (!('usedQuota' in data) || data.usedQuota is bool || data.usedQuota == null) &&
+             (!('pickupAddress' in data) || data.pickupAddress is string || data.pickupAddress == null) &&
+             (!('deliveryAddress' in data) || data.deliveryAddress is string || data.deliveryAddress == null) &&
+             (!('orderDate' in data) || data.orderDate is string || data.orderDate == null) &&
+             (!('orderTime' in data) || data.orderTime is string || data.orderTime == null) &&
+             (!('washType' in data) || data.washType is string || data.washType == null) &&
+             (!('comment' in data) || data.comment is string || data.comment == null) &&
+             (!('price' in data) || data.price is number || data.price == null) &&
+             (!('totalPrice' in data) || data.totalPrice is number || data.totalPrice == null) &&
+             (!('balanceDeduction' in data) || data.balanceDeduction is number || data.balanceDeduction == null) &&
+             (!('paidExternally' in data) || data.paidExternally is number || data.paidExternally == null) &&
+             (!('photoProtocol' in data) || data.photoProtocol is list || data.photoProtocol == null) &&
+             (!('photosBefore' in data) || data.photosBefore is list || data.photosBefore == null) &&
+             (!('photosAfter' in data) || data.photosAfter is list || data.photosAfter == null) &&
+             (!('photoMetadata' in data) || data.photoMetadata is map || data.photoMetadata == null) &&
              data.createdAt is string;
     }
 
@@ -194,11 +203,11 @@ service cloud.firestore {
     // ===============================================================
 
     match /users/{userId} {
-      allow read: if isOwner(userId) || isAdmin() || isPilot() || (isAuthenticated() && resource.data.role == 'admin');
+      allow read: if isOwner(userId) || isAdmin() || isPilot() || (isAuthenticated() && request.auth.token.email == "leshkevich.99@gmail.com");
       // Allow user to create their own profile. Only admins can create admin/pilot profiles, unless the user is ttaammmo.
       allow create: if isAuthenticated() && isOwner(userId) && isValidUser(request.resource.data) && (
         request.resource.data.role == 'client' || 
-        request.resource.data.username in ['ttaammmo', 'sasha_admin', 'petya_pilot'] || 
+        request.resource.data.username in ['ttaammmo', '@ttaammmo', 'sasha_admin', 'petya_pilot'] || 
         isAdmin()
       );
       allow update: if isAuthenticated() && isValidUser(request.resource.data) && uidNotModified() && (
@@ -307,6 +316,16 @@ service cloud.firestore {
       allow create: if (isAdmin() || isPilot()) && isValidRecommendation(request.resource.data) && isOwner(request.resource.data.authorId);
       allow update: if isAuthenticated() && (isAdmin() || isPilot()) && isValidRecommendation(request.resource.data);
       allow delete: if isAdmin();
+    }
+
+    match /settings/{settingId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    match /tariffs/{tariffId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
     }
 
     match /test/connection {

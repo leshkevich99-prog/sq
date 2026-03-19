@@ -106,7 +106,7 @@ export default function SOS() {
   if (loading) return <div className="p-6 text-center text-zinc-500">Загрузка...</div>;
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20 flex flex-col items-center justify-center min-h-[80vh]">
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 flex flex-col items-center justify-center min-h-[80vh]">
       <div className="text-center mb-12">
         <h1 className="text-3xl font-bold uppercase tracking-widest mb-2">Экстренная связь</h1>
         <p className="text-zinc-400 text-sm max-w-xs mx-auto">

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { BynIcon } from '../components/BynIcon';
 import { MapPin, Calendar, Clock, ChevronRight, Car, Truck, Droplets, Wrench, Key, FileText, SquareParking, Check, X } from 'lucide-react';
 import WebApp from '@twa-dev/sdk';
 import { useFirebase } from '../components/FirebaseProvider';
@@ -23,13 +24,22 @@ const SERVICE_PRICES: Record<string, any> = {
 };
 
 const SERVICES = [
-  { id: 'logistics', title: 'Логистическое поручение', price: '140.00 BYN', desc: 'Перегон автомобиля из точки А в точку Б', icon: Truck },
-  { id: 'valet', title: 'AIRPORT VALET', price: '275.00 BYN', desc: 'Встреча или проводы в аэропорту', icon: Key },
-  { id: 'parking', title: 'Night Drop', price: 'от 170.00 BYN', desc: 'Безопасная ночная парковка вашего авто', icon: SquareParking },
-  { id: 'bureaucracy', title: 'Бюрократия под ключ', price: '170.00 - 350.00 BYN', desc: 'Оформление документов, страховок, ТО', icon: FileText },
-  { id: 'wash', title: 'Комплексная трехфазная мойка', price: '150.00 BYN', desc: 'Премиальный уход за кузовом и салоном', icon: Droplets },
-  { id: 'service', title: 'СТО / ТО', price: '140.00 BYN', desc: 'Доставка авто на сервисное обслуживание', icon: Wrench }
+  { id: 'logistics', title: 'Логистическое поручение', price: <div className="flex items-center gap-1">140.00 <BynIcon size="0.8em" /></div>, desc: 'Перегон автомобиля из точки А в точку Б', icon: Truck },
+  { id: 'valet', title: 'AIRPORT VALET', price: <div className="flex items-center gap-1">275.00 <BynIcon size="0.8em" /></div>, desc: 'Встреча или проводы в аэропорту', icon: Key },
+  { id: 'parking', title: 'Night Drop', price: <div className="flex items-center gap-1">от 170.00 <BynIcon size="0.8em" /></div>, desc: 'Безопасная ночная парковка вашего авто', icon: SquareParking },
+  { id: 'bureaucracy', title: 'Бюрократия под ключ', price: <div className="flex items-center gap-1">170.00 - 350.00 <BynIcon size="0.8em" /></div>, desc: 'Оформление документов, страховок, ТО', icon: FileText },
+  { id: 'wash', title: 'Комплексная трехфазная мойка', price: <div className="flex items-center gap-1">150.00 <BynIcon size="0.8em" /></div>, desc: 'Премиальный уход за кузовом и салоном', icon: Droplets },
+  { id: 'service', title: 'СТО / ТО', price: <div className="flex items-center gap-1">140.00 <BynIcon size="0.8em" /></div>, desc: 'Доставка авто на сервисное обслуживание', icon: Wrench }
 ];
+
+const SERVICE_LABELS: Record<string, string> = {
+  'logistics': 'Логистика',
+  'valet': 'AIRPORT VALET',
+  'parking': 'Night Drop',
+  'bureaucracy': 'Бюрократия',
+  'wash': 'Мойка',
+  'service': 'СТО / ТО'
+};
 
 export default function Order() {
   const { user } = useFirebase();
@@ -176,11 +186,11 @@ export default function Order() {
     if (useQuota) {
       confirmMsg = `Подтвердить вызов по квоте?`;
     } else if (payableAmount === 0) {
-      confirmMsg = `Стоимость услуги: ${price.toFixed(2)} BYN. Вся сумма будет списана с вашего депозита. Продолжить?`;
+      confirmMsg = `Стоимость услуги: ${price.toFixed(2)} Br. Вся сумма будет списана с вашего депозита. Продолжить?`;
     } else if (balanceDeduction > 0) {
-      confirmMsg = `Стоимость услуги: ${price.toFixed(2)} BYN. С депозита спишется ${balanceDeduction.toFixed(2)} BYN, к оплате останется ${payableAmount.toFixed(2)} BYN. Продолжить?`;
+      confirmMsg = `Стоимость услуги: ${price.toFixed(2)} Br. С депозита спишется ${balanceDeduction.toFixed(2)} Br, к оплате останется ${payableAmount.toFixed(2)} Br. Продолжить?`;
     } else {
-      confirmMsg = `Стоимость услуги: ${price.toFixed(2)} BYN. Оплатить вызов?`;
+      confirmMsg = `Стоимость услуги: ${price.toFixed(2)} Br. Оплатить вызов?`;
     }
 
     const proceed = await new Promise<boolean>((resolve) => {
@@ -297,7 +307,7 @@ export default function Order() {
           amount: payableAmount,
           type: 'service_order',
           pendingOrderId: pendingOrderRef.id,
-          description: `Оплата услуги ${service} (списано ${balanceDeduction.toFixed(2)} BYN с депозита)`
+          description: `Оплата услуги ${service} (списано ${balanceDeduction.toFixed(2)} Br с депозита)`
         })
       });
 
@@ -327,12 +337,14 @@ export default function Order() {
     const adminQuery = query(collection(db, 'users'), where('role', '==', 'admin'));
     const adminSnaps = await getDocs(adminQuery);
     
+    const serviceName = SERVICE_LABELS[serviceType] || serviceType;
+
     for (const adminDoc of adminSnaps.docs) {
       const adminData = adminDoc.data();
       createNotification(
         adminDoc.id,
         'Новое поручение',
-        `Поступило новое поручение на "${serviceType}" от ${user?.firstName || 'клиента'}.`,
+        `Поступило новое поручение на "${serviceName}" от ${user?.firstName || 'клиента'}.`,
         'info',
         `/task/${requestId}`
       );
@@ -344,7 +356,7 @@ export default function Order() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               telegramId: adminData.telegramId,
-              message: `🏎️ Новое поручение!\n\nУслуга: ${serviceType}\nКлиент: ${user?.firstName || 'клиент'}\nОплата: ${useQuota ? 'Квота' : balanceDeduction > 0 ? `Депозит (${balanceDeduction}) + ${paidExternally}` : paidExternally}\n\nОткройте приложение для деталей.`
+              message: `🏎️ Новое поручение!\n\nУслуга: ${serviceName}\nКлиент: ${user?.firstName || 'клиент'}\nОплата: ${useQuota ? 'Квота' : balanceDeduction > 0 ? `Депозит (${balanceDeduction}) + ${paidExternally}` : paidExternally}\n\nОткройте приложение для деталей.`
             })
           });
         } catch (e) {}
@@ -394,7 +406,7 @@ export default function Order() {
   }
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
       {/* Active Orders Section */}
       {activeOrders.length > 0 && (
         <section className="mb-8 space-y-3">
@@ -428,7 +440,7 @@ export default function Order() {
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-xs font-mono text-zinc-400">{(order.price || 0).toFixed(2)} BYN</p>
+                  <p className="text-xs font-mono text-zinc-400 flex items-center gap-1">{(order.price || 0).toFixed(2)} <BynIcon size="0.8em" /></p>
                 </div>
               </div>
             ))}

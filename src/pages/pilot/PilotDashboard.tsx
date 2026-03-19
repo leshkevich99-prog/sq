@@ -43,6 +43,15 @@ interface CarData {
   plate: string;
 }
 
+const SERVICE_LABELS: Record<string, string> = {
+  'logistics': 'Логистика',
+  'valet': 'AIRPORT VALET',
+  'parking': 'Night Drop',
+  'bureaucracy': 'Бюрократия',
+  'wash': 'Мойка',
+  'service': 'СТО / ТО'
+};
+
 export default function PilotDashboard() {
   const navigate = useNavigate();
   const { user } = useFirebase();
@@ -188,7 +197,8 @@ export default function PilotDashboard() {
       };
 
       const title = 'Обновление статуса';
-      const body = `Ваше поручение на услугу "${reqData.serviceType}" ${statusLabels[newStatus] || newStatus}.`;
+      const serviceName = SERVICE_LABELS[reqData.serviceType] || reqData.serviceType;
+      const body = `Ваше поручение на услугу "${serviceName}" ${statusLabels[newStatus] || newStatus}.`;
 
       await createNotification(
         reqData.userId,
@@ -223,7 +233,7 @@ export default function PilotDashboard() {
   }
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
       <header className="mb-6 mt-2 flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-serif font-normal tracking-wide uppercase">Кабинет пилота</h1>
@@ -412,7 +422,7 @@ export default function PilotDashboard() {
       {/* Navigation Modal */}
       {showNavModal && (
         <div className="fixed inset-0 z-[400] bg-black/80 backdrop-blur-sm flex items-end justify-center animate-in fade-in duration-200">
-          <div className="w-full max-w-md bg-zinc-900 rounded-t-3xl p-6 pb-10 animate-in slide-in-from-bottom-full duration-300">
+          <div className="w-full max-w-md bg-zinc-900 rounded-t-3xl p-6 pb-[max(env(safe-area-inset-bottom),2.5rem)] animate-in slide-in-from-bottom-full duration-300">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-lg font-bold uppercase tracking-widest">Выбрать навигатор</h3>
               <button onClick={() => setShowNavModal(false)} className="p-2 bg-zinc-800 rounded-full">

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Star, MapPin, Clock, Shield, ChevronRight, UserCheck, UserX, Wallet } from 'lucide-react';
+import { BynIcon } from '../../components/BynIcon';
 import { db, handleFirestoreError, OperationType } from '../../firebase';
 import { collection, onSnapshot, query, where, doc, updateDoc } from 'firebase/firestore';
 import toast from 'react-hot-toast';
@@ -62,7 +63,7 @@ export default function AdminPilots() {
   });
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
       <header className="mb-6 mt-2">
         <h1 className="text-3xl font-serif font-normal tracking-wide uppercase">Реестр Пилотов</h1>
         <p className="text-zinc-400 text-sm mt-1">Управление командой и верификация</p>
@@ -152,7 +153,7 @@ const PilotCard: React.FC<{ pilot: PilotData, onToggleVerify: () => void }> = ({
         </div>
         <div className="text-center">
           <div className={`text-sm font-bold mb-1 ${(pilot.balance || 0) < 0 ? 'text-red-600' : 'text-white'}`}>
-            {(pilot.balance || 0).toFixed(2)} <span className="text-[10px] font-normal">BYN</span>
+            {(pilot.balance || 0).toFixed(2)} <BynIcon size="0.8em" className="text-zinc-500 ml-0.5" />
           </div>
           <p className="text-[10px] text-zinc-500 uppercase tracking-widest">Депозит</p>
         </div>

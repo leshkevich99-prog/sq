@@ -12,6 +12,7 @@ import {
   CreditCard,
   ChevronRight
 } from 'lucide-react';
+import { BynIcon } from '../../components/BynIcon';
 import { useFirebase } from '../../components/FirebaseProvider';
 import { db, handleFirestoreError, OperationType } from '../../firebase';
 import { collection, query, where, orderBy, onSnapshot, addDoc, limit } from 'firebase/firestore';
@@ -170,7 +171,7 @@ export default function PilotWallet() {
   if (loading) return <div className="p-6 text-center text-zinc-500">Загрузка кошелька...</div>;
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex items-center gap-4 mb-6">
         <button onClick={() => navigate(-1)} className="p-2 bg-zinc-900 rounded-full border border-zinc-800">
           <ArrowLeft size={20} />
@@ -186,7 +187,7 @@ export default function PilotWallet() {
             <Wallet size={16} />
             <span className="text-xs uppercase font-bold tracking-widest">Доступный баланс</span>
           </div>
-          <div className="text-4xl font-bold mb-6">{totalBalance.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} BYN</div>
+          <div className="text-4xl font-bold mb-6">{totalBalance.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <BynIcon size="0.6em" className="text-zinc-500" /></div>
           <button 
             onClick={() => setShowPayoutModal(true)}
             className="w-full py-4 bg-white text-black rounded-2xl font-bold uppercase tracking-widest text-xs active:scale-[0.98] transition-transform shadow-lg shadow-white/5"
@@ -257,7 +258,7 @@ export default function PilotWallet() {
                   </div>
                 </div>
                 <div className={`text-sm font-bold ${tx.type === 'earning' ? 'text-emerald-500' : 'text-white'}`}>
-                  {tx.type === 'earning' ? '+' : '-'}{tx.amount.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} BYN
+                  {tx.type === 'earning' ? '+' : '-'}{tx.amount.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <BynIcon size="0.8em" />
                 </div>
               </div>
             ))}
@@ -268,7 +269,7 @@ export default function PilotWallet() {
       {/* Payout Modal */}
       {showPayoutModal && (
         <div className="fixed inset-0 z-[400] bg-black/80 backdrop-blur-sm flex items-end justify-center animate-in fade-in duration-200">
-          <div className="w-full max-w-md bg-zinc-900 rounded-t-3xl p-6 pb-10 animate-in slide-in-from-bottom-full duration-300">
+          <div className="w-full max-w-md bg-zinc-900 rounded-t-3xl p-6 pb-[max(env(safe-area-inset-bottom),2.5rem)] animate-in slide-in-from-bottom-full duration-300">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-lg font-bold uppercase tracking-widest">Вывод средств</h3>
               <button onClick={() => setShowPayoutModal(false)} className="p-2 bg-zinc-800 rounded-full">
@@ -287,7 +288,7 @@ export default function PilotWallet() {
                     placeholder="0"
                     className="w-full bg-black border border-zinc-800 rounded-2xl px-4 py-4 text-2xl font-bold focus:outline-none focus:border-amber-500 transition-colors"
                   />
-                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 font-bold">BYN</span>
+                  <BynIcon className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500" size="1.2em" />
                 </div>
               </div>
 

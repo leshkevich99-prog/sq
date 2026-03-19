@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { db, handleFirestoreError, OperationType, createNotification } from '../../firebase';
 import { collection, onSnapshot, doc, updateDoc, query, where, getDoc, orderBy, limit } from 'firebase/firestore';
 import { Link } from 'react-router-dom';
+import { BynIcon } from '../../components/BynIcon';
 import { 
   X, 
   ChevronRight, 
@@ -65,6 +66,15 @@ interface TestDriveData {
   status: string;
   createdAt: string;
 }
+
+const SERVICE_LABELS: Record<string, string> = {
+  'logistics': 'Логистика',
+  'valet': 'AIRPORT VALET',
+  'parking': 'Night Drop',
+  'bureaucracy': 'Бюрократия',
+  'wash': 'Мойка',
+  'service': 'СТО / ТО'
+};
 
 export default function AdminDashboard() {
   const [requests, setRequests] = useState<RequestData[]>([]);
@@ -172,7 +182,8 @@ export default function AdminDashboard() {
 
       // Notify pilot
       const pilotTitle = 'Новое поручение';
-      const pilotBody = `Вам назначено новое поручение: ${reqData.serviceType}.`;
+      const serviceName = SERVICE_LABELS[reqData.serviceType] || reqData.serviceType;
+      const pilotBody = `Вам назначено новое поручение: ${serviceName}.`;
       await createNotification(
         pilotId,
         pilotTitle,
@@ -372,7 +383,7 @@ export default function AdminDashboard() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
         <StatCard 
           title="Выручка" 
-          value={`${totalRevenue.toLocaleString('ru-RU', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} BYN`} 
+          value={<div className="flex items-center gap-1">{totalRevenue.toLocaleString('ru-RU', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} <BynIcon size="1em" /></div>} 
           icon={<TrendingUp size={18} className="text-emerald-500" />} 
           trend="+12%" 
           isUp={true} 
@@ -638,7 +649,7 @@ export default function AdminDashboard() {
   );
 }
 
-function StatCard({ title, value, icon, trend, isUp }: { title: string; value: string | number; icon: React.ReactNode; trend: string; isUp: boolean }) {
+function StatCard({ title, value, icon, trend, isUp }: { title: string; value: React.ReactNode; icon: React.ReactNode; trend: string; isUp: boolean }) {
   return (
     <div className="bg-zinc-900 border border-zinc-800 rounded-2xl md:rounded-3xl p-4 md:p-6">
       <div className="flex justify-between items-start mb-3 md:mb-4">

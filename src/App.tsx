@@ -51,50 +51,56 @@ function AppRoutes() {
   const role = user.role || 'client';
 
   return (
-    <div className="pt-10">
+    <div className="w-full h-full">
       <Routes>
         {role === 'client' && (
-          <Route path="/" element={<Layout />}>
-            <Route index element={<Home />} />
-            <Route path="tariffs" element={<Tariffs />} />
-            <Route path="garage" element={<Garage />} />
-            <Route path="order" element={<Order />} />
-            <Route path="test-drive" element={<TestDrive />} />
-            <Route path="task/:id" element={<TaskDetails />} />
-            <Route path="task/:id/chat" element={<Chat />} />
-            <Route path="finances" element={<Finances />} />
-            <Route path="profile" element={<Profile />} />
-            <Route path="notifications" element={<Notifications />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Route>
+          <>
+            <Route path="/" element={<Layout />}>
+              <Route index element={<Home />} />
+              <Route path="tariffs" element={<Tariffs />} />
+              <Route path="garage" element={<Garage />} />
+              <Route path="order" element={<Order />} />
+              <Route path="test-drive" element={<TestDrive />} />
+              <Route path="task/:id" element={<TaskDetails />} />
+              <Route path="finances" element={<Finances />} />
+              <Route path="profile" element={<Profile />} />
+              <Route path="notifications" element={<Notifications />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Route>
+            <Route path="/task/:id/chat" element={<Chat />} />
+          </>
         )}
 
         {role === 'admin' && (
-          <Route path="/" element={<AdminLayout />}>
-            <Route index element={<AdminDashboard />} />
-            <Route path="crm" element={<AdminCRM />} />
-            <Route path="moderation" element={<AdminModeration />} />
-            <Route path="pilots" element={<AdminPilots />} />
-            <Route path="transactions" element={<AdminTransactions />} />
-            <Route path="settings" element={<AdminSettings />} />
-            <Route path="analytics" element={<AdminAnalytics />} />
-            <Route path="task/:id" element={<TaskDetails />} />
-            <Route path="task/:id/chat" element={<Chat />} />
-            <Route path="notifications" element={<AdminNotifications />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Route>
+          <>
+            <Route path="/" element={<AdminLayout />}>
+              <Route index element={<AdminDashboard />} />
+              <Route path="crm" element={<AdminCRM />} />
+              <Route path="moderation" element={<AdminModeration />} />
+              <Route path="pilots" element={<AdminPilots />} />
+              <Route path="transactions" element={<AdminTransactions />} />
+              <Route path="settings" element={<AdminSettings />} />
+              <Route path="analytics" element={<AdminAnalytics />} />
+              <Route path="task/:id" element={<TaskDetails />} />
+              <Route path="notifications" element={<AdminNotifications />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Route>
+            <Route path="/task/:id/chat" element={<Chat />} />
+          </>
         )}
 
         {role === 'pilot' && (
-          <Route path="/" element={<PilotLayout />}>
-            <Route index element={<PilotDashboard />} />
-            <Route path="task/:id" element={<TaskDetails />} />
-            <Route path="task/:id/chat" element={<Chat />} />
-            <Route path="history" element={<PilotHistory />} />
-            <Route path="notifications" element={<Notifications />} />
-            <Route path="sos" element={<SOS />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Route>
+          <>
+            <Route path="/" element={<PilotLayout />}>
+              <Route index element={<PilotDashboard />} />
+              <Route path="task/:id" element={<TaskDetails />} />
+              <Route path="history" element={<PilotHistory />} />
+              <Route path="notifications" element={<Notifications />} />
+              <Route path="sos" element={<SOS />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Route>
+            <Route path="/task/:id/chat" element={<Chat />} />
+          </>
         )}
       </Routes>
     </div>

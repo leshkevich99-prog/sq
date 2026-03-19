@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { BynIcon } from '../../components/BynIcon';
 import { 
   ArrowUpRight, 
   ArrowDownRight, 
@@ -75,7 +76,7 @@ export default function AdminTransactions() {
     .reduce((acc, tx) => acc + tx.amount, 0);
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
       <header className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-serif font-normal tracking-wide uppercase">Транзакции</h1>
@@ -95,7 +96,7 @@ export default function AdminTransactions() {
             </div>
             <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Всего приход</span>
           </div>
-          <div className="text-2xl font-bold text-emerald-500">+{totalIn.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} BYN</div>
+          <div className="text-2xl font-bold text-emerald-500 flex items-center gap-1">+{totalIn.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <BynIcon size="1em" /></div>
         </div>
         <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6">
           <div className="flex items-center gap-3 mb-4">
@@ -104,7 +105,7 @@ export default function AdminTransactions() {
             </div>
             <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Всего расход</span>
           </div>
-          <div className="text-2xl font-bold text-red-500">-{totalOut.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} BYN</div>
+          <div className="text-2xl font-bold text-red-500 flex items-center gap-1">-{totalOut.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <BynIcon size="1em" /></div>
         </div>
       </div>
 
@@ -190,8 +191,8 @@ export default function AdminTransactions() {
                         </a>
                       )}
                     </td>
-                    <td className={`px-6 py-4 text-sm font-bold text-right ${isPositive ? 'text-emerald-500' : 'text-white'}`}>
-                      {isPositive ? '+' : '-'}{tx.amount.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} BYN
+                    <td className={`px-6 py-4 text-sm font-bold text-right flex items-center justify-end gap-1 ${isPositive ? 'text-emerald-500' : 'text-white'}`}>
+                      {isPositive ? '+' : '-'}{tx.amount.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <BynIcon size="1em" />
                     </td>
                   </tr>
                 );

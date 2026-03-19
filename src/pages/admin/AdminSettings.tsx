@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { BynIcon } from '../../components/BynIcon';
 import { Save, Shield, Percent, DollarSign, Info, Plus, Trash2 } from 'lucide-react';
 import { db, handleFirestoreError, OperationType } from '../../firebase';
 import { doc, onSnapshot, setDoc, collection, getDocs } from 'firebase/firestore';
@@ -64,7 +65,7 @@ export default function AdminSettings() {
   };
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
       <header className="mb-8">
         <h1 className="text-3xl font-serif font-normal tracking-wide uppercase">Настройки системы</h1>
         <p className="text-zinc-400 text-sm mt-1">Тарифы, комиссии и базовые цены</p>
@@ -89,7 +90,7 @@ export default function AdminSettings() {
                     onChange={(e) => setSettings({...settings, baseLogisticsPrice: parseFloat(e.target.value)})}
                     className="w-full bg-black border border-zinc-800 rounded-xl py-3 px-4 text-sm focus:outline-none focus:border-white transition-colors"
                   />
-                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 text-xs">BYN</span>
+                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 text-xs"><BynIcon size="1.2em" /></span>
                 </div>
               </div>
               <div>
@@ -101,7 +102,7 @@ export default function AdminSettings() {
                     onChange={(e) => setSettings({...settings, baseWashPrice: parseFloat(e.target.value)})}
                     className="w-full bg-black border border-zinc-800 rounded-xl py-3 px-4 text-sm focus:outline-none focus:border-white transition-colors"
                   />
-                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 text-xs">BYN</span>
+                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 text-xs"><BynIcon size="1.2em" /></span>
                 </div>
               </div>
             </div>
@@ -128,7 +129,7 @@ export default function AdminSettings() {
                     onChange={(e) => setSettings({...settings, minPayoutAmount: parseFloat(e.target.value)})}
                     className="w-full bg-black border border-zinc-800 rounded-xl py-3 px-4 text-sm focus:outline-none focus:border-white transition-colors"
                   />
-                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 text-xs">BYN</span>
+                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 text-xs"><BynIcon size="1.2em" /></span>
                 </div>
               </div>
             </div>
@@ -169,7 +170,7 @@ export default function AdminSettings() {
                 <div className="flex justify-between items-start mb-4">
                   <div>
                     <h3 className="font-bold text-lg text-white uppercase tracking-tight">{tariff.name}</h3>
-                    <div className="text-2xl font-bold text-accent mt-1">{tariff.price.toFixed(2)} <span className="text-sm font-normal text-zinc-500">BYN / мес</span></div>
+                    <div className="text-2xl font-bold text-accent mt-1 flex items-center gap-1">{tariff.price.toFixed(2)} <BynIcon size="0.6em" className="text-zinc-500" /> <span className="text-sm font-normal text-zinc-500">/ мес</span></div>
                   </div>
                   <button className="text-zinc-600 hover:text-red-500 transition-colors">
                     <Trash2 size={18} />

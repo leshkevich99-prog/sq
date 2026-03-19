@@ -37,7 +37,7 @@ if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
 }
 
 // Initialize Telegram Bot
-initBot();
+await initBot();
 
 async function startServer() {
   const app = express();
@@ -256,6 +256,9 @@ async function startServer() {
       role = 'pilot';
     } else if (code === 'cl') {
       uid = 'test_client';
+      role = 'client';
+    } else if (code === 'new') {
+      uid = `test_new_${Date.now()}`;
       role = 'client';
     } else {
       return res.status(400).json({ error: 'Invalid code' });

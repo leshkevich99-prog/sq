@@ -46,7 +46,7 @@ export default function PilotLayout() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-black text-white pb-20 font-sans relative flex flex-col">
+    <div className="min-h-screen bg-black text-white pb-28 font-sans relative flex flex-col">
       <Header />
       <main className="flex-1 p-4">
         <Outlet />
