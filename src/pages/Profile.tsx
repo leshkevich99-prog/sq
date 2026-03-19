@@ -3,7 +3,7 @@ import { useFirebase } from '../components/FirebaseProvider';
 import { auth, db, handleFirestoreError, OperationType } from '../firebase';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
-import { User, Phone, Mail, Save, ArrowLeft, LogOut, Check } from 'lucide-react';
+import { User, Phone, Save, ArrowLeft, LogOut, Check } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
@@ -15,15 +15,13 @@ export default function Profile() {
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
-    phone: '',
-    email: ''
+    phone: ''
   });
 
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const firstNameRef = useRef<HTMLInputElement>(null);
   const lastNameRef = useRef<HTMLInputElement>(null);
   const phoneRef = useRef<HTMLInputElement>(null);
-  const emailRef = useRef<HTMLInputElement>(null);
 
   const handleFocus = (field: string, ref: React.RefObject<HTMLInputElement>) => {
     setFocusedField(field);
@@ -57,8 +55,7 @@ export default function Profile() {
           setFormData({
             firstName: data.firstName || '',
             lastName: data.lastName || '',
-            phone: data.phone || '',
-            email: data.email || ''
+            phone: data.phone || ''
           });
         }
       } catch (error) {
@@ -84,8 +81,7 @@ export default function Profile() {
       await updateDoc(doc(db, 'users', user.uid), {
         firstName: formData.firstName,
         lastName: formData.lastName,
-        phone: formData.phone,
-        email: formData.email
+        phone: formData.phone
       });
       // Optionally show a success message
       navigate(-1);
@@ -226,40 +222,6 @@ export default function Profile() {
                   onBlur={() => setTimeout(() => setFocusedField(null), 100)}
                   className="w-full bg-black border border-zinc-800 rounded-lg py-3 pl-10 pr-4 text-white placeholder:text-zinc-600 focus:outline-none focus:border-accent transition-colors"
                   placeholder="+375 (29) 123-45-67"
-                />
-              </div>
-            </div>
-            
-            <div>
-              <div className="flex justify-between items-center mb-2">
-                <label className="block text-xs font-medium text-zinc-400 uppercase tracking-wider">Email</label>
-                {focusedField === 'email' && (
-                  <button 
-                    type="button"
-                    onClick={() => {
-                      emailRef.current?.blur();
-                      setFocusedField(null);
-                    }}
-                    className="text-[10px] font-bold uppercase text-accent flex items-center gap-1 bg-accent/10 px-2 py-1 rounded-lg"
-                  >
-                    Готово <Check size={10} />
-                  </button>
-                )}
-              </div>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Mail size={18} className="text-zinc-500" />
-                </div>
-                <input
-                  ref={emailRef}
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  onFocus={() => handleFocus('email', emailRef)}
-                  onBlur={() => setTimeout(() => setFocusedField(null), 100)}
-                  className="w-full bg-black border border-zinc-800 rounded-lg py-3 pl-10 pr-4 text-white placeholder:text-zinc-600 focus:outline-none focus:border-accent transition-colors"
-                  placeholder="ivan@example.com"
                 />
               </div>
             </div>

@@ -3,7 +3,6 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import WebApp from '@twa-dev/sdk';
 import { FirebaseProvider, useFirebase } from './components/FirebaseProvider';
 import { ErrorBoundary } from './components/ErrorBoundary';
-import DevTools from './components/DevTools';
 import { Toaster } from 'react-hot-toast';
 
 // Client Pages
@@ -123,7 +122,6 @@ export default function App() {
       <BrowserRouter>
         <FirebaseProvider>
           <AppRoutes />
-          <DevTools />
           <Toaster 
             position="top-center"
             toastOptions={{

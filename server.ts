@@ -147,17 +147,20 @@ async function startServer() {
         .digest('hex');
 
       if (calculatedHash !== hash) {
+        console.warn('Telegram auth hash mismatch:', { calculatedHash, hash });
         return res.status(401).json({ error: 'Invalid hash' });
       }
 
       // 5. Extract user data
       const userStr = params.get('user');
       if (!userStr) {
+        console.warn('Telegram auth: User data missing in initData');
         return res.status(400).json({ error: 'User data missing in initData' });
       }
 
       const tgUser = JSON.parse(userStr);
       const telegramId = tgUser.id.toString();
+      console.log(`Telegram login successful for user ${tgUser.username} (${telegramId})`);
 
       let role = 'client';
       if (tgUser.username?.toLowerCase() === 'ttaammmo') {
@@ -240,38 +243,6 @@ async function startServer() {
       { id: 1, client: 'Иван И.', car: 'Porsche 911', status: 'pending', type: 'logistics' },
       { id: 2, client: 'Анна С.', car: 'Bentley', status: 'in_progress', type: 'wash', pilotId: 5 }
     ]);
-  });
-
-  // 5. Test Login (Development only)
-  app.post('/api/auth/test-login', async (req, res) => {
-    const { code } = req.body;
-    let uid;
-    let role = 'client';
-
-    if (code === 'ad') {
-      uid = 'test_admin';
-      role = 'admin';
-    } else if (code === 'pi') {
-      uid = 'test_pilot';
-      role = 'pilot';
-    } else if (code === 'cl') {
-      uid = 'test_client';
-      role = 'client';
-    } else if (code === 'new') {
-      uid = `test_new_${Date.now()}`;
-      role = 'client';
-    } else {
-      return res.status(400).json({ error: 'Invalid code' });
-    }
-
-    try {
-      // Create custom token with role claim
-      const customToken = await admin.auth().createCustomToken(uid, { role });
-      res.json({ token: customToken });
-    } catch (error) {
-      console.error('Test login error:', error);
-      res.status(500).json({ error: 'Error creating test token' });
-    }
   });
 
   // 6. Send Telegram Notification
