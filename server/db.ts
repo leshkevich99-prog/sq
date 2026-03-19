@@ -1,9 +1,14 @@
 import { initializeApp, getApps, applicationDefault } from 'firebase-admin/app';
 import { getFirestore, Timestamp } from 'firebase-admin/firestore';
+import fs from 'node:fs';
+import path from 'node:path';
+
+const config = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'firebase-applet-config.json'), 'utf-8'));
 
 if (!getApps().length) {
   initializeApp({
-    credential: applicationDefault()
+    credential: applicationDefault(),
+    projectId: config.projectId
   });
 }
 
