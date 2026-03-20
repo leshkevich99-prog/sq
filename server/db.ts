@@ -4,7 +4,7 @@ import { getFirestore, Timestamp } from 'firebase-admin/firestore';
 let db: any = null;
 
 if (!getApps().length) {
-  const envJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+  const envJson = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
   if (envJson && envJson !== 'undefined') {
     try {
       const serviceAccount = JSON.parse(envJson);
@@ -13,10 +13,10 @@ if (!getApps().length) {
       });
       db = getFirestore();
     } catch (error) {
-      console.error('Failed to parse FIREBASE_SERVICE_ACCOUNT_JSON:', error);
+      console.error('Failed to parse FIREBASE_SERVICE_ACCOUNT_KEY:', error);
     }
   } else {
-    console.warn('FIREBASE_SERVICE_ACCOUNT_JSON is missing or undefined.');
+    console.warn('FIREBASE_SERVICE_ACCOUNT_KEY is missing or undefined.');
   }
 } else {
   db = getFirestore();
@@ -38,7 +38,7 @@ const toData = (doc: any) => {
 export const firestore = {
   collection: (path: string) => {
     if (!db) {
-      throw new Error('Database not initialized. Missing or invalid FIREBASE_SERVICE_ACCOUNT_JSON.');
+      throw new Error('Database not initialized. Missing or invalid FIREBASE_SERVICE_ACCOUNT_KEY.');
     }
     const colRef = db.collection(path);
     return {
