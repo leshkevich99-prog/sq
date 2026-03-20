@@ -81,7 +81,7 @@ export async function initBot() {
     
     if (!payment) return;
 
-    console.log('Successful payment received:', payment);
+    console.log('Successful payment received:', JSON.stringify(payment));
     
     try {
       let rawPayload;
@@ -94,8 +94,16 @@ export async function initBot() {
         rawPayload = await firestore.collection('payment_payloads').get(payment.invoice_payload);
         
         if (!rawPayload) {
-          throw new Error(`Payload not found in Firestore for ID: ${payment.invoice_payload}`);
+          console.error(`Payload not found in Firestore for ID: ${payment.invoice_payload}`);
+          bot?.sendMessage(chatId, '⚠️ Ошибка: данные платежа не найдены. Пожалуйста, свяжитесь с поддержкой.');
+          return;
         }
+      }
+
+      if (!rawPayload) {
+        console.error('No payload data resolved');
+        bot?.sendMessage(chatId, '⚠️ Ошибка: не удалось обработать данные платежа.');
+        return;
       }
 
       const userId = rawPayload.u || rawPayload.userId;
@@ -121,7 +129,8 @@ export async function initBot() {
               userId,
               type: 'deposit_deduction',
               amount: balanceDeduction,
-              description: `Доплата за переход на тариф ${tariffName} (списано с депозита)`
+              description: `Доплата за переход на тариф ${tariffName} (списано с депозита)`,
+              createdAt: new Date().toISOString()
             });
           }
         } else if (type === 'service_order' && rawPayload.po) {
@@ -134,12 +143,13 @@ export async function initBot() {
             await firestore.collection('requests').set(requestId, {
               userId: orderData.userId,
               carId: orderData.carId,
-              type: orderData.serviceType,
-              description: orderData.description,
-              priority: orderData.priority,
-              scheduledDate: orderData.scheduledDate,
+              serviceType: orderData.serviceType,
+              description: orderData.description || '',
+              priority: orderData.priority || 'normal',
+              scheduledDate: orderData.scheduledDate || '',
               status: 'pending',
-              actualCost: amount || (payment.total_amount / 100)
+              actualCost: amount || (payment.total_amount / 100),
+              createdAt: new Date().toISOString()
             });
 
             // 2. Deduct from balance if needed
@@ -148,7 +158,8 @@ export async function initBot() {
                 userId,
                 type: 'deposit_deduction',
                 amount: orderData.balanceDeduction,
-                description: `Оплата услуги "${orderData.serviceType}" (часть суммы)`
+                description: `Оплата услуги "${orderData.serviceType}" (часть суммы)`,
+                createdAt: new Date().toISOString()
               });
             }
 
@@ -162,7 +173,8 @@ export async function initBot() {
                 message: `Поступило оплаченное поручение на "${orderData.serviceType}".`,
                 type: 'info',
                 link: `/task/${requestId}`,
-                read: false
+                read: false,
+                createdAt: new Date().toISOString()
               });
 
               // Send Telegram notification
@@ -186,8 +198,12 @@ export async function initBot() {
               name: orderData.name,
               phone: orderData.phone,
               carModel: orderData.carModel,
+              date: orderData.date || '',
+              time: orderData.time || '',
+              address: orderData.address || '',
               status: 'pending',
-              paidExternally: amount || (payment.total_amount / 100)
+              paidExternally: amount || (payment.total_amount / 100),
+              createdAt: new Date().toISOString()
             });
 
             // 2. Notify admins
@@ -200,7 +216,8 @@ export async function initBot() {
                 message: `Поступила оплаченная заявка на тест-драйв от ${orderData.name}.`,
                 type: 'info',
                 link: `/test-drives`,
-                read: false
+                read: false,
+                createdAt: new Date().toISOString()
               });
 
               // Send Telegram notification
@@ -215,12 +232,13 @@ export async function initBot() {
         }
 
         // Create transaction record for the external payment
-        console.log(`Creating transaction record for user ${userId}`);
+        console.log(`Creating transaction record for user ${userId}, type: ${type}`);
         await firestore.collection('transactions').add({
           userId,
-          type: 'payment',
+          type: type === 'deposit' || (!['subscription', 'service_order', 'test_drive'].includes(type)) ? 'deposit' : 'payment',
           amount: amount || (payment.total_amount / 100),
-          description: type === 'subscription' ? `Оплата тарифа ${tariffName}` : type === 'service_order' ? `Оплата услуги` : type === 'test_drive' ? `Оплата тест-драйва` : 'Пополнение депозита'
+          description: type === 'subscription' ? `Оплата тарифа ${tariffName}` : type === 'service_order' ? `Оплата услуги` : type === 'test_drive' ? `Оплата тест-драйва` : 'Пополнение депозита',
+          createdAt: new Date().toISOString()
         });
 
         bot?.sendMessage(chatId, '✅ Оплата прошла успешно! Ваш профиль обновлен.');

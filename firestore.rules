@@ -94,7 +94,7 @@ service cloud.firestore {
     }
 
     function isValidRequest(data) {
-      return hasOnlyAllowedFields(['userId', 'carId', 'serviceType', 'status', 'pilotId', 'usedQuota', 'pickupAddress', 'deliveryAddress', 'orderDate', 'orderTime', 'washType', 'comment', 'price', 'balanceDeduction', 'paidExternally', 'createdAt', 'updatedAt', 'photoProtocol', 'photosBefore', 'photosAfter', 'photoMetadata', 'totalPrice']) &&
+      return hasOnlyAllowedFields(['userId', 'carId', 'serviceType', 'status', 'pilotId', 'usedQuota', 'pickupAddress', 'deliveryAddress', 'orderDate', 'orderTime', 'washType', 'comment', 'price', 'balanceDeduction', 'paidExternally', 'actualCost', 'createdAt', 'updatedAt', 'photoProtocol', 'photosBefore', 'photosAfter', 'photoMetadata', 'totalPrice', 'description', 'priority', 'scheduledDate']) &&
              data.userId is string &&
              data.carId is string &&
              data.serviceType is string && data.serviceType.size() > 0 && data.serviceType.size() < 100 &&
@@ -107,10 +107,14 @@ service cloud.firestore {
              (!('orderTime' in data) || data.orderTime is string || data.orderTime == null) &&
              (!('washType' in data) || data.washType is string || data.washType == null) &&
              (!('comment' in data) || data.comment is string || data.comment == null) &&
+             (!('description' in data) || data.description is string || data.description == null) &&
+             (!('priority' in data) || data.priority is string || data.priority == null) &&
+             (!('scheduledDate' in data) || data.scheduledDate is string || data.scheduledDate == null) &&
              (!('price' in data) || data.price is number || data.price == null) &&
              (!('totalPrice' in data) || data.totalPrice is number || data.totalPrice == null) &&
              (!('balanceDeduction' in data) || data.balanceDeduction is number || data.balanceDeduction == null) &&
              (!('paidExternally' in data) || data.paidExternally is number || data.paidExternally == null) &&
+             (!('actualCost' in data) || data.actualCost is number || data.actualCost == null) &&
              (!('photoProtocol' in data) || data.photoProtocol is list || data.photoProtocol == null) &&
              (!('photosBefore' in data) || data.photosBefore is list || data.photosBefore == null) &&
              (!('photosAfter' in data) || data.photosAfter is list || data.photosAfter == null) &&
@@ -175,7 +179,7 @@ service cloud.firestore {
     }
 
     function isValidTestDrive(data) {
-      return hasOnlyAllowedFields(['userId', 'name', 'phone', 'carModel', 'date', 'time', 'address', 'status', 'createdAt', 'updatedAt']) &&
+      return hasOnlyAllowedFields(['userId', 'name', 'phone', 'carModel', 'date', 'time', 'address', 'status', 'paidExternally', 'createdAt', 'updatedAt']) &&
              data.userId is string &&
              data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
              data.phone is string && data.phone.size() > 0 && data.phone.size() < 20 &&
@@ -184,6 +188,7 @@ service cloud.firestore {
              data.time is string &&
              data.address is string && data.address.size() > 0 && data.address.size() < 200 &&
              data.status in ['pending', 'contacted', 'completed', 'cancelled'] &&
+             (!('paidExternally' in data) || data.paidExternally is number || data.paidExternally == null) &&
              data.createdAt is string;
     }
 
