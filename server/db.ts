@@ -1,5 +1,7 @@
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getFirestore, Timestamp } from 'firebase-admin/firestore';
+import fs from 'node:fs';
+import path from 'node:path';
 
 let db: any = null;
 
@@ -8,10 +10,17 @@ if (!getApps().length) {
   if (envJson && envJson !== 'undefined') {
     try {
       const serviceAccount = JSON.parse(envJson);
-      initializeApp({
+      const app = initializeApp({
         credential: cert(serviceAccount)
       });
-      db = getFirestore();
+      
+      const configPath = path.join(process.cwd(), 'firebase-applet-config.json');
+      if (fs.existsSync(configPath)) {
+        const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+        db = getFirestore(app, config.firestoreDatabaseId);
+      } else {
+        db = getFirestore(app);
+      }
     } catch (error) {
       console.error('Failed to parse FIREBASE_SERVICE_ACCOUNT_KEY:', error);
     }
@@ -19,7 +28,14 @@ if (!getApps().length) {
     console.warn('FIREBASE_SERVICE_ACCOUNT_KEY is missing or undefined.');
   }
 } else {
-  db = getFirestore();
+  const app = getApps()[0];
+  const configPath = path.join(process.cwd(), 'firebase-applet-config.json');
+  if (fs.existsSync(configPath)) {
+    const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+    db = getFirestore(app, config.firestoreDatabaseId);
+  } else {
+    db = getFirestore(app);
+  }
 }
 
 // Helper to convert Firestore data to plain objects
