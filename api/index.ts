@@ -311,7 +311,7 @@ async function startServer() {
         createdAt: new Date().toISOString()
       });
 
-      console.log(`Creating invoice for user ${userId}, amount ${numAmount}, payloadId ${payloadId}`);
+      console.log(`Creating invoice for user ${userId}, amount ${numAmount}, payloadId ${payloadId}, type ${type}`);
 
       const invoiceLink = await createInvoiceLink(
         type === 'service_order' ? 'Оплата услуги Squadra' : 
@@ -323,7 +323,7 @@ async function startServer() {
       );
 
       if (invoiceLink) {
-        console.log('Invoice link created successfully');
+        console.log('Invoice link created successfully:', invoiceLink);
         return res.json({ payment_url: invoiceLink, isNative: true });
       }
       

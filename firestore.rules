@@ -119,10 +119,10 @@ service cloud.firestore {
     }
 
     function isValidPendingOrder(data) {
-      return hasOnlyAllowedFields(['userId', 'carId', 'serviceType', 'pickupAddress', 'deliveryAddress', 'orderDate', 'orderTime', 'washType', 'comment', 'price', 'balanceDeduction', 'paidExternally', 'createdAt', 'updatedAt']) &&
+      return hasOnlyAllowedFields(['userId', 'carId', 'serviceType', 'pickupAddress', 'deliveryAddress', 'orderDate', 'orderTime', 'washType', 'comment', 'price', 'balanceDeduction', 'paidExternally', 'createdAt', 'updatedAt', 'type', 'carModel', 'date', 'time', 'address', 'name', 'phone']) &&
              data.userId is string &&
-             data.carId is string &&
-             data.serviceType is string &&
+             (!('carId' in data) || data.carId is string) &&
+             (!('serviceType' in data) || data.serviceType is string) &&
              data.createdAt is string;
     }
 
