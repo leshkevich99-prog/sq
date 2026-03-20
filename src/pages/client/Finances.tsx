@@ -86,29 +86,16 @@ export default function Finances() {
 
       const { payment_url } = await response.json();
 
-      // 2. Open Telegram Invoice
-      try {
-        WebApp.openInvoice(payment_url, (status) => {
-          if (status === 'paid') {
-            toast.success('Депозит успешно пополнен!', { id: toastId });
-            WebApp.HapticFeedback.notificationOccurred('success');
-            setTopUpModalOpen(false);
-            setTopUpAmount('');
-          } else if (status === 'cancelled') {
-            toast.error('Оплата отменена', { id: toastId });
-          } else if (status === 'failed') {
-            toast.error('Ошибка при оплате', { id: toastId });
-          } else {
-            toast.dismiss(toastId);
-          }
-        });
-      } catch (e) {
-        // Fallback
-        window.open(payment_url, '_blank');
-        toast.success('Счет открыт в новой вкладке', { id: toastId });
-        setTopUpModalOpen(false);
-        setTopUpAmount('');
+      // 2. Open Payment Link
+      if (WebApp.platform !== 'unknown') {
+        WebApp.openLink(payment_url);
+        toast.success('Переход к оплате...', { id: toastId });
+      } else {
+        window.location.href = payment_url;
       }
+      
+      setTopUpModalOpen(false);
+      setTopUpAmount('');
 
     } catch (error) {
       console.error('Top up error:', error);

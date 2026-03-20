@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { BynIcon } from '../components/BynIcon';
 import { ArrowLeft, Car, Calendar, Clock, MapPin, Check } from 'lucide-react';
 import toast from 'react-hot-toast';
+import WebApp from '@twa-dev/sdk';
 import { useFirebase } from '../components/FirebaseProvider';
 import { db, handleFirestoreError, OperationType, collection, addDoc } from '../firebase';
 
@@ -83,28 +84,15 @@ export default function TestDrive() {
       if (!response.ok) throw new Error('Failed to create invoice');
       const { payment_url } = await response.json();
 
-      // @ts-ignore
-      if (window.Telegram?.WebApp?.openInvoice) {
-        // @ts-ignore
-        window.Telegram.WebApp.openInvoice(payment_url, (status) => {
-          if (status === 'paid') {
-            toast.success('Оплата прошла успешно! Поручение принято.', { id: toastId });
-            // @ts-ignore
-            if (window.Telegram?.WebApp?.HapticFeedback) {
-              // @ts-ignore
-              window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
-            }
-            navigate('/');
-          } else {
-            toast.dismiss(toastId);
-          }
-        });
+      // 2. Open Payment Link
+      if (WebApp.platform !== 'unknown') {
+        WebApp.openLink(payment_url);
+        toast.success('Переход к оплате...', { id: toastId });
       } else {
-        // Fallback for web
-        window.open(payment_url, '_blank');
-        toast.success('Счет открыт в новой вкладке. После оплаты поручение будет принято.', { id: toastId });
-        navigate('/');
+        window.location.href = payment_url;
       }
+      
+      navigate('/');
     } catch (error) {
       console.error('Payment error:', error);
       toast.error('Ошибка при создании счета', { id: toastId });
