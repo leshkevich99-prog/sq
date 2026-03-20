@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import WebApp from '@twa-dev/sdk';
+import { auth } from '../firebase';
+import { signInWithCustomToken, signOut } from 'firebase/auth';
 
 interface AppUser {
   id: string;
@@ -45,7 +47,16 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     try {
       const response = await fetch('/api/auth/me');
       if (response.ok) {
-        const { user: userData } = await response.json();
+        const { user: userData, firebaseCustomToken } = await response.json();
+        
+        if (firebaseCustomToken) {
+          try {
+            await signInWithCustomToken(auth, firebaseCustomToken);
+          } catch (fbErr) {
+            console.error("Firebase auth error:", fbErr);
+          }
+        }
+        
         const mappedUser = { ...userData, uid: userData.id };
         setUser(mappedUser);
         return true;
@@ -68,7 +79,16 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       });
 
       if (response.ok) {
-        const { user: userData } = await response.json();
+        const { user: userData, firebaseCustomToken } = await response.json();
+        
+        if (firebaseCustomToken) {
+          try {
+            await signInWithCustomToken(auth, firebaseCustomToken);
+          } catch (fbErr) {
+            console.error("Firebase auth error:", fbErr);
+          }
+        }
+        
         const mappedUser = { ...userData, uid: userData.id };
         setUser(mappedUser);
         return true;
@@ -117,6 +137,7 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const logout = async () => {
     try {
       await fetch('/api/auth/logout', { method: 'POST' });
+      await signOut(auth);
       setUser(null);
     } catch (err) {
       console.error("Logout error:", err);

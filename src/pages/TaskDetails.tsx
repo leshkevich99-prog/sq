@@ -127,7 +127,10 @@ export default function TaskDetails() {
         if (carSnap.exists()) setCar(carSnap.data() as CarData);
       }
       setLoading(false);
-    }, (error) => handleFirestoreError(error, OperationType.GET, `requests/${id}`));
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, `requests/${id}`);
+      setLoading(false);
+    });
 
     const qExpenses = query(collection(db, 'transactions'), where('requestId', '==', id));
     const unsubExpenses = onSnapshot(qExpenses, (snapshot) => {

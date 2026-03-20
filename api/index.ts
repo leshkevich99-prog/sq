@@ -7,7 +7,7 @@ import multer from 'multer';
 import { v4 as uuidv4 } from 'uuid';
 import { fileURLToPath } from 'url';
 import { initBot, sendNotification, getBot } from '../server/bot.js';
-import { firestore } from '../server/db.js';
+import { firestore, adminAuth } from '../server/db.js';
 import { generateToken, authenticateToken, AuthRequest, isAdmin } from '../server/auth.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -109,6 +109,15 @@ async function startServer() {
 
       const token = generateToken({ id: userData.id, telegramId: userData.telegramId, role: userData.role });
 
+      let firebaseCustomToken = null;
+      try {
+        if (adminAuth) {
+          firebaseCustomToken = await adminAuth.createCustomToken(userData.id);
+        }
+      } catch (authErr) {
+        console.error('Error creating custom token:', authErr);
+      }
+
       res.cookie('token', token, {
         httpOnly: true,
         secure: true,
@@ -116,7 +125,7 @@ async function startServer() {
         maxAge: 7 * 24 * 60 * 60 * 1000
       });
 
-      res.json({ user: userData });
+      res.json({ user: userData, firebaseCustomToken });
     } catch (error: any) {
       console.error('Telegram login error:', error);
       res.status(500).json({ error: error.message });
@@ -126,7 +135,17 @@ async function startServer() {
   app.get('/api/auth/me', authenticateToken, async (req: AuthRequest, res) => {
     const user = await firestore.collection('users').get(req.user?.id!);
     if (!user) return res.status(404).json({ error: 'User not found' });
-    res.json({ user });
+    
+    let firebaseCustomToken = null;
+    try {
+      if (adminAuth) {
+        firebaseCustomToken = await adminAuth.createCustomToken(user.id);
+      }
+    } catch (authErr) {
+      console.error('Error creating custom token:', authErr);
+    }
+    
+    res.json({ user, firebaseCustomToken });
   });
 
   app.post('/api/auth/logout', (req, res) => {

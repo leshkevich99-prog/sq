@@ -94,7 +94,10 @@ export default function AdminDashboard() {
       const reqs: RequestData[] = [];
       snapshot.forEach(doc => reqs.push({ id: doc.id, ...doc.data() } as RequestData));
       setRequests(reqs);
-    }, (error) => handleFirestoreError(error, OperationType.LIST, 'requests'));
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'requests');
+      setLoading(false);
+    });
 
     const unsubUsers = onSnapshot(collection(db, 'users'), (snapshot) => {
       const usrs: Record<string, UserData> = {};
@@ -108,7 +111,10 @@ export default function AdminDashboard() {
       });
       setUsers(usrs);
       setPilots(plts);
-    }, (error) => handleFirestoreError(error, OperationType.LIST, 'users'));
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'users');
+      setLoading(false);
+    });
 
     const unsubCars = onSnapshot(collection(db, 'cars'), (snapshot) => {
       const crs: Record<string, CarData> = {};
@@ -116,7 +122,10 @@ export default function AdminDashboard() {
         crs[doc.id] = { id: doc.id, ...doc.data() } as CarData;
       });
       setCars(crs);
-    }, (error) => handleFirestoreError(error, OperationType.LIST, 'cars'));
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'cars');
+      setLoading(false);
+    });
 
     const unsubSos = onSnapshot(
       query(collection(db, 'sos_alerts'), where('status', '==', 'active')), 
@@ -126,7 +135,10 @@ export default function AdminDashboard() {
         setSosAlerts(alerts);
         setLoading(false);
       }, 
-      (error) => handleFirestoreError(error, OperationType.LIST, 'sos_alerts')
+      (error) => {
+        handleFirestoreError(error, OperationType.LIST, 'sos_alerts');
+        setLoading(false);
+      }
     );
 
     const unsubTestDrives = onSnapshot(
@@ -136,7 +148,10 @@ export default function AdminDashboard() {
         snapshot.forEach(doc => drives.push({ id: doc.id, ...doc.data() } as TestDriveData));
         setTestDrives(drives.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
       },
-      (error) => handleFirestoreError(error, OperationType.LIST, 'test_drives')
+      (error) => {
+        handleFirestoreError(error, OperationType.LIST, 'test_drives');
+        setLoading(false);
+      }
     );
 
     return () => {

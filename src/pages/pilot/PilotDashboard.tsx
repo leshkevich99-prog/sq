@@ -84,7 +84,10 @@ export default function PilotDashboard() {
       const reqs: RequestData[] = [];
       snapshot.forEach(doc => reqs.push({ id: doc.id, ...doc.data() } as RequestData));
       setRequests(reqs);
-    }, (error) => handleFirestoreError(error, OperationType.LIST, 'requests'));
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'requests');
+      setLoading(false);
+    });
 
     // Available requests (Exchange) - only if on shift
     const qAvailable = query(
@@ -105,7 +108,10 @@ export default function PilotDashboard() {
       });
       
       setAvailableRequests(reqs.slice(0, 20));
-    }, (error) => handleFirestoreError(error, OperationType.LIST, 'requests'));
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'requests');
+      setLoading(false);
+    });
 
     const unsubUsers = onSnapshot(collection(db, 'users'), (snapshot) => {
       const usrs: Record<string, UserData> = {};
@@ -113,7 +119,10 @@ export default function PilotDashboard() {
         usrs[doc.id] = { id: doc.id, ...doc.data() } as UserData;
       });
       setUsers(usrs);
-    }, (error) => handleFirestoreError(error, OperationType.LIST, 'users'));
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'users');
+      setLoading(false);
+    });
 
     const unsubCars = onSnapshot(collection(db, 'cars'), (snapshot) => {
       const crs: Record<string, CarData> = {};
@@ -122,7 +131,10 @@ export default function PilotDashboard() {
       });
       setCars(crs);
       setLoading(false);
-    }, (error) => handleFirestoreError(error, OperationType.LIST, 'cars'));
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'cars');
+      setLoading(false);
+    });
 
     return () => {
       unsubUser();

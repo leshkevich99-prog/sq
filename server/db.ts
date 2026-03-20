@@ -1,9 +1,11 @@
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getFirestore, Timestamp } from 'firebase-admin/firestore';
+import { getAuth } from 'firebase-admin/auth';
 import fs from 'node:fs';
 import path from 'node:path';
 
 let db: any = null;
+export let adminAuth: any = null;
 
 if (!getApps().length) {
   const envJson = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
@@ -13,6 +15,7 @@ if (!getApps().length) {
       const app = initializeApp({
         credential: cert(serviceAccount)
       });
+      adminAuth = getAuth(app);
       
       const configPath = path.join(process.cwd(), 'firebase-applet-config.json');
       if (fs.existsSync(configPath)) {
@@ -29,6 +32,7 @@ if (!getApps().length) {
   }
 } else {
   const app = getApps()[0];
+  adminAuth = getAuth(app);
   const configPath = path.join(process.cwd(), 'firebase-applet-config.json');
   if (fs.existsSync(configPath)) {
     const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));

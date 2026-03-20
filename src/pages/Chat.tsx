@@ -65,7 +65,10 @@ export default function Chat() {
       setMessages(msgs);
       setLoading(false);
       setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
-    }, (error) => handleFirestoreError(error, OperationType.LIST, 'messages'));
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'messages');
+      setLoading(false);
+    });
 
     return () => unsub();
   }, [id, user, navigate]);

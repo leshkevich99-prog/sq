@@ -63,6 +63,8 @@ export default function Home() {
         if (tx.type === 'deposit_deduction') currentBalance -= tx.amount;
       });
       setBalance(currentBalance);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'transactions');
     });
 
     // Listen to active and recent requests
@@ -105,6 +107,7 @@ export default function Home() {
       setLoading(false);
     }, (error) => {
       handleFirestoreError(error, OperationType.LIST, 'requests');
+      setLoading(false);
     });
 
     return () => {

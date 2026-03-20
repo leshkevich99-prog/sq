@@ -64,6 +64,7 @@ export default function Garage() {
       setLoading(false);
     }, (error) => {
       handleFirestoreError(error, OperationType.LIST, 'cars');
+      setLoading(false);
     });
 
     return () => unsubscribe();
