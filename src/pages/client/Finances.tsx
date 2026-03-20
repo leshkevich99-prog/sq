@@ -84,18 +84,30 @@ export default function Finances() {
         throw new Error('Failed to create invoice');
       }
 
-      const { payment_url } = await response.json();
+      const { payment_url, isNative } = await response.json();
 
       // 2. Open Payment Link
-      if (WebApp.platform !== 'unknown') {
-        WebApp.openLink(payment_url);
-        toast.success('Переход к оплате...', { id: toastId });
+      if (isNative) {
+        WebApp.openInvoice(payment_url, (status) => {
+          if (status === 'paid') {
+            toast.success('Депозит успешно пополнен!', { id: toastId });
+            WebApp.HapticFeedback.notificationOccurred('success');
+            setTopUpModalOpen(false);
+            setTopUpAmount('');
+          } else {
+            toast.dismiss(toastId);
+          }
+        });
       } else {
-        window.location.href = payment_url;
+        if (WebApp.platform !== 'unknown') {
+          WebApp.openLink(payment_url);
+          toast.success('Переход к оплате...', { id: toastId });
+        } else {
+          window.location.href = payment_url;
+        }
+        setTopUpModalOpen(false);
+        setTopUpAmount('');
       }
-      
-      setTopUpModalOpen(false);
-      setTopUpAmount('');
 
     } catch (error) {
       console.error('Top up error:', error);

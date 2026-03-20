@@ -282,23 +282,37 @@ async function startServer() {
       if (!userId) return res.status(401).json({ error: 'Unauthorized' });
       if (!amount) return res.status(400).json({ error: 'Missing amount' });
 
-      // In a real app, you would call bePaid API here.
-      // For now, we'll simulate a payment URL or use a mock.
-      // The user has VITE_BEPAID_TOKEN, which we can use if we know the shop ID.
+      // Use native Telegram Invoice Link if possible
+      const { createInvoiceLink } = await import('../server/bot.js');
       
-      // For Telegram WebApp.openInvoice, it expects a URL that handles the payment.
-      // We'll return a mock URL for now that points to a simple payment page
-      // or just a success redirect if we want to simulate it.
-      
-      // Construct a mock payment URL
-      const token = process.env.VITE_BEPAID_TOKEN;
-      if (!token) {
-        console.warn('VITE_BEPAID_TOKEN is missing in environment variables');
+      // Payload must be < 128 bytes. Use compact keys.
+      // u: userId, t: type, po: pendingOrderId, a: amount, tn: tariffName, q: quotas, bd: balanceDeduction
+      const payload = JSON.stringify({
+        u: userId,
+        t: type,
+        po: pendingOrderId,
+        a: amount,
+        tn: req.body.tariffName,
+        q: req.body.quotas,
+        bd: req.body.balanceDeduction
+      });
+
+      const invoiceLink = await createInvoiceLink(
+        type === 'service_order' ? 'Оплата услуги Squadra' : 'Оплата Squadra',
+        description || 'Оплата услуг консьерж-сервиса',
+        payload,
+        amount
+      );
+
+      if (invoiceLink) {
+        return res.json({ payment_url: invoiceLink, isNative: true });
       }
       
-      const payment_url = `https://checkout.bepaid.by/v2/checkout?token=${token || 'mock_token'}&amount=${amount * 100}&currency=BYN&description=${encodeURIComponent(description || 'Payment')}`;
+      // Fallback to external URL if invoice creation fails
+      const token = process.env.VITE_BEPAID_TOKEN || process.env.BEPAID_TOKEN;
+      const payment_url = `https://checkout.bepaid.by/v2/checkout?token=${token || 'mock_token'}&amount=${Math.round(amount * 100)}&currency=BYN&description=${encodeURIComponent(description || 'Payment')}`;
 
-      res.json({ payment_url });
+      res.json({ payment_url, isNative: false });
     } catch (error: any) {
       console.error('Payment creation error:', error);
       res.status(500).json({ error: error.message });

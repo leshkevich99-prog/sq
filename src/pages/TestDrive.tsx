@@ -82,17 +82,28 @@ export default function TestDrive() {
       });
 
       if (!response.ok) throw new Error('Failed to create invoice');
-      const { payment_url } = await response.json();
+      const { payment_url, isNative } = await response.json();
 
       // 2. Open Payment Link
-      if (WebApp.platform !== 'unknown') {
-        WebApp.openLink(payment_url);
-        toast.success('Переход к оплате...', { id: toastId });
+      if (isNative) {
+        WebApp.openInvoice(payment_url, (status) => {
+          if (status === 'paid') {
+            toast.success('Оплата прошла успешно! Заявка принята.', { id: toastId });
+            WebApp.HapticFeedback.notificationOccurred('success');
+            navigate('/');
+          } else {
+            toast.dismiss(toastId);
+          }
+        });
       } else {
-        window.location.href = payment_url;
+        if (WebApp.platform !== 'unknown') {
+          WebApp.openLink(payment_url);
+          toast.success('Переход к оплате...', { id: toastId });
+        } else {
+          window.location.href = payment_url;
+        }
+        navigate('/');
       }
-      
-      navigate('/');
     } catch (error) {
       console.error('Payment error:', error);
       toast.error('Ошибка при создании счета', { id: toastId });
@@ -192,28 +203,28 @@ export default function TestDrive() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-full">
-          <div className="space-y-2 w-full min-w-0">
+        <div className="grid grid-cols-2 gap-3 w-full">
+          <div className="space-y-2">
             <label className="block text-xs text-zinc-500 uppercase tracking-wider ml-1">Дата</label>
-            <div className="relative w-full">
-              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
+            <div className="relative">
+              <Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-500" size={16} />
               <input 
                 type="date" 
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-4 pl-10 pr-4 text-sm focus:outline-none focus:border-amber-500 text-white [color-scheme:dark] min-w-0" 
+                className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-4 pl-8 pr-2 text-xs focus:outline-none focus:border-amber-500 text-white [color-scheme:dark] appearance-none box-border" 
               />
             </div>
           </div>
-          <div className="space-y-2 w-full min-w-0">
+          <div className="space-y-2">
             <label className="block text-xs text-zinc-500 uppercase tracking-wider ml-1">Время</label>
-            <div className="relative w-full">
-              <Clock className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
+            <div className="relative">
+              <Clock className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-500" size={16} />
               <input 
                 type="time" 
                 value={time}
                 onChange={(e) => setTime(e.target.value)}
-                className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-4 pl-10 pr-4 text-sm focus:outline-none focus:border-amber-500 text-white [color-scheme:dark] min-w-0" 
+                className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-4 pl-8 pr-2 text-xs focus:outline-none focus:border-amber-500 text-white [color-scheme:dark] appearance-none box-border" 
               />
             </div>
           </div>

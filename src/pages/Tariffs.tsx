@@ -137,14 +137,15 @@ export default function Tariffs() {
         throw new Error('Failed to create invoice');
       }
 
-      const { payment_url } = await response.json();
+      const { payment_url, isNative } = await response.json();
 
-      // 2. Open Telegram Invoice
-      try {
+      // 2. Open Payment Link
+      if (isNative) {
         WebApp.openInvoice(payment_url, (status) => {
           if (status === 'paid') {
             toast.success(`Тариф ${tariffName} успешно оплачен!`, { id: toastId });
             WebApp.HapticFeedback.notificationOccurred('success');
+            setPurchasing(null);
           } else if (status === 'cancelled') {
             toast.error('Оплата отменена', { id: toastId });
           } else if (status === 'failed') {
@@ -153,10 +154,13 @@ export default function Tariffs() {
             toast.dismiss(toastId);
           }
         });
-      } catch (e) {
-        // Fallback for non-telegram environments
-        window.open(payment_url, '_blank');
-        toast.success('Счет открыт в новой вкладке', { id: toastId });
+      } else {
+        if (WebApp.platform !== 'unknown') {
+          WebApp.openLink(payment_url);
+          toast.success('Переход к оплате...', { id: toastId });
+        } else {
+          window.location.href = payment_url;
+        }
       }
 
     } catch (error) {

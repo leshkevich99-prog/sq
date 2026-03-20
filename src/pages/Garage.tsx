@@ -422,7 +422,7 @@ function CarDetailsModal({ car, onClose }: { car: Car, onClose: () => void }) {
                     </span>
                   )}
                 </label>
-                <input type="date" value={maintenanceSchedule} onChange={e => setMaintenanceSchedule(e.target.value)} className={`w-full min-w-0 bg-black border rounded-lg px-2 py-1.5 text-xs text-white focus:border-accent outline-none box-border appearance-none ${maintenanceSchedule ? (new Date(maintenanceSchedule) < new Date() ? 'border-red-500/50' : 'border-zinc-800') : 'border-zinc-800'}`} />
+                <input type="date" value={maintenanceSchedule} onChange={e => setMaintenanceSchedule(e.target.value)} className={`w-full min-w-0 bg-black border rounded-lg px-2 py-1.5 text-xs text-white focus:border-accent outline-none box-border appearance-none [color-scheme:dark] ${maintenanceSchedule ? (new Date(maintenanceSchedule) < new Date() ? 'border-red-500/50' : 'border-zinc-800') : 'border-zinc-800'}`} />
               </div>
               <div className="w-full">
                 <label className="block text-[9px] text-zinc-500 mb-0.5 uppercase tracking-wider flex flex-wrap justify-between items-center gap-x-1">
@@ -433,7 +433,7 @@ function CarDetailsModal({ car, onClose }: { car: Car, onClose: () => void }) {
                     </span>
                   )}
                 </label>
-                <input type="date" value={inspectionDate} onChange={e => setInspectionDate(e.target.value)} className={`w-full min-w-0 bg-black border rounded-lg px-2 py-1.5 text-xs text-white focus:border-accent outline-none box-border appearance-none ${inspectionDate ? (new Date(inspectionDate) < new Date() ? 'border-red-500/50' : 'border-zinc-800') : 'border-zinc-800'}`} />
+                <input type="date" value={inspectionDate} onChange={e => setInspectionDate(e.target.value)} className={`w-full min-w-0 bg-black border rounded-lg px-2 py-1.5 text-xs text-white focus:border-accent outline-none box-border appearance-none [color-scheme:dark] ${inspectionDate ? (new Date(inspectionDate) < new Date() ? 'border-red-500/50' : 'border-zinc-800') : 'border-zinc-800'}`} />
               </div>
               <div className="w-full">
                 <label className="block text-[9px] text-zinc-500 mb-0.5 uppercase tracking-wider flex flex-wrap justify-between items-center gap-x-1">
@@ -444,7 +444,7 @@ function CarDetailsModal({ car, onClose }: { car: Car, onClose: () => void }) {
                     </span>
                   )}
                 </label>
-                <input type="date" value={insuranceDate} onChange={e => setInsuranceDate(e.target.value)} className={`w-full min-w-0 bg-black border rounded-lg px-2 py-1.5 text-xs text-white focus:border-accent outline-none box-border appearance-none ${insuranceDate ? (new Date(insuranceDate) < new Date() ? 'border-red-500/50' : 'border-zinc-800') : 'border-zinc-800'}`} />
+                <input type="date" value={insuranceDate} onChange={e => setInsuranceDate(e.target.value)} className={`w-full min-w-0 bg-black border rounded-lg px-2 py-1.5 text-xs text-white focus:border-accent outline-none box-border appearance-none [color-scheme:dark] ${insuranceDate ? (new Date(insuranceDate) < new Date() ? 'border-red-500/50' : 'border-zinc-800') : 'border-zinc-800'}`} />
               </div>
             </div>
           </div>

@@ -311,19 +311,28 @@ export default function Order() {
       });
 
       if (!response.ok) throw new Error('Failed to create invoice');
-      const { payment_url } = await response.json();
+      const { payment_url, isNative } = await response.json();
 
-      WebApp.openInvoice(payment_url, (status) => {
-        if (status === 'paid') {
-          toast.success('Оплата прошла успешно! Поручение принято.', { id: toastId });
-          WebApp.HapticFeedback.notificationOccurred('success');
-          setPickupAddress('');
-          setDeliveryAddress('');
-          setComment('');
+      if (isNative) {
+        WebApp.openInvoice(payment_url, (status) => {
+          if (status === 'paid') {
+            toast.success('Оплата прошла успешно! Поручение принято.', { id: toastId });
+            WebApp.HapticFeedback.notificationOccurred('success');
+            setPickupAddress('');
+            setDeliveryAddress('');
+            setComment('');
+          } else {
+            toast.dismiss(toastId);
+          }
+        });
+      } else {
+        if (WebApp.platform !== 'unknown') {
+          WebApp.openLink(payment_url);
+          toast.success('Переход к оплате...', { id: toastId });
         } else {
-          toast.dismiss(toastId);
+          window.location.href = payment_url;
         }
-      });
+      }
     } catch (error) {
       console.error('Payment error:', error);
       toast.error('Ошибка при создании счета', { id: toastId });
@@ -608,13 +617,13 @@ export default function Order() {
             )}
 
             {/* Date & Time */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
                 <label className="block text-xs text-zinc-500 uppercase tracking-wider ml-1">Дата</label>
                 <select 
                   value={orderDate}
                   onChange={(e) => setOrderDate(e.target.value)}
-                  className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-4 px-4 text-sm focus:outline-none focus:border-accent text-white appearance-none"
+                  className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-4 px-3 text-xs focus:outline-none focus:border-accent text-white appearance-none"
                 >
                   <option value="today">Сегодня</option>
                   <option value="tomorrow">Завтра</option>
@@ -626,7 +635,7 @@ export default function Order() {
                 <select 
                   value={orderTime}
                   onChange={(e) => setOrderTime(e.target.value)}
-                  className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-4 px-4 text-sm focus:outline-none focus:border-accent text-white appearance-none"
+                  className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-4 px-3 text-xs focus:outline-none focus:border-accent text-white appearance-none"
                 >
                   <option value="asap">Как можно скорее</option>
                   <option value="morning">Утро (09:00-12:00)</option>
