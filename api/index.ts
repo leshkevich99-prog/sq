@@ -220,10 +220,27 @@ async function startServer() {
   });
 
   // Bot Webhook
-  app.post('/api/bot/webhook', (req, res) => {
+  app.post('/api/bot/webhook', async (req, res) => {
     const bot = getBot();
     if (bot) {
-      bot.processUpdate(req.body);
+      try {
+        // Explicitly handle and await critical payment events before Vercel kills the function
+        if (req.body.pre_checkout_query) {
+          console.log('Webhook received pre_checkout_query, answering...');
+          await bot.answerPreCheckoutQuery(req.body.pre_checkout_query.id, true);
+        }
+        
+        if (req.body.message && req.body.message.successful_payment) {
+          console.log('Webhook received successful_payment, processing...');
+          const { handleSuccessfulPayment } = await import('../server/bot.js');
+          await handleSuccessfulPayment(req.body.message.chat.id, req.body.message.successful_payment);
+        }
+
+        // Process other updates normally
+        bot.processUpdate(req.body);
+      } catch (err) {
+        console.error('Error processing webhook update:', err);
+      }
     }
     res.sendStatus(200);
   });
