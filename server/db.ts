@@ -1,14 +1,26 @@
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getFirestore, Timestamp } from 'firebase-admin/firestore';
 
-if (!getApps().length) {
-  const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON!);
-  initializeApp({
-    credential: cert(serviceAccount)
-  });
-}
+let db: any = null;
 
-const db = getFirestore();
+if (!getApps().length) {
+  const envJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+  if (envJson && envJson !== 'undefined') {
+    try {
+      const serviceAccount = JSON.parse(envJson);
+      initializeApp({
+        credential: cert(serviceAccount)
+      });
+      db = getFirestore();
+    } catch (error) {
+      console.error('Failed to parse FIREBASE_SERVICE_ACCOUNT_JSON:', error);
+    }
+  } else {
+    console.warn('FIREBASE_SERVICE_ACCOUNT_JSON is missing or undefined.');
+  }
+} else {
+  db = getFirestore();
+}
 
 // Helper to convert Firestore data to plain objects
 const toData = (doc: any) => {
@@ -25,6 +37,9 @@ const toData = (doc: any) => {
 
 export const firestore = {
   collection: (path: string) => {
+    if (!db) {
+      throw new Error('Database not initialized. Missing or invalid FIREBASE_SERVICE_ACCOUNT_JSON.');
+    }
     const colRef = db.collection(path);
     return {
       get: async (id: string) => {
