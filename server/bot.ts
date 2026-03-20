@@ -84,7 +84,20 @@ export async function initBot() {
     console.log('Successful payment received:', payment);
     
     try {
-      const rawPayload = JSON.parse(payment.invoice_payload);
+      let rawPayload;
+      try {
+        // Try to parse as JSON first (for backward compatibility)
+        rawPayload = JSON.parse(payment.invoice_payload);
+      } catch (e) {
+        // If not JSON, it's likely a payloadId (UUID)
+        console.log(`Fetching payload from Firestore for ID: ${payment.invoice_payload}`);
+        rawPayload = await firestore.collection('payment_payloads').get(payment.invoice_payload);
+        
+        if (!rawPayload) {
+          throw new Error(`Payload not found in Firestore for ID: ${payment.invoice_payload}`);
+        }
+      }
+
       const userId = rawPayload.u || rawPayload.userId;
       const type = rawPayload.t || rawPayload.type;
       const tariffName = rawPayload.tn || rawPayload.tariffName;
@@ -242,11 +255,6 @@ export async function createInvoiceLink(title: string, description: string, payl
     return null;
   }
 
-  if (payload.length > 128) {
-    console.error(`Invoice creation failed: Payload too long (${payload.length} bytes). Max 128 bytes.`);
-    return null;
-  }
-
   try {
     // amount is in Br, Telegram expects smallest units (kopeks)
     const telegramAmount = Math.round(amount * 100);
@@ -257,7 +265,7 @@ export async function createInvoiceLink(title: string, description: string, payl
 
     const prices = [{ label: title, amount: telegramAmount }];
     
-    console.log(`Requesting Telegram invoice link for "${title}"...`);
+    console.log(`Requesting Telegram invoice link for "${title}" with payload length ${payload.length}...`);
     
     // @ts-ignore
     const link = await bot.createInvoiceLink(
@@ -269,9 +277,16 @@ export async function createInvoiceLink(title: string, description: string, payl
       prices
     );
     
+    if (!link) {
+      console.error('Telegram API returned empty link for createInvoiceLink');
+    }
+
     return link;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Telegram API error during createInvoiceLink:', error);
+    if (error.response && error.response.body) {
+      console.error('Telegram API error body:', error.response.body);
+    }
     return null;
   }
 }

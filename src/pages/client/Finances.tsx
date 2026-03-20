@@ -70,8 +70,10 @@ export default function Finances() {
       // 1. Create invoice link via backend
       const response = await fetch('/api/payments/bepaid/create', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+        },
         body: JSON.stringify({
           userId: user.uid,
           amount: Number(topUpAmount),

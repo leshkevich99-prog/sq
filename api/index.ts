@@ -6,7 +6,7 @@ import cookieParser from 'cookie-parser';
 import multer from 'multer';
 import { v4 as uuidv4 } from 'uuid';
 import { fileURLToPath } from 'url';
-import { initBot, sendNotification, getBot } from '../server/bot.js';
+import { initBot, sendNotification, getBot, createInvoiceLink } from '../server/bot.js';
 import { firestore, adminAuth } from '../server/db.js';
 import { generateToken, authenticateToken, AuthRequest, isAdmin } from '../server/auth.js';
 
@@ -280,42 +280,61 @@ async function startServer() {
       const userId = req.user?.id;
       
       if (!userId) return res.status(401).json({ error: 'Unauthorized' });
-      if (!amount) return res.status(400).json({ error: 'Missing amount' });
+      if (amount === undefined || amount === null || isNaN(Number(amount))) {
+        console.error('Invalid or missing amount in request:', amount);
+        return res.status(400).json({ error: 'Invalid or missing amount' });
+      }
 
-      // Use native Telegram Invoice Link if possible
-      const { createInvoiceLink } = await import('../server/bot.js');
-      
+      const numAmount = Number(amount);
+      if (numAmount < 0) {
+        console.error('Negative amount in request:', numAmount);
+        return res.status(400).json({ error: 'Amount cannot be negative' });
+      }
+
       // Payload must be < 128 bytes. Use compact keys.
       // u: userId, t: type, po: pendingOrderId, a: amount, tn: tariffName, q: quotas, bd: balanceDeduction
-      const payload = JSON.stringify({
+      const payloadObj: any = {
         u: userId,
         t: type,
-        po: pendingOrderId,
-        a: amount,
-        tn: req.body.tariffName,
-        q: req.body.quotas,
-        bd: req.body.balanceDeduction
+        a: numAmount
+      };
+      
+      if (pendingOrderId) payloadObj.po = pendingOrderId;
+      if (req.body.tariffName) payloadObj.tn = req.body.tariffName;
+      if (req.body.quotas) payloadObj.q = req.body.quotas;
+      if (req.body.balanceDeduction) payloadObj.bd = req.body.balanceDeduction;
+
+      // Store full payload in Firestore to avoid 128-byte limit
+      const payloadId = uuidv4();
+      await firestore.collection('payment_payloads').set(payloadId, {
+        ...payloadObj,
+        createdAt: new Date().toISOString()
       });
 
+      console.log(`Creating invoice for user ${userId}, amount ${numAmount}, payloadId ${payloadId}`);
+
       const invoiceLink = await createInvoiceLink(
-        type === 'service_order' ? 'Оплата услуги Squadra' : 'Оплата Squadra',
+        type === 'service_order' ? 'Оплата услуги Squadra' : 
+        type === 'subscription' ? 'Оплата тарифа Squadra' :
+        type === 'test_drive' ? 'Оплата тест-драйва' : 'Пополнение депозита',
         description || 'Оплата услуг консьерж-сервиса',
-        payload,
-        amount
+        payloadId,
+        numAmount
       );
 
       if (invoiceLink) {
+        console.log('Invoice link created successfully');
         return res.json({ payment_url: invoiceLink, isNative: true });
       }
       
-      // Fallback to external URL if invoice creation fails
+      console.warn('createInvoiceLink returned null, falling back to external bePaid URL');
       const token = process.env.VITE_BEPAID_TOKEN || process.env.BEPAID_TOKEN;
-      const payment_url = `https://checkout.bepaid.by/v2/checkout?token=${token || 'mock_token'}&amount=${Math.round(amount * 100)}&currency=BYN&description=${encodeURIComponent(description || 'Payment')}`;
+      const payment_url = `https://checkout.bepaid.by/v2/checkout?token=${token || 'mock_token'}&amount=${Math.round(numAmount * 100)}&currency=BYN&description=${encodeURIComponent(description || 'Payment')}`;
 
       res.json({ payment_url, isNative: false });
     } catch (error: any) {
-      console.error('Payment creation error:', error);
-      res.status(500).json({ error: error.message });
+      console.error('Payment creation error details:', error);
+      res.status(500).json({ error: error.message || 'Internal server error' });
     }
   });
 
