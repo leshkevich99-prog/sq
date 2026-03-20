@@ -299,12 +299,7 @@ export async function createInvoiceLink(title: string, description: string, payl
       payload,
       providerToken,
       'BYN',
-      prices,
-      {
-        need_phone_number: true,
-        need_email: true,
-        send_email_to_provider: true,
-      }
+      prices
     );
     
     if (!link) {
