@@ -224,20 +224,48 @@ async function startServer() {
     const bot = getBot();
     if (bot) {
       try {
+        let handled = false;
+        
         // Explicitly handle and await critical payment events before Vercel kills the function
         if (req.body.pre_checkout_query) {
           console.log('Webhook received pre_checkout_query, answering...');
           await bot.answerPreCheckoutQuery(req.body.pre_checkout_query.id, true);
+          handled = true;
         }
         
-        if (req.body.message && req.body.message.successful_payment) {
-          console.log('Webhook received successful_payment, processing...');
-          const { handleSuccessfulPayment } = await import('../server/bot.js');
-          await handleSuccessfulPayment(req.body.message.chat.id, req.body.message.successful_payment);
+        if (req.body.message) {
+          const msg = req.body.message;
+          const chatId = msg.chat?.id;
+          
+          if (msg.successful_payment) {
+            console.log('Webhook received successful_payment, processing...');
+            const { handleSuccessfulPayment } = await import('../server/bot.js');
+            await handleSuccessfulPayment(chatId, msg.successful_payment);
+            handled = true;
+          } else if (msg.text) {
+            if (msg.text.startsWith('/start')) {
+              console.log('Webhook received /start command');
+              const appUrl = 'https://sq-topaz.vercel.app/';
+              await bot.sendMessage(chatId, 'Добро пожаловать в Squadra! 🏎️\n\nВаш автомобильный консьерж-сервис. Нажмите кнопку ниже, чтобы открыть приложение.', {
+                reply_markup: {
+                  inline_keyboard: [
+                    [{ text: 'Открыть приложение', web_app: { url: appUrl } }]
+                  ]
+                }
+              });
+              handled = true;
+            } else if (msg.text.startsWith('/help')) {
+              console.log('Webhook received /help command');
+              await bot.sendMessage(chatId, 'Служба поддержки Squadra.\n\nЕсли у вас возникли вопросы, пожалуйста, свяжитесь с нашим администратором: @ttaammmo');
+              handled = true;
+            }
+          }
         }
 
-        // Process other updates normally
-        bot.processUpdate(req.body);
+        // Process other updates normally only if not handled explicitly
+        if (!handled) {
+          bot.processUpdate(req.body);
+        }
       } catch (err) {
         console.error('Error processing webhook update:', err);
       }
