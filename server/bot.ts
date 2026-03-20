@@ -69,6 +69,7 @@ export async function initBot() {
 
   // Handle Pre-Checkout Query
   bot.on('pre_checkout_query', (query) => {
+    console.log(`Pre-checkout query received: ${query.id}, user: ${query.from.id}, payload: ${query.invoice_payload}`);
     bot?.answerPreCheckoutQuery(query.id, true).catch(err => {
       console.error('Error answering pre_checkout_query:', err);
     });
@@ -83,6 +84,9 @@ export async function initBot() {
 
     console.log('Successful payment received:', JSON.stringify(payment));
     
+    // Add logging to see if the handler is triggered
+    console.log(`Processing payment for user ${payment.invoice_payload}`);
+    
     try {
       let rawPayload;
       try {
@@ -95,6 +99,7 @@ export async function initBot() {
         
         if (!rawPayload) {
           console.error(`Payload not found in Firestore for ID: ${payment.invoice_payload}`);
+          console.log(`Payment details: ${JSON.stringify(payment)}`);
           bot?.sendMessage(chatId, '⚠️ Ошибка: данные платежа не найдены. Пожалуйста, свяжитесь с поддержкой.');
           return;
         }
@@ -268,6 +273,7 @@ export async function createInvoiceLink(title: string, description: string, payl
   }
   
   const providerToken = process.env.BEPAID_TOKEN || process.env.VITE_BEPAID_TOKEN || process.env.BEPAID_PROVIDER_TOKEN;
+  console.log(`Provider token exists: ${!!providerToken}`);
   if (!providerToken) {
     console.error('Invoice creation failed: BEPAID_TOKEN is not set in environment variables');
     return null;
