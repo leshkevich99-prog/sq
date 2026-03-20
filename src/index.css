@@ -23,10 +23,10 @@ body {
 
 @supports (padding-bottom: env(safe-area-inset-bottom)) {
   .pb-safe {
-    padding-bottom: max(env(safe-area-inset-bottom), 0.75rem) !important;
+    padding-bottom: max(env(safe-area-inset-bottom), 1rem) !important;
   }
   .pt-safe {
-    padding-top: max(env(safe-area-inset-top), 0.75rem) !important;
+    padding-top: max(env(safe-area-inset-top), 1rem) !important;
   }
 }
 

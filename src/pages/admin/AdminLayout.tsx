@@ -111,10 +111,10 @@ export default function AdminLayout() {
         </main>
 
         {/* Mobile Bottom Nav */}
-        <nav className={`md:hidden ${isKeyboardVisible ? 'hidden' : 'fixed'} bottom-0 left-0 right-0 bg-zinc-950 border-t border-zinc-900 px-1 py-3 flex justify-around items-center z-50 pb-safe`}>
-          <NavItem to="/" icon={<LayoutDashboard size={22} />} label="Главная" />
-          <NavItem to="/crm" icon={<Users size={22} />} label="CRM" />
-          <NavItem to="/moderation" icon={<CheckSquare size={22} />} label="Доки" />
+        <nav className={`md:hidden ${isKeyboardVisible ? 'hidden' : 'fixed'} bottom-0 left-0 right-0 bg-zinc-950 border-t border-zinc-900 px-1 pt-4 pb-safe flex justify-around items-center z-50`}>
+          <NavItem to="/" icon={<LayoutDashboard size={24} />} label="Главная" />
+          <NavItem to="/crm" icon={<Users size={24} />} label="CRM" />
+          <NavItem to="/moderation" icon={<CheckSquare size={24} />} label="Доки" />
         </nav>
       </div>
     </div>

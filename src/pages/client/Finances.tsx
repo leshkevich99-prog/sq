@@ -71,6 +71,7 @@ export default function Finances() {
       const response = await fetch('/api/payments/bepaid/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           userId: user.uid,
           amount: Number(topUpAmount),

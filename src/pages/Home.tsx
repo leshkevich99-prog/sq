@@ -279,19 +279,19 @@ export default function Home() {
         </section>
       )}
 
-      <section className="mb-8">
-        <div className="bg-zinc-900 rounded-2xl p-5 relative overflow-hidden border border-zinc-800">
-          <div className="absolute top-0 right-0 p-4 opacity-10">
-            <ShieldCheck size={120} />
-          </div>
-          <div className="relative z-10">
-            <div className="inline-block px-2 py-1 bg-zinc-800 text-xs rounded-md text-zinc-300 mb-3 uppercase tracking-wider font-medium">
-              {user?.subscription ? 'Активный тариф' : 'Доступен тест-драйв'}
+      {user?.subscription ? (
+        <section className="mb-8">
+          <div className="bg-zinc-900 rounded-2xl p-5 relative overflow-hidden border border-zinc-800">
+            <div className="absolute top-0 right-0 p-4 opacity-10">
+              <ShieldCheck size={120} />
             </div>
-            <h2 className="text-2xl font-bold mb-1">
-              {user?.subscription || 'TEST DRIVE'}
-            </h2>
-            {user?.subscription && (
+            <div className="relative z-10">
+              <div className="inline-block px-2 py-1 bg-zinc-800 text-xs rounded-md text-zinc-300 mb-3 uppercase tracking-wider font-medium">
+                Активный тариф
+              </div>
+              <h2 className="text-2xl font-bold mb-1">
+                {user.subscription}
+              </h2>
               <div className="flex gap-4 mb-4 mt-2">
                 <div className="bg-black/50 rounded-lg px-3 py-2 border border-zinc-800">
                   <div className="text-[10px] text-zinc-500 uppercase tracking-wider">Логистика</div>
@@ -306,19 +306,58 @@ export default function Home() {
                   </div>
                 </div>
               </div>
-            )}
-            <p className="text-zinc-400 text-sm mb-4">
-              {user?.subscription ? 'Управляйте вашими лимитами и услугами' : 'Попробуйте наш сервис за 500 Br'}
-            </p>
-            <Link 
-              to="/tariffs"
-              className="inline-flex items-center text-sm font-medium text-white hover:text-zinc-300 transition-colors"
-            >
-              {user?.subscription ? 'Управление тарифом' : 'Выбрать тариф'} <ArrowRight size={16} className="ml-1" />
-            </Link>
+              <p className="text-zinc-400 text-sm mb-4">
+                Управляйте вашими лимитами и услугами
+              </p>
+              <Link 
+                to="/tariffs"
+                className="inline-flex items-center text-sm font-medium text-white hover:text-zinc-300 transition-colors"
+              >
+                Управление тарифом <ArrowRight size={16} className="ml-1" />
+              </Link>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      ) : (
+        <>
+          <section className="mb-8">
+            <Link to="/test-drive" className="block">
+              <div className="bg-zinc-900 rounded-2xl p-5 relative overflow-hidden border border-amber-500/30 hover:border-amber-500/50 transition-colors">
+                <div className="absolute top-0 right-0 p-4 opacity-10">
+                  <CarIcon size={120} />
+                </div>
+                <div className="relative z-10">
+                  <div className="inline-block px-2 py-1 bg-amber-500/20 text-amber-500 text-[10px] rounded-md mb-3 uppercase tracking-wider font-bold">
+                    Доступен тест-драйв
+                  </div>
+                  <h2 className="text-2xl font-bold mb-1 uppercase tracking-tighter">TEST DRIVE</h2>
+                  <p className="text-zinc-400 text-sm mb-4">
+                    Попробуйте наш сервис за 500 Br
+                  </p>
+                  <div className="inline-flex items-center text-sm font-bold text-amber-500 uppercase tracking-wider">
+                    Записаться <ArrowRight size={16} className="ml-1" />
+                  </div>
+                </div>
+              </div>
+            </Link>
+          </section>
+
+          <section className="mb-8">
+            <div className="bg-zinc-900 rounded-2xl p-5 border border-zinc-800">
+              <h3 className="text-sm font-bold uppercase tracking-wider text-zinc-500 mb-4">Выбор тарифа</h3>
+              <p className="text-zinc-400 text-sm mb-4 leading-relaxed">
+                Выберите подходящий тарифный план для постоянного обслуживания вашего автомобиля.
+              </p>
+              <Link 
+                to="/tariffs"
+                className="inline-flex items-center justify-center w-full bg-white text-black py-3 rounded-xl text-sm font-bold uppercase tracking-wider hover:bg-zinc-200 transition-colors"
+              >
+                Посмотреть тарифы <ArrowRight size={16} className="ml-2" />
+              </Link>
+            </div>
+          </section>
+        </>
+      )}
 
       <section className="mb-8">
         <h3 className="text-sm font-semibold text-zinc-500 uppercase tracking-wider mb-4">Быстрые действия</h3>
@@ -326,15 +365,6 @@ export default function Home() {
           <QuickAction to="/order" icon={<MapPin size={20} />} label="Вызвать пилота" />
           <QuickAction to="/garage" icon={<CarIcon size={20} />} label={`Бортовой журнал (${Object.keys(cars).length})`} />
         </div>
-        {!user?.subscription && (
-          <Link 
-            to="/test-drive" 
-            className="w-full bg-amber-500 text-black border border-amber-600 rounded-xl p-4 flex items-center justify-center gap-2 hover:bg-amber-400 transition-colors active:scale-95"
-          >
-            <CarIcon size={20} />
-            <span className="text-sm font-bold uppercase tracking-wider">Записаться на тест-драйв (500.00 <BynIcon size="0.6em" className="text-black" />)</span>
-          </Link>
-        )}
       </section>
 
       {recentRequests.length > 0 && (

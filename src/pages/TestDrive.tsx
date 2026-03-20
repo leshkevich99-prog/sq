@@ -70,6 +70,7 @@ export default function TestDrive() {
       const response = await fetch('/api/payments/bepaid/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           userId: user.uid,
           amount: 500,
@@ -179,7 +180,7 @@ export default function TestDrive() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-2">
             <label className="block text-xs text-zinc-500 uppercase tracking-wider ml-1">Дата</label>
             <div className="relative">

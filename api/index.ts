@@ -263,6 +263,38 @@ async function startServer() {
     res.json(msg);
   });
 
+  // Payments API
+  app.post('/api/payments/bepaid/create', authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      const { amount, type, description, pendingOrderId } = req.body;
+      const userId = req.user?.id;
+      
+      if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+      if (!amount) return res.status(400).json({ error: 'Missing amount' });
+
+      // In a real app, you would call bePaid API here.
+      // For now, we'll simulate a payment URL or use a mock.
+      // The user has VITE_BEPAID_TOKEN, which we can use if we know the shop ID.
+      
+      // For Telegram WebApp.openInvoice, it expects a URL that handles the payment.
+      // We'll return a mock URL for now that points to a simple payment page
+      // or just a success redirect if we want to simulate it.
+      
+      // Construct a mock payment URL
+      const token = process.env.VITE_BEPAID_TOKEN;
+      if (!token) {
+        console.warn('VITE_BEPAID_TOKEN is missing in environment variables');
+      }
+      
+      const payment_url = `https://checkout.bepaid.by/v2/checkout?token=${token || 'mock_token'}&amount=${amount * 100}&currency=BYN&description=${encodeURIComponent(description || 'Payment')}`;
+
+      res.json({ payment_url });
+    } catch (error: any) {
+      console.error('Payment creation error:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Recommendations
   app.get('/api/recommendations', authenticateToken, async (req: AuthRequest, res) => {
     const cars = await firestore.collection('cars').all([{ type: 'where', field: 'userId', op: '==', value: req.user?.id }]);
