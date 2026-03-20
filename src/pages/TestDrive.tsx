@@ -54,7 +54,7 @@ export default function TestDrive() {
     const toastId = toast.loading('Создание счета...');
 
     try {
-      // Create a pending test drive order
+      const testDrivePrice = 500;
       const pendingOrderRef = await addDoc(collection(db, 'pending_orders'), {
         userId: user.uid,
         type: 'test_drive',
@@ -64,7 +64,7 @@ export default function TestDrive() {
         date,
         time,
         address,
-        price: 500,
+        price: testDrivePrice,
         createdAt: new Date().toISOString()
       });
 
@@ -76,10 +76,10 @@ export default function TestDrive() {
         },
         body: JSON.stringify({
           userId: user.uid,
-          amount: 500,
+          amount: testDrivePrice,
           type: 'test_drive',
           pendingOrderId: pendingOrderRef.id,
-          description: `Оплата тест-драйва`
+          description: `Оплата тест-драйва ${carModel}`
         })
       });
 
