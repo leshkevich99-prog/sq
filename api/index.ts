@@ -322,6 +322,8 @@ async function startServer() {
         numAmount
       );
 
+      console.log(`Invoice link result: ${invoiceLink}`);
+
       if (invoiceLink) {
         console.log('Invoice link created successfully:', invoiceLink);
         return res.json({ payment_url: invoiceLink, isNative: true });
@@ -329,6 +331,7 @@ async function startServer() {
       
       console.warn('createInvoiceLink returned null, falling back to external bePaid URL');
       const token = process.env.VITE_BEPAID_TOKEN || process.env.BEPAID_TOKEN;
+      console.log(`Using bePaid token: ${token ? 'present' : 'missing'}`);
       const payment_url = `https://checkout.bepaid.by/v2/checkout?token=${token || 'mock_token'}&amount=${Math.round(numAmount * 100)}&currency=BYN&description=${encodeURIComponent(description || 'Payment')}`;
 
       res.json({ payment_url, isNative: false });
