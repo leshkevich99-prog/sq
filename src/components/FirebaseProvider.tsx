@@ -47,7 +47,11 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     try {
       const response = await fetch('/api/auth/me');
       if (response.ok) {
-        const { user: userData, firebaseCustomToken } = await response.json();
+        const { user: userData, firebaseCustomToken, token } = await response.json();
+        
+        if (token) {
+          localStorage.setItem('auth_token', token);
+        }
         
         if (firebaseCustomToken) {
           try {
@@ -79,7 +83,11 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       });
 
       if (response.ok) {
-        const { user: userData, firebaseCustomToken } = await response.json();
+        const { user: userData, firebaseCustomToken, token } = await response.json();
+        
+        if (token) {
+          localStorage.setItem('auth_token', token);
+        }
         
         if (firebaseCustomToken) {
           try {
@@ -138,6 +146,7 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     try {
       await fetch('/api/auth/logout', { method: 'POST' });
       await signOut(auth);
+      localStorage.removeItem('auth_token');
       setUser(null);
     } catch (err) {
       console.error("Logout error:", err);

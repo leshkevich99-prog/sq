@@ -102,7 +102,7 @@ export default function TestDrive() {
   };
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 w-full max-w-full overflow-x-hidden">
       <header className="mb-6 flex items-center gap-4">
         <button onClick={() => navigate(-1)} className="p-2 bg-zinc-900 rounded-full border border-zinc-800">
           <ArrowLeft size={20} />
@@ -113,10 +113,10 @@ export default function TestDrive() {
         </div>
       </header>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="space-y-2">
+      <form onSubmit={handleSubmit} className="space-y-4 w-full max-w-full overflow-x-hidden">
+        <div className="space-y-2 w-full">
           <label className="block text-xs text-zinc-500 uppercase tracking-wider ml-1">Ваше имя</label>
-          <div className="relative">
+          <div className="relative w-full">
             <input 
               type="text" 
               placeholder="Имя" 
@@ -127,9 +127,9 @@ export default function TestDrive() {
           </div>
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-2 w-full">
           <label className="block text-xs text-zinc-500 uppercase tracking-wider ml-1">Телефон</label>
-          <div className="relative">
+          <div className="relative w-full">
             <input 
               type="tel" 
               placeholder="+375 (XX) XXX-XX-XX" 
@@ -140,9 +140,9 @@ export default function TestDrive() {
           </div>
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-2 w-full">
           <label className="block text-xs text-zinc-500 uppercase tracking-wider ml-1">Марка и модель авто</label>
-          <div className="relative">
+          <div className="relative w-full">
             <Car className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
             <input 
               type="text" 
@@ -154,42 +154,66 @@ export default function TestDrive() {
           </div>
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-2 w-full">
           <label className="block text-xs text-zinc-500 uppercase tracking-wider ml-1">Адрес подачи</label>
-          <div className="relative">
+          <div className="relative w-full">
             <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
             <input 
               type="text" 
               placeholder="Улица, дом" 
               value={address}
               onChange={(e) => setAddress(e.target.value)}
-              className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-4 pl-10 pr-4 text-sm focus:outline-none focus:border-amber-500 text-white" 
+              className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-4 pl-10 pr-12 text-sm focus:outline-none focus:border-amber-500 text-white" 
             />
+            <button 
+              type="button"
+              onClick={() => {
+                if (!navigator.geolocation) {
+                  toast.error('Геолокация не поддерживается вашим браузером');
+                  return;
+                }
+                toast.loading('Определение местоположения...', { duration: 2000 });
+                navigator.geolocation.getCurrentPosition(
+                  (position) => {
+                    const coords = `${position.coords.latitude.toFixed(4)}, ${position.coords.longitude.toFixed(4)}`;
+                    setAddress(`Мое местоположение (${coords})`);
+                    toast.success('Местоположение определено');
+                  },
+                  (error) => {
+                    console.error('Geolocation error:', error);
+                    toast.error('Не удалось определить местоположение');
+                  }
+                );
+              }}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-amber-500 hover:text-white transition-colors"
+            >
+              <div className="text-[10px] font-bold uppercase">GPS</div>
+            </button>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="space-y-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-full">
+          <div className="space-y-2 w-full min-w-0">
             <label className="block text-xs text-zinc-500 uppercase tracking-wider ml-1">Дата</label>
-            <div className="relative">
+            <div className="relative w-full">
               <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
               <input 
                 type="date" 
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-4 pl-10 pr-4 text-sm focus:outline-none focus:border-amber-500 text-white [color-scheme:dark]" 
+                className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-4 pl-10 pr-4 text-sm focus:outline-none focus:border-amber-500 text-white [color-scheme:dark] min-w-0" 
               />
             </div>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-2 w-full min-w-0">
             <label className="block text-xs text-zinc-500 uppercase tracking-wider ml-1">Время</label>
-            <div className="relative">
+            <div className="relative w-full">
               <Clock className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
               <input 
                 type="time" 
                 value={time}
                 onChange={(e) => setTime(e.target.value)}
-                className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-4 pl-10 pr-4 text-sm focus:outline-none focus:border-amber-500 text-white [color-scheme:dark]" 
+                className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-4 pl-10 pr-4 text-sm focus:outline-none focus:border-amber-500 text-white [color-scheme:dark] min-w-0" 
               />
             </div>
           </div>

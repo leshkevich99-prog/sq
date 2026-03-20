@@ -13,12 +13,28 @@
   --color-accent: #ff4d00;
 }
 
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  overscroll-behavior-y: none;
+  position: fixed;
+  width: 100%;
+}
+
 body {
   background-color: #000000;
   color: #ffffff;
   font-family: var(--font-sans);
-  /* Prevent pull-to-refresh and overscroll glow */
-  overscroll-behavior-y: none;
+}
+
+#root {
+  height: 100%;
+  width: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
 }
 
 @supports (padding-bottom: env(safe-area-inset-bottom)) {

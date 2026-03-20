@@ -125,7 +125,7 @@ async function startServer() {
         maxAge: 7 * 24 * 60 * 60 * 1000
       });
 
-      res.json({ user: userData, firebaseCustomToken });
+      res.json({ user: userData, firebaseCustomToken, token });
     } catch (error: any) {
       console.error('Telegram login error:', error);
       res.status(500).json({ error: error.message });
@@ -145,7 +145,17 @@ async function startServer() {
       console.error('Error creating custom token:', authErr);
     }
     
-    res.json({ user, firebaseCustomToken });
+    // Refresh token
+    const token = generateToken({ id: user.id, telegramId: user.telegramId, role: user.role });
+    
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'none',
+      maxAge: 7 * 24 * 60 * 60 * 1000
+    });
+
+    res.json({ user, firebaseCustomToken, token });
   });
 
   app.post('/api/auth/logout', (req, res) => {

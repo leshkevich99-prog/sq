@@ -356,6 +356,32 @@ export default function Home() {
               </Link>
             </div>
           </section>
+
+          <section className="mb-8">
+            <div className="bg-zinc-900/40 rounded-2xl p-5 border border-zinc-800/50 flex items-center justify-between gap-4">
+              <div className="flex-1">
+                <h3 className="text-sm font-bold uppercase tracking-wider text-white mb-1">Squadra на главном экране</h3>
+                <p className="text-[10px] text-zinc-500 leading-relaxed">
+                  Добавьте ярлык на рабочий стол для мгновенного доступа к сервису
+                </p>
+              </div>
+              <button 
+                onClick={() => {
+                  const WebApp = (window as any).Telegram?.WebApp;
+                  if (WebApp) {
+                    if (typeof WebApp.addToHomeScreen === 'function') {
+                      WebApp.addToHomeScreen();
+                    } else {
+                      WebApp.showAlert('Чтобы добавить приложение на главный экран:\n\n1. Нажмите на три точки (⋮) в верхнем углу\n2. Выберите "Добавить на гл. экран"\n\nТеперь Squadra всегда под рукой!');
+                    }
+                  }
+                }}
+                className="px-4 py-2 bg-zinc-800 text-white text-[10px] font-bold uppercase tracking-widest rounded-lg hover:bg-zinc-700 transition-colors shrink-0"
+              >
+                Добавить
+              </button>
+            </div>
+          </section>
         </>
       )}
 

@@ -52,15 +52,16 @@ service cloud.firestore {
     // Domain Validators
     // ===============================================================
     function isValidUser(data) {
-      return hasOnlyAllowedFields(['uid', 'telegramId', 'username', 'firstName', 'lastName', 'phone', 'email', 'role', 'subscription', 'quotas', 'createdAt', 'isOnShift', 'tariff', 'balance', 'limits', 'usedQuotas', 'isVerified', 'completedTasks', 'rating']) &&
+      return hasOnlyAllowedFields(['uid', 'telegramId', 'username', 'firstName', 'lastName', 'phone', 'email', 'role', 'subscription', 'quotas', 'createdAt', 'updatedAt', 'isOnShift', 'tariff', 'balance', 'limits', 'usedQuotas', 'isVerified', 'completedTasks', 'rating', 'photoUrl']) &&
              (!('uid' in data) || data.uid is string || data.uid == null) &&
-             (!('telegramId' in data) || data.telegramId is number || data.telegramId == null) &&
+             (!('telegramId' in data) || data.telegramId is string || data.telegramId is number || data.telegramId == null) &&
              data.role in ['client', 'admin', 'pilot'] &&
              (!('username' in data) || data.username is string || data.username == null) &&
              (!('firstName' in data) || data.firstName is string || data.firstName == null) &&
              (!('lastName' in data) || data.lastName is string || data.lastName == null) &&
              (!('phone' in data) || data.phone is string || data.phone == null) &&
              (!('email' in data) || data.email is string || data.email == null) &&
+             (!('photoUrl' in data) || data.photoUrl is string || data.photoUrl == null) &&
              (!('subscription' in data) || data.subscription is string || data.subscription == null) &&
              (!('quotas' in data) || data.quotas is map || data.quotas == null) &&
              (!('isOnShift' in data) || data.isOnShift is bool || data.isOnShift == null) &&
@@ -75,7 +76,7 @@ service cloud.firestore {
     }
 
     function isValidCar(data) {
-      return hasOnlyAllowedFields(['userId', 'make', 'model', 'year', 'plate', 'isApproved', 'createdAt', 'maintenanceSchedule', 'inspectionDate', 'insuranceDate', 'malfunctions', 'vin', 'color', 'plateNumber']) &&
+      return hasOnlyAllowedFields(['userId', 'make', 'model', 'year', 'plate', 'isApproved', 'createdAt', 'updatedAt', 'maintenanceSchedule', 'inspectionDate', 'insuranceDate', 'malfunctions', 'vin', 'color', 'plateNumber']) &&
              data.userId is string &&
              data.make is string && data.make.size() > 0 && data.make.size() < 50 &&
              data.model is string && data.model.size() > 0 && data.model.size() < 50 &&
@@ -93,7 +94,7 @@ service cloud.firestore {
     }
 
     function isValidRequest(data) {
-      return hasOnlyAllowedFields(['userId', 'carId', 'serviceType', 'status', 'pilotId', 'usedQuota', 'pickupAddress', 'deliveryAddress', 'orderDate', 'orderTime', 'washType', 'comment', 'price', 'balanceDeduction', 'paidExternally', 'createdAt', 'photoProtocol', 'photosBefore', 'photosAfter', 'photoMetadata', 'totalPrice']) &&
+      return hasOnlyAllowedFields(['userId', 'carId', 'serviceType', 'status', 'pilotId', 'usedQuota', 'pickupAddress', 'deliveryAddress', 'orderDate', 'orderTime', 'washType', 'comment', 'price', 'balanceDeduction', 'paidExternally', 'createdAt', 'updatedAt', 'photoProtocol', 'photosBefore', 'photosAfter', 'photoMetadata', 'totalPrice']) &&
              data.userId is string &&
              data.carId is string &&
              data.serviceType is string && data.serviceType.size() > 0 && data.serviceType.size() < 100 &&
@@ -118,7 +119,7 @@ service cloud.firestore {
     }
 
     function isValidPendingOrder(data) {
-      return hasOnlyAllowedFields(['userId', 'carId', 'serviceType', 'pickupAddress', 'deliveryAddress', 'orderDate', 'orderTime', 'washType', 'comment', 'price', 'balanceDeduction', 'paidExternally', 'createdAt']) &&
+      return hasOnlyAllowedFields(['userId', 'carId', 'serviceType', 'pickupAddress', 'deliveryAddress', 'orderDate', 'orderTime', 'washType', 'comment', 'price', 'balanceDeduction', 'paidExternally', 'createdAt', 'updatedAt']) &&
              data.userId is string &&
              data.carId is string &&
              data.serviceType is string &&
@@ -126,7 +127,7 @@ service cloud.firestore {
     }
 
     function isValidNotification(data) {
-      return hasOnlyAllowedFields(['userId', 'title', 'message', 'type', 'read', 'link', 'createdAt']) &&
+      return hasOnlyAllowedFields(['userId', 'title', 'message', 'type', 'read', 'link', 'createdAt', 'updatedAt']) &&
              data.userId is string &&
              data.title is string && data.title.size() > 0 && data.title.size() < 200 &&
              data.message is string && data.message.size() > 0 && data.message.size() < 1000 &&
@@ -137,7 +138,7 @@ service cloud.firestore {
     }
 
     function isValidMessage(data) {
-      return hasOnlyAllowedFields(['requestId', 'senderId', 'text', 'createdAt']) &&
+      return hasOnlyAllowedFields(['requestId', 'senderId', 'text', 'createdAt', 'updatedAt']) &&
              data.requestId is string &&
              data.senderId is string &&
              data.text is string && data.text.size() > 0 && data.text.size() < 2000 &&
@@ -145,7 +146,7 @@ service cloud.firestore {
     }
 
     function isValidSosAlert(data) {
-      return hasOnlyAllowedFields(['pilotId', 'status', 'createdAt', 'resolvedAt']) &&
+      return hasOnlyAllowedFields(['pilotId', 'status', 'createdAt', 'updatedAt', 'resolvedAt']) &&
              data.pilotId is string &&
              data.status in ['active', 'resolved'] &&
              data.createdAt is string &&
@@ -153,7 +154,7 @@ service cloud.firestore {
     }
 
     function isValidPayout(data) {
-      return hasOnlyAllowedFields(['userId', 'amount', 'status', 'method', 'details', 'createdAt', 'processedAt']) &&
+      return hasOnlyAllowedFields(['userId', 'amount', 'status', 'method', 'details', 'createdAt', 'updatedAt', 'processedAt']) &&
              data.userId is string &&
              data.amount is number && data.amount > 0 &&
              data.status in ['pending', 'processed', 'rejected'] &&
@@ -164,7 +165,7 @@ service cloud.firestore {
     }
 
     function isValidReview(data) {
-      return hasOnlyAllowedFields(['requestId', 'clientId', 'pilotId', 'rating', 'comment', 'createdAt']) &&
+      return hasOnlyAllowedFields(['requestId', 'clientId', 'pilotId', 'rating', 'comment', 'createdAt', 'updatedAt']) &&
              data.requestId is string &&
              data.clientId is string &&
              data.pilotId is string &&
@@ -174,7 +175,7 @@ service cloud.firestore {
     }
 
     function isValidTestDrive(data) {
-      return hasOnlyAllowedFields(['userId', 'name', 'phone', 'carModel', 'date', 'time', 'address', 'status', 'createdAt']) &&
+      return hasOnlyAllowedFields(['userId', 'name', 'phone', 'carModel', 'date', 'time', 'address', 'status', 'createdAt', 'updatedAt']) &&
              data.userId is string &&
              data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
              data.phone is string && data.phone.size() > 0 && data.phone.size() < 20 &&
@@ -187,7 +188,7 @@ service cloud.firestore {
     }
 
     function isValidRecommendation(data) {
-      return hasOnlyAllowedFields(['carId', 'userId', 'authorId', 'text', 'photos', 'status', 'createdAt', 'resolvedAt']) &&
+      return hasOnlyAllowedFields(['carId', 'userId', 'authorId', 'text', 'photos', 'status', 'createdAt', 'updatedAt', 'resolvedAt']) &&
              data.carId is string &&
              data.userId is string &&
              data.authorId is string &&
