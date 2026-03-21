@@ -224,6 +224,7 @@ async function startServer() {
     const bot = getBot();
     if (bot) {
       try {
+        console.log('Webhook received update:', JSON.stringify(req.body));
         let handled = false;
         
         // Explicitly handle and await critical payment events before Vercel kills the function
@@ -239,8 +240,8 @@ async function startServer() {
           
           if (msg.successful_payment) {
             console.log('Webhook received successful_payment, processing...');
-            const { handleSuccessfulPayment } = await import('../server/bot.js');
-            await handleSuccessfulPayment(chatId, msg.successful_payment);
+            const { handleSuccessfulPayment: processPayment } = await import('../server/bot');
+            await processPayment(chatId, msg.successful_payment);
             handled = true;
           } else if (msg.text) {
             if (msg.text.startsWith('/start')) {
