@@ -56,15 +56,17 @@ async function startServer() {
       const { initData } = req.body;
       if (!initData) return res.status(400).json({ error: 'Missing initData' });
 
-      const botToken = process.env.TELEGRAM_BOT_TOKEN;
+      const botToken = process.env.TELEGRAM_BOT_TOKEN?.trim();
       if (!botToken) {
-        console.error('TELEGRAM_BOT_TOKEN not set');
+        console.error('TELEGRAM_BOT_TOKEN not set or empty');
         return res.status(500).json({ error: 'Server configuration error' });
       }
 
       const urlParams = new URLSearchParams(initData);
       const hash = urlParams.get('hash');
       urlParams.delete('hash');
+      
+      // Sort keys alphabetically and create the data check string
       const dataCheckString = Array.from(urlParams.entries())
         .sort(([a], [b]) => a.localeCompare(b))
         .map(([key, value]) => `${key}=${value}`)
@@ -74,7 +76,10 @@ async function startServer() {
       const calculatedHash = crypto.createHmac('sha256', secretKey).update(dataCheckString).digest('hex');
 
       if (calculatedHash !== hash) {
-        console.error('Telegram hash mismatch');
+        console.error('Telegram hash mismatch!');
+        console.log('Data check string:', dataCheckString);
+        console.log('Calculated hash:', calculatedHash);
+        console.log('Received hash:', hash);
         return res.status(401).json({ error: 'Invalid Telegram data' });
       }
 
