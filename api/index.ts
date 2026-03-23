@@ -61,10 +61,14 @@ async function startServer() {
         console.error('TELEGRAM_BOT_TOKEN not set or empty');
         return res.status(500).json({ error: 'Server configuration error' });
       }
+      
+      // Log token prefix for debugging (safe)
+      console.log(`Verifying with bot token starting with: ${botToken.substring(0, 4)}... (length: ${botToken.length})`);
 
       const urlParams = new URLSearchParams(initData);
       const hash = urlParams.get('hash');
       urlParams.delete('hash');
+      urlParams.delete('signature'); // CRITICAL: signature must also be excluded from hash calculation
       
       // Sort keys alphabetically and create the data check string
       const dataCheckString = Array.from(urlParams.entries())
