@@ -70,9 +70,9 @@ async function startServer() {
       urlParams.delete('hash');
       urlParams.delete('signature'); // CRITICAL: signature must also be excluded from hash calculation
       
-      // Sort keys alphabetically and create the data check string
+      // Sort keys alphabetically (locale-independent) and create the data check string
       const dataCheckString = Array.from(urlParams.entries())
-        .sort(([a], [b]) => a.localeCompare(b))
+        .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
         .map(([key, value]) => `${key}=${value}`)
         .join('\n');
 

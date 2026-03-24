@@ -28,7 +28,8 @@ export async function initBot() {
     console.log(`Telegram Bot: Using webhook at ${webhookUrl}`);
     bot = new TelegramBot(token, { polling: false });
     try {
-      await bot.setWebHook(`${webhookUrl}/api/bot/webhook`);
+      const cleanWebhookUrl = webhookUrl.replace(/\/+$/, '');
+      await bot.setWebHook(`${cleanWebhookUrl}/api/bot/webhook`);
     } catch (e) {
       console.error('Failed to set Telegram webhook:', e);
     }
