@@ -224,70 +224,67 @@ async function startServer() {
     res.json({ request: { ...request, photos: typeof request.photos === 'string' ? JSON.parse(request.photos || '[]') : (request.photos || []) } });
   });
 
-  // File Upload with SUPER LOGS
+  // File Upload with SUPER LOGS & Base64 Support
   app.post('/api/upload', authenticateToken, upload.single('file'), async (req: any, res) => {
-    console.log('[UPLOAD] Request received');
+    console.log('[UPLOAD] Request received. Body keys:', Object.keys(req.body || {}));
     try {
-      if (!req.user) {
-        console.error('[UPLOAD] No user in request - Auth failed');
-        return res.status(401).json({ error: 'Not authenticated' });
-      }
+      let fileBuffer: Buffer;
+      let mimetype: string;
+      let originalName: string;
 
-      if (!req.file) {
-        console.error('[UPLOAD] No file in request. Body keys:', Object.keys(req.body || {}));
+      if (req.file) {
+        console.log('[UPLOAD] Detected multipart/form-data file');
+        fileBuffer = req.file.buffer;
+        mimetype = req.file.mimetype;
+        originalName = req.file.originalname;
+      } else if (req.body.base64Data) {
+        console.log('[UPLOAD] Detected base64Data in body');
+        const base64String = req.body.base64Data;
+        const matches = base64String.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+        
+        if (!matches || matches.length !== 3) {
+          console.error('[UPLOAD] Invalid base64 format');
+          return res.status(400).json({ error: 'Invalid base64 format' });
+        }
+
+        mimetype = matches[1];
+        fileBuffer = Buffer.from(matches[2], 'base64');
+        originalName = req.body.fileName ? path.basename(req.body.fileName) : 'image.jpg';
+        console.log(`[UPLOAD] Decoded base64: ${mimetype}, size: ${fileBuffer.length}`);
+      } else {
+        console.error('[UPLOAD] No file or base64Data found');
         return res.status(400).json({ error: 'No file uploaded' });
       }
 
-      console.log(`[UPLOAD] File received: ${req.file.originalname}, size: ${req.file.size}, type: ${req.file.mimetype}`);
-
       if (!bucket) {
-        console.error('[UPLOAD] Firebase Bucket is NULL or UNDEFINED');
+        console.error('[UPLOAD] Firebase Bucket is NULL');
         return res.status(500).json({ error: 'Storage not initialized' });
       }
 
-      console.log(`[UPLOAD] Using bucket: ${bucket.name}`);
-
-      const fileName = `uploads/${Date.now()}-${req.file.originalname}`;
+      const fileName = `uploads/${Date.now()}-${originalName}`;
       const blob = bucket.file(fileName);
+      console.log(`[UPLOAD] Saving to: ${fileName}`);
 
-      console.log(`[UPLOAD] Attempting to save blob: ${fileName}`);
+      await blob.save(fileBuffer, {
+        metadata: { contentType: mimetype },
+        resumable: false
+      });
+      console.log('[UPLOAD] Blob saved successfully');
 
-      // Save to Firebase Storage
-      try {
-        await blob.save(req.file.buffer, {
-          metadata: { contentType: req.file.mimetype },
-          resumable: false
-        });
-        console.log('[UPLOAD] Blob saved successfully');
-      } catch (saveErr: any) {
-        console.error('[UPLOAD] Error during blob.save():', saveErr);
-        throw new Error(`Firebase save failed: ${saveErr.message}`);
-      }
-
-      console.log('[UPLOAD] Attempting to get signed URL...');
-
-      // Get signed URL
-      try {
-        const [signedUrl] = await blob.getSignedUrl({
-          action: 'read',
-          expires: '01-01-2099'
-        });
-        console.log('[UPLOAD] Signed URL generated:', signedUrl.substring(0, 50) + '...');
-        res.json({ url: signedUrl });
-      } catch (urlErr: any) {
-        console.error('[UPLOAD] Error during getSignedUrl():', urlErr);
-        throw new Error(`Signed URL generation failed: ${urlErr.message}`);
-      }
+      const [signedUrl] = await blob.getSignedUrl({
+        action: 'read',
+        expires: '01-01-2099'
+      });
+      console.log('[UPLOAD] Signed URL generated:', signedUrl.substring(0, 50) + '...');
+      
+      res.json({ url: signedUrl });
 
     } catch (e: any) {
       console.error('[UPLOAD] CRITICAL ERROR:', e);
-      // Если мы дошли сюда, значит что-то совсем плохо. 
-      // Попробуем хотя бы вернуть ошибку, которую фронтенд сможет отобразить.
       res.status(500).json({ 
-        url: null, // Чтобы фронтенд увидел отсутствие ссылки
+        url: null,
         error: e.message || 'File upload failed',
-        details: e.toString(),
-        stack: e.stack
+        details: e.toString()
       });
     }
   });
