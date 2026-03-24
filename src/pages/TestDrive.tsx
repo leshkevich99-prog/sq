@@ -18,6 +18,31 @@ export default function TestDrive() {
   const [address, setAddress] = useState('');
   const [safetyAccepted, setSafetyAccepted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [existingBooking, setExistingBooking] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  React.useEffect(() => {
+    const checkBookings = async () => {
+      if (!user) return;
+      try {
+        const response = await fetch('/api/requests', {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          const testDrive = data.requests?.find((r: any) => 
+            r.userId === user.id && r.type === 'test_drive' && r.status !== 'completed' && r.status !== 'cancelled'
+          );
+          if (testDrive) setExistingBooking(testDrive);
+        }
+      } catch (e) {
+        console.error('Check bookings error:', e);
+      } finally {
+        setLoading(false);
+      }
+    };
+    checkBookings();
+  }, [user]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -134,7 +159,48 @@ export default function TestDrive() {
         </div>
       </header>
 
-      <form onSubmit={handleSubmit} className="space-y-4 w-full max-w-full overflow-x-hidden">
+      {loading ? (
+        <div className="flex justify-center items-center py-20">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500"></div>
+        </div>
+      ) : existingBooking ? (
+        <div className="space-y-6 animate-in fade-in zoom-in duration-500">
+          <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-6 text-center">
+            <div className="w-16 h-16 bg-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Check size={32} className="text-white" />
+            </div>
+            <h2 className="text-xl font-bold text-white mb-2">Вы записаны на тест-драйв</h2>
+            <p className="text-zinc-400 text-sm">Ваша заявка успешно оплачена и принята в работу</p>
+          </div>
+
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
+            <div className="p-4 border-b border-zinc-800 bg-zinc-800/50">
+              <div className="flex items-center gap-3">
+                <Car className="text-amber-500" size={20} />
+                <span className="font-bold">{existingBooking.title.replace('Тест-драйв: ', '')}</span>
+              </div>
+            </div>
+            <div className="p-4 space-y-4">
+              <div className="flex items-center gap-3 text-sm text-zinc-300">
+                <Calendar className="text-zinc-500" size={18} />
+                <span>Запланировано на: <strong>{existingBooking.description.split('Дата: ')[1]}</strong></span>
+              </div>
+              <div className="flex items-center gap-3 text-sm text-zinc-300">
+                <MapPin className="text-zinc-500" size={18} />
+                <span className="truncate">Адрес: {existingBooking.description.split('Адрес: ')[1]?.split('. Дата')[0]}</span>
+              </div>
+            </div>
+          </div>
+
+          <button 
+            onClick={() => navigate('/')}
+            className="w-full py-4 bg-zinc-800 text-white rounded-xl font-bold uppercase tracking-widest text-sm"
+          >
+            Вернуться на главную
+          </button>
+        </div>
+      ) : (
+        <form onSubmit={handleSubmit} className="space-y-4 w-full max-w-full overflow-x-hidden">
         <div className="space-y-2 w-full">
           <label className="block text-xs text-zinc-500 uppercase tracking-wider ml-1">Ваше имя</label>
           <div className="relative w-full">

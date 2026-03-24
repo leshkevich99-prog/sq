@@ -642,6 +642,51 @@ async function startServer() {
     }
   });
 
+  // User Profile
+  app.put('/api/users/profile', authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      const { firstName, lastName, phone, tariff } = req.body;
+      const updated = await firestore.collection('users').update(req.user?.id!, {
+        firstName, lastName, phone, tariff,
+        updatedAt: new Date().toISOString()
+      });
+      res.json(updated);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // Filtered SOS Alerts for Admin
+  app.get('/api/sos_alerts', authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      // If admin, show only active ones (or all but mostly we want active for the dash)
+      const alerts = await firestore.collection('sos_alerts').all([
+        { type: 'where', field: 'status', op: '==', value: 'active' },
+        { type: 'orderBy', field: 'createdAt', dir: 'desc' }
+      ]);
+      res.json({ sos_alerts: alerts });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // Cars with VIN and TechPassport
+  app.post('/api/cars', authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      const id = uuidv4();
+      const carData = {
+        ...req.body,
+        id,
+        userId: req.user?.id,
+        createdAt: new Date().toISOString()
+      };
+      const created = await firestore.collection('cars').set(id, carData);
+      res.json(created);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   // Generic CRUD for Firestore
   app.get('/api/:collection', authenticateToken, async (req: AuthRequest, res) => {
     const { collection } = req.params;

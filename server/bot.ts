@@ -196,16 +196,16 @@ export async function handleSuccessfulPayment(chatId: number, payment: any) {
         const orderData = await firestore.collection('pending_orders').get(pendingOrderId);
         
         if (orderData) {
-          // 1. Create real test drive request
-          const testDriveId = uuidv4();
-          await firestore.collection('test_drives').set(testDriveId, {
+          // 1. Create real request in common collection 'requests'
+          const requestId = uuidv4();
+          await firestore.collection('requests').set(requestId, {
+            id: requestId,
             userId: orderData.userId,
-            name: orderData.name,
-            phone: orderData.phone,
-            carModel: orderData.carModel,
-            date: orderData.date || '',
-            time: orderData.time || '',
-            address: orderData.address || '',
+            clientName: orderData.name,
+            clientPhone: orderData.phone,
+            title: `Тест-драйв: ${orderData.carModel}`,
+            description: `Запись на тест-драйв. Адрес: ${orderData.address || '—'}. Дата: ${orderData.date} ${orderData.time}`,
+            type: 'test_drive',
             status: 'pending',
             paidExternally: amount || (payment.total_amount / 100),
             createdAt: new Date().toISOString()
@@ -215,12 +215,12 @@ export async function handleSuccessfulPayment(chatId: number, payment: any) {
           const admins = await firestore.collection('users').all([{ type: 'where', field: 'role', op: '==', value: 'admin' }]);
           for (const adminUser of admins) {
             // Add in-app notification
-            await firestore.collection('notifications').add({
+            await firestore.collection('notifications').set(uuidv4(), {
               userId: adminUser.id,
               title: 'Новый тест-драйв',
-              message: `Поступила оплаченная заявка на тест-драйв от ${orderData.name}.`,
+              body: `Поступила оплаченная заявка на тест-драйв от ${orderData.name}.`,
               type: 'info',
-              link: `/test-drives`,
+              link: `/task/${requestId}`,
               read: false,
               createdAt: new Date().toISOString()
             });

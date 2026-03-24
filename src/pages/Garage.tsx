@@ -12,6 +12,9 @@ interface Car {
   model: string;
   year: number;
   plate: string;
+  vin?: string;
+  techPassportFront?: string;
+  techPassportBack?: string;
   isApproved: boolean;
   maintenanceSchedule?: string;
   inspectionDate?: string;
@@ -54,6 +57,25 @@ export default function Garage() {
   useEffect(() => {
     if (!user) return;
 
+    const fetchCars = async () => {
+      try {
+        const response = await fetch('/api/cars', {
+          headers: { 'Authorization': `Bearer ${await (user as any).getIdToken?.() || ''}` }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setCars(data.cars || []);
+        }
+      } catch (e) {
+        console.error('Fetch cars error:', e);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCars();
+    
+    // Fallback to real-time for better UX if possible, but keep API as primary for writes
     const q = query(collection(db, 'cars'), where('userId', '==', user.uid));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const carsData: Car[] = [];
@@ -61,9 +83,6 @@ export default function Garage() {
         carsData.push({ id: doc.id, ...doc.data() } as Car);
       });
       setCars(carsData);
-      setLoading(false);
-    }, (error) => {
-      handleFirestoreError(error, OperationType.LIST, 'cars');
       setLoading(false);
     });
 
@@ -164,10 +183,36 @@ function AddCarModal({ onClose, userId }: { onClose: () => void, userId?: string
   const [model, setModel] = useState('');
   const [year, setYear] = useState('');
   const [plate, setPlate] = useState('');
+  const [vin, setVin] = useState('');
   const [maintenanceSchedule, setMaintenanceSchedule] = useState('');
   const [inspectionDate, setInspectionDate] = useState('');
   const [insuranceDate, setInsuranceDate] = useState('');
+  const [techPassportFront, setTechPassportFront] = useState<File | null>(null);
+  const [techPassportBack, setTechPassportBack] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  const handleFileUpload = async (file: File, path: string) => {
+    const options = { maxSizeMB: 1, maxWidthOrHeight: 1280, useWebWorker: true };
+    const compressed = await imageCompression(file, options);
+    
+    // Simplified base64 logic for our upload proxy
+    const base64 = await new Promise<string>((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.readAsDataURL(compressed);
+    });
+
+    const response = await fetch('/api/upload-proxy', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        base64Data: base64,
+        fileName: `cars/${userId}/${Date.now()}_${path}.jpg`
+      })
+    });
+    const data = await response.json();
+    return data.url;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -175,24 +220,47 @@ function AddCarModal({ onClose, userId }: { onClose: () => void, userId?: string
     setSubmitting(true);
     const toastId = toast.loading('Добавление автомобиля...');
     try {
-      await addDoc(collection(db, 'cars'), {
-        userId,
-        make,
-        model,
-        year: parseInt(year),
-        plate,
-        isApproved: false,
-        maintenanceSchedule: maintenanceSchedule || null,
-        inspectionDate: inspectionDate || null,
-        insuranceDate: insuranceDate || null,
-        malfunctions: [],
-        createdAt: new Date().toISOString()
+      let frontUrl = null;
+      let backUrl = null;
+
+      if (techPassportFront) {
+        toast.loading('Загрузка техпаспорта (1/2)...', { id: toastId });
+        frontUrl = await handleFileUpload(techPassportFront, 'tp_front');
+      }
+      if (techPassportBack) {
+        toast.loading('Загрузка техпаспорта (2/2)...', { id: toastId });
+        backUrl = await handleFileUpload(techPassportBack, 'tp_back');
+      }
+
+      const response = await fetch('/api/cars', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId,
+          make,
+          model,
+          year: parseInt(year),
+          plate,
+          vin,
+          techPassportFront: frontUrl,
+          techPassportBack: backUrl,
+          isApproved: false,
+          maintenanceSchedule: maintenanceSchedule || null,
+          inspectionDate: inspectionDate || null,
+          insuranceDate: insuranceDate || null,
+          malfunctions: [],
+          createdAt: new Date().toISOString()
+        })
       });
-      toast.success('Автомобиль добавлен', { id: toastId });
+
+      if (!response.ok) throw new Error('Failed to create car via API');
+
+      toast.success('Автомобиль добавлен на модерацию', { id: toastId });
       onClose();
-    } catch (error) {
-      handleFirestoreError(error, OperationType.CREATE, 'cars');
-      toast.error('Ошибка при добавлении', { id: toastId });
+    } catch (error: any) {
+      console.error('Add car error:', error);
+      toast.error(error.message || 'Ошибка при добавлении', { id: toastId });
+    } finally {
       setSubmitting(false);
     }
   };
@@ -223,6 +291,38 @@ function AddCarModal({ onClose, userId }: { onClose: () => void, userId?: string
               <input required value={plate} onChange={e => setPlate(e.target.value)} className="w-full min-w-0 bg-black border border-zinc-800 rounded-lg px-2 py-1.5 text-xs text-white focus:border-accent outline-none box-border appearance-none" placeholder="0001 MI-7" />
             </div>
           </div>
+
+          <div>
+            <label className="block text-[9px] text-zinc-500 mb-0.5 uppercase tracking-wider">VIN-номер (по желанию)</label>
+            <input value={vin} onChange={e => setVin(e.target.value)} className="w-full min-w-0 bg-black border border-zinc-800 rounded-lg px-2 py-1.5 text-xs text-white focus:border-accent outline-none box-border appearance-none" placeholder="WBA..." />
+          </div>
+          
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="block text-[9px] text-zinc-500 mb-0.5 uppercase tracking-wider">Техпаспорт (Лицо)</label>
+              <button 
+                type="button" 
+                onClick={() => document.getElementById('tp-front-input')?.click()}
+                className={`w-full py-2 rounded-lg border border-dashed flex items-center justify-center gap-2 text-[10px] ${techPassportFront ? 'border-emerald-500 text-emerald-500 bg-emerald-500/10' : 'border-zinc-800 text-zinc-500 hover:border-zinc-600'}`}
+              >
+                <Camera size={14} />
+                {techPassportFront ? 'Готово' : 'Загрузить'}
+              </button>
+              <input id="tp-front-input" type="file" accept="image/*" className="hidden" onChange={e => setTechPassportFront(e.target.files?.[0] || null)} />
+            </div>
+            <div>
+              <label className="block text-[9px] text-zinc-500 mb-0.5 uppercase tracking-wider">Техпаспорт (Оборот)</label>
+              <button 
+                type="button" 
+                onClick={() => document.getElementById('tp-back-input')?.click()}
+                className={`w-full py-2 rounded-lg border border-dashed flex items-center justify-center gap-2 text-[10px] ${techPassportBack ? 'border-emerald-500 text-emerald-500 bg-emerald-500/10' : 'border-zinc-800 text-zinc-500 hover:border-zinc-600'}`}
+              >
+                <Camera size={14} />
+                {techPassportBack ? 'Готово' : 'Загрузить'}
+              </button>
+              <input id="tp-back-input" type="file" accept="image/*" className="hidden" onChange={e => setTechPassportBack(e.target.files?.[0] || null)} />
+            </div>
+          </div>
           
           <div className="pt-2 border-t border-zinc-800">
             <h3 className="text-[9px] font-bold uppercase tracking-wider text-zinc-400 mb-1.5">Сервисная книжка (опционально)</h3>
@@ -243,7 +343,7 @@ function AddCarModal({ onClose, userId }: { onClose: () => void, userId?: string
           </div>
 
           <button disabled={submitting} type="submit" className="w-full bg-accent text-white rounded-xl py-2 text-sm font-medium mt-2 disabled:opacity-50">
-            {submitting ? 'Сохранение...' : 'Добавить в журнал'}
+            {submitting ? 'Сохранение...' : 'Отправить на модерацию'}
           </button>
         </form>
       </div>
