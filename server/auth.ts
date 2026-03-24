@@ -1,5 +1,5 @@
+import express, { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { Request, Response, NextFunction } from 'express';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this-in-production';
 
@@ -9,6 +9,9 @@ export interface AuthRequest extends Request {
     telegramId: string;
     role: string;
   };
+  body: any;
+  query: any;
+  params: any;
 }
 
 export function generateToken(user: { id: string; telegramId: string; role: string }) {

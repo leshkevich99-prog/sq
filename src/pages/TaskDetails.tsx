@@ -170,10 +170,14 @@ export default function TaskDetails() {
     try {
       const updateData: any = { status: newStatus };
       if (newStatus === 'accepted' && user?.role === 'pilot') {
-        updateData.pilotId = user.uid;
+        updateData.pilotId = user.id;
       }
       
-      await updateDoc(doc(db, 'requests', id), updateData);
+      await fetch(`/api/requests/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updateData)
+      });
       
       // Notify client
       const statusLabels: Record<string, string> = {
@@ -312,16 +316,19 @@ export default function TaskDetails() {
       const txTitle = expenseType === 'over_tariff' ? 'Списание сверх тарифа' : 
                       expenseType === 'fuel_liquids' ? 'Топливо/жидкости' : 'Крупный счет (СТО)';
 
-      await addDoc(collection(db, 'transactions'), {
-        userId: request.userId,
-        pilotId: user.uid,
-        requestId: id,
-        type: txType,
-        amount: amount,
-        description: `${txTitle}: ${expenseDescription}`,
-        receiptUrl,
-        createdAt: new Date().toISOString(),
-        status: expenseType === 'large_bill_sto' ? 'pending' : 'completed'
+      await fetch('/api/transactions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: request.userId,
+          pilotId: user.uid,
+          requestId: id,
+          type: txType,
+          amount: amount,
+          description: `${txTitle}: ${expenseDescription}`,
+          receiptUrl,
+          status: expenseType === 'large_bill_sto' ? 'pending' : 'completed'
+        })
       });
 
       // Update request with external payment info if it's a large bill
@@ -473,12 +480,17 @@ export default function TaskDetails() {
       toast.loading('Сохранение...', { id: toastId });
       const field = uploadType === 'before' ? 'photosBefore' : 'photosAfter';
       const safeUrl = getSafeUrl(downloadURL);
+      const currentPhotos = (request as any)[field] || [];
 
-      await updateDoc(doc(db, 'requests', id), {
-        [field]: arrayUnion(downloadURL),
-        [`photoMetadata.${safeUrl}`]: {
-          timestamp: new Date().toISOString()
-        }
+      await fetch(`/api/requests/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          [field]: [...currentPhotos, downloadURL],
+          [`photoMetadata.${safeUrl}`]: {
+            timestamp: new Date().toISOString()
+          }
+        })
       });
       
       toast.success('Фото добавлено!', { id: toastId });

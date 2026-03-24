@@ -89,79 +89,52 @@ export default function AdminDashboard() {
   const [viewMode, setViewMode] = useState<'kanban' | 'list'>('kanban');
   const [activeKanbanTab, setActiveKanbanTab] = useState<'pending' | 'in_progress' | 'completed'>('pending');
 
-  useEffect(() => {
-    const unsubRequests = onSnapshot(collection(db, 'requests'), (snapshot) => {
-      const reqs: RequestData[] = [];
-      snapshot.forEach(doc => reqs.push({ id: doc.id, ...doc.data() } as RequestData));
-      setRequests(reqs);
-    }, (error) => {
-      handleFirestoreError(error, OperationType.LIST, 'requests');
-      setLoading(false);
-    });
+  const fetchData = useCallback(async () => {
+    try {
+      const [reqRes, userRes, carRes, sosRes, testRes] = await Promise.all([
+        fetch('/api/admin/requests'),
+        fetch('/api/admin/users'),
+        fetch('/api/cars'), // Need all cars
+        fetch('/api/sos_alerts'),
+        fetch('/api/test_drives')
+      ]);
 
-    const unsubUsers = onSnapshot(collection(db, 'users'), (snapshot) => {
-      const usrs: Record<string, UserData> = {};
-      const plts: UserData[] = [];
-      snapshot.forEach(doc => {
-        const data = { id: doc.id, ...doc.data() } as UserData;
-        usrs[doc.id] = data;
-        if (data.role === 'pilot' || data.role === 'admin') {
-          plts.push(data);
-        }
-      });
-      setUsers(usrs);
-      setPilots(plts);
-    }, (error) => {
-      handleFirestoreError(error, OperationType.LIST, 'users');
-      setLoading(false);
-    });
-
-    const unsubCars = onSnapshot(collection(db, 'cars'), (snapshot) => {
-      const crs: Record<string, CarData> = {};
-      snapshot.forEach(doc => {
-        crs[doc.id] = { id: doc.id, ...doc.data() } as CarData;
-      });
-      setCars(crs);
-    }, (error) => {
-      handleFirestoreError(error, OperationType.LIST, 'cars');
-      setLoading(false);
-    });
-
-    const unsubSos = onSnapshot(
-      query(collection(db, 'sos_alerts'), where('status', '==', 'active')), 
-      (snapshot) => {
-        const alerts: SosAlert[] = [];
-        snapshot.forEach(doc => alerts.push({ id: doc.id, ...doc.data() } as SosAlert));
-        setSosAlerts(alerts);
-        setLoading(false);
-      }, 
-      (error) => {
-        handleFirestoreError(error, OperationType.LIST, 'sos_alerts');
-        setLoading(false);
+      if (reqRes.ok) {
+        const data = await reqRes.json();
+        setRequests(data.requests || []);
       }
-    );
-
-    const unsubTestDrives = onSnapshot(
-      collection(db, 'test_drives'),
-      (snapshot) => {
-        const drives: TestDriveData[] = [];
-        snapshot.forEach(doc => drives.push({ id: doc.id, ...doc.data() } as TestDriveData));
-        setTestDrives(drives.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
-      },
-      (error) => {
-        handleFirestoreError(error, OperationType.LIST, 'test_drives');
-        setLoading(false);
+      
+      if (userRes.ok) {
+        const data = await userRes.json();
+        const usrs: Record<string, UserData> = {};
+        const plts: UserData[] = [];
+        (data.users || []).forEach((u: any) => {
+          usrs[u.id] = u;
+          if (u.role === 'pilot' || u.role === 'admin') plts.push(u);
+        });
+        setUsers(usrs);
+        setPilots(plts);
       }
-    );
 
-    return () => {
-      unsubRequests();
-      unsubUsers();
-      unsubCars();
-      unsubSos();
-      unsubTestDrives();
-    };
+      if (carRes.ok) {
+        const data = await carRes.json();
+        const crs: Record<string, CarData> = {};
+        (data.cars || []).forEach((c: any) => { crs[c.id] = c; });
+        setCars(crs);
+      }
+
+      setLoading(false);
+    } catch (error) {
+      console.error('Fetch dashboard error:', error);
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchData();
+    const interval = setInterval(fetchData, 10000); // Poll every 10s
+    return () => clearInterval(interval);
+  }, [fetchData]);
 
   const handleAssignClick = (requestId: string) => {
     setSelectedRequestId(requestId);

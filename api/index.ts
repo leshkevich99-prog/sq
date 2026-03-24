@@ -641,11 +641,21 @@ async function startServer() {
       const item = await firestore.collection(collection).get(id);
       if (!item) return res.status(404).json({ error: 'Not found' });
 
-      if (item.userId && item.userId !== req.user?.id && req.user?.role !== 'admin') {
-        return res.status(403).json({ error: 'Forbidden' });
-      }
-      if (collection === 'users' && id !== req.user?.id && req.user?.role !== 'admin') {
-        return res.status(403).json({ error: 'Forbidden' });
+      if (collection === 'requests') {
+        const isOwner = item.userId === req.user?.id;
+        const isAssignedPilot = item.pilotId === req.user?.id;
+        const isAdmin = req.user?.role === 'admin';
+        
+        if (!isOwner && !isAssignedPilot && !isAdmin) {
+          return res.status(403).json({ error: 'Forbidden: You are not assigned to this task' });
+        }
+      } else {
+        if (item.userId && item.userId !== req.user?.id && req.user?.role !== 'admin') {
+          return res.status(403).json({ error: 'Forbidden' });
+        }
+        if (collection === 'users' && id !== req.user?.id && req.user?.role !== 'admin') {
+          return res.status(403).json({ error: 'Forbidden' });
+        }
       }
 
       const updated = await firestore.collection(collection).update(id, data);

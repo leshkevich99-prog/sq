@@ -25,27 +25,37 @@ if (typeof window !== 'undefined') {
 import App from './App.tsx';
 import './index.css';
 
-// 2. Safe Fetch Patch
-const originalFetch = window.fetch;
-window.fetch = async function(...args) {
-  const resource = args[0];
-  let config = args[1] || {};
+// 2. Bulletproof Fetch Patch
+const { fetch: originalFetch } = window;
+window.fetch = async (...args) => {
+  let [resource, config] = args;
   
-  // Normalize resource to string to check for /api/
+  // Normalize URL
   const url = typeof resource === 'string' ? resource : (resource instanceof Request ? resource.url : String(resource));
 
   if (url.includes('/api/')) {
     const token = localStorage.getItem('auth_token');
     if (token) {
-      const headers = new Headers(config.headers || {});
-      if (!headers.has('Authorization')) {
-        headers.set('Authorization', `Bearer ${token}`);
+      if (resource instanceof Request) {
+        // If it's a Request object, we must clone it and add headers
+        const headers = new Headers(resource.headers);
+        if (!headers.has('Authorization')) {
+          headers.set('Authorization', `Bearer ${token}`);
+        }
+        resource = new Request(resource, { headers });
+      } else {
+        // If it's a string, update config
+        config = config || {};
+        const headers = new Headers(config.headers || {});
+        if (!headers.has('Authorization')) {
+          headers.set('Authorization', `Bearer ${token}`);
+        }
+        config.headers = headers;
       }
-      config.headers = headers;
     }
   }
   
-  return originalFetch.apply(this, [resource, config]);
+  return originalFetch(resource, config);
 };
 
 createRoot(document.getElementById('root')!).render(
