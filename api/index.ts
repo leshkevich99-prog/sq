@@ -12,22 +12,14 @@ import { generateToken, authenticateToken, AuthRequest, isAdmin } from '../serve
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// Configure multer for file uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadDir = path.join(process.cwd(), 'uploads');
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
-  }
+// Configure multer for memory storage (for Vercel compatibility)
+const upload = multer({ 
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
 });
 
-const upload = multer({ storage: storage });
+import { getStorage } from 'firebase-admin/storage';
+const bucket = getStorage().bucket();
 
 async function startServer() {
   console.log('Starting server initialization...');
@@ -236,10 +228,40 @@ async function startServer() {
   });
 
   // File Upload
-  app.post('/api/upload', authenticateToken, upload.single('file'), (req: any, res) => {
-    if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
-    const url = `/uploads/${req.file.filename}`;
-    res.json({ url });
+  app.post('/api/upload', authenticateToken, upload.single('file'), async (req: any, res) => {
+    try {
+      if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+
+      const blob = bucket.file(`uploads/${Date.now()}-${req.file.originalname}`);
+      const blobStream = blob.createWriteStream({
+        metadata: {
+          contentType: req.file.mimetype,
+        },
+        resumable: false
+      });
+
+      blobStream.on('error', (error) => {
+        console.error('Blob upload error:', error);
+        res.status(500).json({ error: 'Upload failed' });
+      });
+
+      blobStream.on('finish', async () => {
+        try {
+          // Make the file public to get a permanent link
+          await blob.makePublic();
+          const publicUrl = `https://storage.googleapis.com/${bucket.name}/${blob.name}`;
+          res.json({ url: publicUrl });
+        } catch (err) {
+          console.error('Error making file public:', err);
+          res.status(500).json({ error: 'Failed to generate public URL' });
+        }
+      });
+
+      blobStream.end(req.file.buffer);
+    } catch (e: any) {
+      console.error('Upload endpoint error:', e);
+      res.status(500).json({ error: e.message });
+    }
   });
 
   // Notifications
