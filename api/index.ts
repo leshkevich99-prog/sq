@@ -79,20 +79,14 @@ async function startServer() {
   app.post('/api/auth/telegram-login', async (req, res) => {
     try {
       const { initData } = req.body;
-      // ВРЕМЕННЫЙ ХАРДКОД ДЛЯ ДИАГНОСТИКИ (игнорируем Vercel env)
-      const botToken = "8635277211:AAFILNiDWzXEfHWoIbTMB1PxFQEPsGMLgBU";
-      const versionMarker = "VER_2026_03_24_12_40"; // УНИКАЛЬНЫЙ МАРКЕР
+      const botToken = process.env.TELEGRAM_BOT_TOKEN?.trim();
 
       if (!botToken) {
         console.error('TELEGRAM_BOT_TOKEN not set or empty');
         return res.status(500).json({ error: 'Server configuration error' });
       }
 
-      console.log(`[AUTH] Marker: ${versionMarker}`);
-      console.log(`[AUTH] Token len: ${botToken.length}, prefix: ${botToken.substring(0, 10)}...`);
-      console.log(`[AUTH] Raw initData: ${String(initData).substring(0, 100)}...`);
-
-      // Ручной парсинг initData через decodeURIComponent
+      // Ручной парсинг initData через decodeURIComponent (надежнее для Telegram)
       let receivedHash = '';
       const params: Record<string, string> = {};
       for (const part of String(initData).split('&')) {
@@ -112,31 +106,16 @@ async function startServer() {
         .join('\n');
 
       const secretKey = crypto.createHmac('sha256', 'WebAppData').update(botToken).digest();
-      let calculatedHash = crypto.createHmac('sha256', secretKey).update(dataCheckString).digest('hex');
+      const calculatedHash = crypto.createHmac('sha256', secretKey).update(dataCheckString).digest('hex');
 
-      // ТЕХНИЧЕСКИЙ ЛОГ: HEX-дамп начала строки (проверка кодировки кириллицы)
-      const hexDump = Buffer.from(dataCheckString).toString('hex').substring(0, 100);
-      console.log(`[AUTH] Data Hex (first 100b): ${hexDump}`);
-
-      // ВРЕМЕННЫЙ ПЛАН Б: Разрешаем вход владельцам (для дебага)
-      const userStr = params['user'] || '';
-      const tgUser = userStr ? JSON.parse(userStr) : null;
-      const ownerIds = ['847634885', '8227472600']; 
-      const isOwner = tgUser && ownerIds.includes(tgUser.id.toString());
-      
-      const hashValid = (calculatedHash === receivedHash) || isOwner;
-
-      if (!hashValid) {
-        console.error('Telegram hash mismatch!');
-        console.log(`Bot ID: ${botToken.split(':')[0]}, Calculated: ${calculatedHash}, Received: ${receivedHash}`);
+      if (calculatedHash !== receivedHash) {
+        console.error('[AUTH] Telegram hash mismatch!');
         return res.status(401).json({ error: 'Invalid Telegram data' });
       }
 
-      if (isOwner && calculatedHash !== receivedHash) {
-        console.warn(`[AUTH] Bypassing hash check for owner ${tgUser.id}`);
-      }
-
-      if (!tgUser) return res.status(400).json({ error: 'Missing user data' });
+      const userStr = params['user'];
+      if (!userStr) return res.status(400).json({ error: 'Missing user data' });
+      const tgUser = JSON.parse(userStr);
 
       // Check if user exists in Firestore
       let user = await firestore.collection('users').all([{ type: 'where', field: 'telegramId', op: '==', value: tgUser.id.toString() }]);

@@ -83,36 +83,50 @@ export {
 export { ref, uploadBytesResumable, uploadBytes, uploadString, getDownloadURL };
 
 // ─── Инициализация ───────────────────────────────────────────────────────────
+// Check if all required environment variables are present
+const requiredEnvVars = [
+  'VITE_FIREBASE_API_KEY',
+  'VITE_FIREBASE_AUTH_DOMAIN',
+  'VITE_FIREBASE_PROJECT_ID',
+  'VITE_FIREBASE_STORAGE_BUCKET',
+  'VITE_FIREBASE_MESSAGING_SENDER_ID',
+  'VITE_FIREBASE_APP_ID'
+];
+
+const missingVars = requiredEnvVars.filter(key => !import.meta.env[key]);
+
+if (missingVars.length > 0) {
+  console.error(`[Firebase] Missing environment variables: ${missingVars.join(', ')}`);
+}
+
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
   storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
-let app: FirebaseApp | null = null;
-let _db: Firestore | null = null;
-let _auth: Auth | null = null;
-let _storage: FirebaseStorage | null = null;
+// Initialize Firebase
+let app: any;
+let db: Firestore;
+let auth: Auth;
+let storage: FirebaseStorage;
 
-if (firebaseConfig.apiKey && firebaseConfig.projectId) {
-  try {
-    app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
-    _db = getFirestore(app);
-    _auth = getAuth(app);
-    _storage = getStorage(app);
-  } catch (e) {
-    console.error('[Firebase] Ошибка инициализации:', e);
-  }
-} else {
-  console.warn('[Firebase] Переменные окружения VITE_FIREBASE_* не заданы. Firebase SDK не инициализирован.');
+try {
+  app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+  db = getFirestore(app);
+  auth = getAuth(app);
+  storage = getStorage(app);
+} catch (error) {
+  console.error("[Firebase] Initialization failed:", error);
+  db = null as any;
+  auth = null as any;
+  storage = null as any;
 }
 
-export const db = _db as Firestore;
-export const auth = _auth as Auth;
-export const storage = _storage as FirebaseStorage;
+export { app, db, auth, storage };
 
 // ─── OperationType ────────────────────────────────────────────────────────────
 export const OperationType = {
