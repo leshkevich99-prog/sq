@@ -15,25 +15,37 @@ if (!getApps().length) {
     try {
       const serviceAccount = JSON.parse(envJson);
       const app = initializeApp({
-        credential: cert(serviceAccount)
+        credential: cert(serviceAccount),
+        storageBucket: 'gen-lang-client-0402816336.firebasestorage.app'
       });
       adminAuth = getAuth(app);
-      bucket = getStorage(app).bucket();
-      
+      try {
+        bucket = getStorage(app).bucket();
+      } catch (e) {
+        console.error('Storage init error:', e);
+      }
       const dbId = process.env.FIREBASE_DATABASE_ID;
       db = getFirestore(app, dbId);
     } catch (error) {
-      console.error('Firebase Admin init error');
+      console.error('Firebase Admin init error:', error);
     }
   } else {
     console.warn('FIREBASE_SERVICE_ACCOUNT_KEY is missing');
   }
 } else {
-  const app = getApps()[0];
-  adminAuth = getAuth(app);
-  bucket = getStorage(app).bucket();
-  const dbId = process.env.FIREBASE_DATABASE_ID;
-  db = getFirestore(app, dbId);
+  try {
+    const app = getApps()[0];
+    adminAuth = getAuth(app);
+    try {
+      bucket = getStorage(app).bucket();
+    } catch (e) {
+      console.error('Storage reuse error:', e);
+    }
+    const dbId = process.env.FIREBASE_DATABASE_ID;
+    db = getFirestore(app, dbId);
+  } catch (error) {
+    console.error('Firebase Admin reuse error:', error);
+  }
 }
 
 // Helper to convert Firestore data to plain objects
