@@ -222,6 +222,7 @@ export default function Profile() {
                   placeholder="+375 (29) 123-45-67"
                 />
               </div>
+            </div>
             <div>
               <label className="block text-xs font-medium text-zinc-400 uppercase tracking-wider mb-2">Ваш тариф</label>
               <select
@@ -249,6 +250,4 @@ export default function Profile() {
           {saving ? 'Сохранение...' : 'Сохранить изменения'}
         </button>
       </form>
-    </div>
-  );
-}
+    </di
