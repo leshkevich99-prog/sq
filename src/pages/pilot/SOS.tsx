@@ -43,46 +43,21 @@ export default function SOS() {
     
     const toastId = toast.loading('Отправка сигнала SOS...');
     try {
-      await addDoc(collection(db, 'sos_alerts'), {
-        pilotId: user.uid,
-        status: 'active',
-        createdAt: new Date().toISOString()
+      const response = await fetch('/api/sos/trigger', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
       });
 
-      // Notify admins
-      const adminQuery = query(collection(db, 'users'), where('role', '==', 'admin'));
-      const adminSnaps = await getDocs(adminQuery);
-      
-      adminSnaps.forEach(async (adminDoc) => {
-        const adminData = adminDoc.data();
-        await createNotification(
-          adminDoc.id,
-          'КРИТИЧЕСКИЙ АЛЕРТ: SOS',
-          `Пилот ${user.firstName} активировал сигнал SOS!`,
-          'warning',
-          '/admin/sos'
-        );
+      if (!response.ok) {
+        throw new Error('Ошибка сервера при отправке SOS');
+      }
 
-        if (adminData.telegramId) {
-          try {
-            await fetch('/api/notifications/send', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                telegramId: adminData.telegramId,
-                message: `🚨 ВНИМАНИЕ: СИГНАЛ SOS 🚨\n\nПилот: ${user.firstName} (@${user.username})\n\nСрочно свяжитесь с пилотом!`
-              })
-            });
-          } catch (e) {
-            console.error('Failed to send Telegram SOS notification:', e);
-          }
-        }
-      });
-
+      const alertData = await response.json();
+      setActiveAlert(alertData);
       toast.success('Сигнал успешно отправлен', { id: toastId });
-    } catch (error) {
-      handleFirestoreError(error, OperationType.CREATE, 'sos_alerts');
-      toast.error('Ошибка отправки сигнала', { id: toastId });
+    } catch (error: any) {
+      console.error('SOS Trigger Error:', error);
+      toast.error(error.message || 'Ошибка отправки сигнала', { id: toastId });
     }
   };
 
@@ -91,14 +66,21 @@ export default function SOS() {
     
     const toastId = toast.loading('Отмена сигнала...');
     try {
-      await updateDoc(doc(db, 'sos_alerts', activeAlert.id), {
-        status: 'resolved',
-        resolvedAt: new Date().toISOString()
+      const response = await fetch('/api/sos/resolve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ alertId: activeAlert.id })
       });
+
+      if (!response.ok) {
+        throw new Error('Ошибка сервера при отмене SOS');
+      }
+
+      setActiveAlert(null);
       toast.success('Сигнал отменен', { id: toastId });
-    } catch (error) {
-      handleFirestoreError(error, OperationType.UPDATE, `sos_alerts/${activeAlert.id}`);
-      toast.error('Ошибка отмены', { id: toastId });
+    } catch (error: any) {
+      console.error('SOS Resolve Error:', error);
+      toast.error(error.message || 'Ошибка отмены', { id: toastId });
     }
   };
 

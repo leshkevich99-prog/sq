@@ -351,6 +351,46 @@ async function startServer() {
     }
   });
 
+  // SOS System Endpoints (bypass client rules)
+  app.post('/api/sos/trigger', authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      const id = uuidv4();
+      const alert = {
+        id,
+        pilotId: req.user?.id,
+        status: 'active',
+        createdAt: new Date().toISOString()
+      };
+      
+      await firestore.collection('sos_alerts').set(id, alert);
+      
+      // Notify admins via Bot
+      const admins = await firestore.collection('users').all([{type: 'where', field: 'role', op: '==', value: 'admin'}]);
+      for (const admin of admins) {
+        if (admin.telegramId) {
+          await sendNotification(admin.telegramId.toString(), `🚨 ВНИМАНИЕ: СИГНАЛ SOS 🚨\n\nПилот: ${req.user?.id}\n\nТребуется срочная помощь!`);
+        }
+      }
+      
+      res.json(alert);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.post('/api/sos/resolve', authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      const { alertId } = req.body;
+      await firestore.collection('sos_alerts').update(alertId, {
+        status: 'resolved',
+        resolvedAt: new Date().toISOString()
+      });
+      res.json({ success: true });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   // Bot Webhook
   app.post('/api/bot/webhook', async (req, res) => {
     const bot = getBot();
