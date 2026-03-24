@@ -329,6 +329,28 @@ async function startServer() {
     res.json({ success: true });
   });
 
+  // Send direct Telegram notification
+  app.post('/api/notifications/send', authenticateToken, async (req, res) => {
+    try {
+      const { telegramId, message } = req.body;
+      if (!telegramId || !message) {
+        return res.status(400).json({ error: 'Missing telegramId or message' });
+      }
+      
+      console.log(`[NOTIFY] Sending Telegram message to ${telegramId}`);
+      const success = await sendNotification(telegramId.toString(), message);
+      
+      if (success) {
+        res.json({ success: true });
+      } else {
+        res.status(500).json({ error: 'Failed to send Telegram notification' });
+      }
+    } catch (e: any) {
+      console.error('[NOTIFY] Error:', e);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   // Bot Webhook
   app.post('/api/bot/webhook', async (req, res) => {
     const bot = getBot();

@@ -107,15 +107,38 @@ function AppRoutes() {
 }
 
 export default function App() {
+  const [isReady, setIsReady] = React.useState(false);
+
   useEffect(() => {
-    WebApp.ready();
-    WebApp.expand();
-    if (WebApp.disableVerticalSwipes) {
-      WebApp.disableVerticalSwipes();
+    try {
+      // 1. Immediate Telegram UI setup
+      WebApp.ready();
+      WebApp.expand();
+      
+      if (WebApp.disableVerticalSwipes) {
+        WebApp.disableVerticalSwipes();
+      }
+      
+      const bgColor = '#000000';
+      WebApp.setHeaderColor(bgColor);
+      WebApp.setBackgroundColor(bgColor);
+      
+      // 2. Safety timeout: if something hangs, show app anyway after 3s
+      const timer = setTimeout(() => {
+        setIsReady(true);
+      }, 3000);
+      
+      setIsReady(true);
+      return () => clearTimeout(timer);
+    } catch (e) {
+      console.error("WebApp Init error:", e);
+      setIsReady(true);
     }
-    WebApp.setHeaderColor('#000000');
-    WebApp.setBackgroundColor('#000000');
   }, []);
+
+  if (!isReady) {
+    return <div className="flex items-center justify-center min-h-screen bg-black text-white/50 animate-pulse uppercase tracking-widest text-xs">Squadra CRM...</div>;
+  }
 
   return (
     <ErrorBoundary>
