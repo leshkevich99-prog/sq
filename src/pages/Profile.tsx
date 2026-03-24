@@ -250,4 +250,6 @@ export default function Profile() {
           {saving ? 'Сохранение...' : 'Сохранить изменения'}
         </button>
       </form>
-    </di
+    </div>
+  );
+}
