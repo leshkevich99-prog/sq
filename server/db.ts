@@ -1,11 +1,13 @@
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getFirestore, Timestamp } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
+import { getStorage } from 'firebase-admin/storage';
 import fs from 'node:fs';
 import path from 'node:path';
 
 let db: any = null;
 export let adminAuth: any = null;
+export let bucket: any = null;
 
 if (!getApps().length) {
   const envJson = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
@@ -16,6 +18,7 @@ if (!getApps().length) {
         credential: cert(serviceAccount)
       });
       adminAuth = getAuth(app);
+      bucket = getStorage(app).bucket();
       
       const dbId = process.env.FIREBASE_DATABASE_ID;
       db = getFirestore(app, dbId);
@@ -28,6 +31,7 @@ if (!getApps().length) {
 } else {
   const app = getApps()[0];
   adminAuth = getAuth(app);
+  bucket = getStorage(app).bucket();
   const dbId = process.env.FIREBASE_DATABASE_ID;
   db = getFirestore(app, dbId);
 }

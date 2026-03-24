@@ -7,7 +7,7 @@ import multer from 'multer';
 import { v4 as uuidv4 } from 'uuid';
 import { fileURLToPath } from 'url';
 import { initBot, sendNotification, getBot, createInvoiceLink } from '../server/bot.js';
-import { firestore, adminAuth } from '../server/db.js';
+import { firestore, adminAuth, bucket } from '../server/db.js';
 import { generateToken, authenticateToken, AuthRequest, isAdmin } from '../server/auth.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -17,9 +17,6 @@ const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
 });
-
-import { getStorage } from 'firebase-admin/storage';
-const bucket = getStorage().bucket();
 
 async function startServer() {
   console.log('Starting server initialization...');
