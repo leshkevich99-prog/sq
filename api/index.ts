@@ -106,7 +106,7 @@ async function startServer() {
       }
 
       // 2. Extract user data safely
-      const userStr = urlParams.get('user');
+      const userStr = params['user'];
       if (!userStr) return res.status(400).json({ error: 'Missing user data' });
       
       const tgUser = JSON.parse(userStr);
