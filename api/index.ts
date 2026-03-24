@@ -61,35 +61,46 @@ async function startServer() {
         console.error('TELEGRAM_BOT_TOKEN not set or empty');
         return res.status(500).json({ error: 'Server configuration error' });
       }
-      
+
       // Log token prefix for debugging (safe)
       console.log(`Verifying with bot token starting with: ${botToken.substring(0, 4)}... (length: ${botToken.length})`);
+      console.log(`Raw initData length: ${initData.length}`);
 
-      const urlParams = new URLSearchParams(initData);
-      const hash = urlParams.get('hash');
-      urlParams.delete('hash');
-      urlParams.delete('signature'); // CRITICAL: signature must also be excluded from hash calculation
-      
-      // Sort keys alphabetically (locale-independent) and create the data check string
-      const dataCheckString = Array.from(urlParams.entries())
+      // Ручной парсинг initData через decodeURIComponent (НЕ URLSearchParams)
+      // URLSearchParams декодирует + как пробел (HTML form encoding) — это неверно для Telegram
+      let receivedHash = '';
+      const params: Record<string, string> = {};
+      for (const part of String(initData).split('&')) {
+        const eqIdx = part.indexOf('=');
+        if (eqIdx === -1) continue;
+        const key = decodeURIComponent(part.slice(0, eqIdx));
+        const value = decodeURIComponent(part.slice(eqIdx + 1));
+        if (key === 'hash') { receivedHash = value; continue; }
+        if (key === 'signature') continue;
+        params[key] = value;
+      }
+
+      // Сортировка и построение data check string
+      const dataCheckString = Object.entries(params)
         .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
-        .map(([key, value]) => `${key}=${value}`)
+        .map(([k, v]) => `${k}=${v}`)
         .join('\n');
 
       const secretKey = crypto.createHmac('sha256', 'WebAppData').update(botToken).digest();
       const calculatedHash = crypto.createHmac('sha256', secretKey).update(dataCheckString).digest('hex');
 
-      if (calculatedHash !== hash) {
+      console.log(`Hash check: calculated=${calculatedHash.slice(0, 8)}... received=${receivedHash.slice(0, 8)}...`);
+
+      if (calculatedHash !== receivedHash) {
         console.error('Telegram hash mismatch!');
-        const botIdFromToken = botToken.split(':')[0];
-        console.log(`Bot ID in TELEGRAM_BOT_TOKEN: ${botIdFromToken}`);
+        console.log(`Bot ID in TELEGRAM_BOT_TOKEN: ${botToken.split(':')[0]}`);
         console.log('Data check string:', dataCheckString);
         console.log('Calculated hash:', calculatedHash);
-        console.log('Received hash:', hash);
+        console.log('Received hash:', receivedHash);
         return res.status(401).json({ error: 'Invalid Telegram data' });
       }
 
-      const userStr = urlParams.get('user');
+      const userStr = params['user'];
       if (!userStr) return res.status(400).json({ error: 'Missing user data' });
       const tgUser = JSON.parse(userStr);
 
@@ -146,7 +157,7 @@ async function startServer() {
   app.get('/api/auth/me', authenticateToken, async (req: AuthRequest, res) => {
     const user = await firestore.collection('users').get(req.user?.id!);
     if (!user) return res.status(404).json({ error: 'User not found' });
-    
+
     let firebaseCustomToken = null;
     try {
       if (adminAuth) {
@@ -155,10 +166,10 @@ async function startServer() {
     } catch (authErr) {
       console.error('Error creating custom token:', authErr);
     }
-    
+
     // Refresh token
     const token = generateToken({ id: user.id, telegramId: user.telegramId, role: user.role });
-    
+
     res.cookie('token', token, {
       httpOnly: true,
       secure: true,
@@ -237,18 +248,18 @@ async function startServer() {
       try {
         console.log('Webhook received update:', JSON.stringify(req.body));
         let handled = false;
-        
+
         // Explicitly handle and await critical payment events before Vercel kills the function
         if (req.body.pre_checkout_query) {
           console.log('Webhook received pre_checkout_query, answering...');
           await bot.answerPreCheckoutQuery(req.body.pre_checkout_query.id, true);
           handled = true;
         }
-        
+
         if (req.body.message) {
           const msg = req.body.message;
           const chatId = msg.chat?.id;
-          
+
           if (msg.successful_payment) {
             console.log('Webhook received successful_payment, processing...');
             const { handleSuccessfulPayment: processPayment } = await import('../server/bot');
@@ -335,7 +346,7 @@ async function startServer() {
     try {
       const { amount, type, description, pendingOrderId } = req.body;
       const userId = req.user?.id;
-      
+
       if (!userId) return res.status(401).json({ error: 'Unauthorized' });
       if (amount === undefined || amount === null || isNaN(Number(amount))) {
         console.error('Invalid or missing amount in request:', amount);
@@ -355,7 +366,7 @@ async function startServer() {
         t: type,
         a: numAmount
       };
-      
+
       if (pendingOrderId) payloadObj.po = pendingOrderId;
       if (req.body.tariffName) payloadObj.tn = req.body.tariffName;
       if (req.body.quotas) payloadObj.q = req.body.quotas;
@@ -371,9 +382,9 @@ async function startServer() {
       console.log(`Creating invoice for user ${userId}, amount ${numAmount}, payloadId ${payloadId}, type ${type}`);
 
       const invoiceLink = await createInvoiceLink(
-        type === 'service_order' ? 'Оплата услуги Squadra' : 
-        type === 'subscription' ? 'Оплата тарифа Squadra' :
-        type === 'test_drive' ? 'Оплата тест-драйва' : 'Пополнение депозита',
+        type === 'service_order' ? 'Оплата услуги Squadra' :
+          type === 'subscription' ? 'Оплата тарифа Squadra' :
+            type === 'test_drive' ? 'Оплата тест-драйва' : 'Пополнение депозита',
         description || 'Оплата услуг консьерж-сервиса',
         payloadId,
         numAmount
@@ -385,7 +396,7 @@ async function startServer() {
         console.log('Invoice link created successfully:', invoiceLink);
         return res.json({ payment_url: invoiceLink, isNative: true });
       }
-      
+
       console.warn('createInvoiceLink returned null, falling back to external bePaid URL');
       const token = process.env.VITE_BEPAID_TOKEN || process.env.BEPAID_TOKEN;
       console.log(`Using bePaid token: ${token ? 'present' : 'missing'}`);
@@ -402,12 +413,12 @@ async function startServer() {
   app.get('/api/recommendations', authenticateToken, async (req: AuthRequest, res) => {
     const cars = await firestore.collection('cars').all([{ type: 'where', field: 'userId', op: '==', value: req.user?.id }]);
     const carIds = cars.map(c => c.id);
-    
+
     if (carIds.length === 0) return res.json({ recommendations: [] });
-    
+
     const allRecs = await firestore.collection('recommendations').all();
     const recommendations = allRecs.filter((r: any) => carIds.includes(r.carId));
-    
+
     res.json({ recommendations });
   });
 
@@ -449,7 +460,7 @@ async function startServer() {
     const { collection } = req.params;
     const data = req.body;
     const id = data.id || uuidv4();
-    
+
     try {
       const created = await firestore.collection(collection).set(id, data);
       res.json(created);
@@ -472,11 +483,11 @@ async function startServer() {
   app.put('/api/:collection/:id', authenticateToken, async (req: AuthRequest, res) => {
     const { collection, id } = req.params;
     const data = req.body;
-    
+
     try {
       const item = await firestore.collection(collection).get(id);
       if (!item) return res.status(404).json({ error: 'Not found' });
-      
+
       if (item.userId && item.userId !== req.user?.id && req.user?.role !== 'admin') {
         return res.status(403).json({ error: 'Forbidden' });
       }
@@ -496,7 +507,7 @@ async function startServer() {
     try {
       const item = await firestore.collection(collection).get(id);
       if (!item) return res.status(404).json({ error: 'Not found' });
-      
+
       if (item.userId && item.userId !== req.user?.id && req.user?.role !== 'admin') {
         return res.status(403).json({ error: 'Forbidden' });
       }
