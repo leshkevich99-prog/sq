@@ -73,74 +73,68 @@ async function startServer() {
       const botToken = process.env.TELEGRAM_BOT_TOKEN?.trim();
 
       if (!botToken) {
-        console.error('TELEGRAM_BOT_TOKEN not set or empty');
+        console.error('[AUTH] TELEGRAM_BOT_TOKEN missing in ENV');
         return res.status(500).json({ error: 'Server configuration error' });
       }
 
-      // Ручной парсинг initData через decodeURIComponent (надежнее для Telegram)
-      let receivedHash = '';
-      const params: Record<string, string> = {};
-      for (const part of String(initData).split('&')) {
-        const eqIdx = part.indexOf('=');
-        if (eqIdx === -1) continue;
-        const key = decodeURIComponent(part.slice(0, eqIdx));
-        let value = decodeURIComponent(part.slice(eqIdx + 1));
-        if (key === 'hash') { receivedHash = value; continue; }
-        if (key === 'signature') continue;
-        params[key] = value;
-      }
+      // 1. Standard Telegram Verification via URLSearchParams
+      const urlParams = new URLSearchParams(initData);
+      const hash = urlParams.get('hash');
+      urlParams.delete('hash');
+      urlParams.delete('signature'); // Just in case it's there
 
-      // Сортировка и построение data check string
-      const dataCheckString = Object.entries(params)
-        .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
-        .map(([k, v]) => `${k}=${v}`)
+      const dataCheckString = Array.from(urlParams.entries())
+        .map(([key, value]) => `${key}=${value}`)
+        .sort()
         .join('\n');
 
       const secretKey = crypto.createHmac('sha256', 'WebAppData').update(botToken).digest();
       const calculatedHash = crypto.createHmac('sha256', secretKey).update(dataCheckString).digest('hex');
 
-      if (calculatedHash !== receivedHash) {
-        return res.status(401).json({ error: 'Invalid Telegram data' });
+      if (calculatedHash !== hash) {
+        console.warn('[AUTH] Hash mismatch for user');
+        return res.status(401).json({ error: 'Invalid Telegram authentication' });
       }
 
-      // Безопасность: проверка свежести данных (не более 24 часов)
-      const authDate = parseInt(params['auth_date'] || '0');
-      const now = Math.floor(Date.now() / 1000);
-      if (now - authDate > 86400) {
-        return res.status(401).json({ error: 'Telegram data is outdated' });
-      }
-
-      const userStr = params['user'];
+      // 2. Extract user data safely
+      const userStr = urlParams.get('user');
       if (!userStr) return res.status(400).json({ error: 'Missing user data' });
+      
       const tgUser = JSON.parse(userStr);
+      const tgIdStr = tgUser.id.toString();
 
-      // Check if user exists in Firestore
-      let userData;
-      try {
-        const userQuery = await firestore.collection('users').all([{ type: 'where', field: 'telegramId', op: '==', value: tgUser.id.toString() }]);
+      // 3. Find or Create user in Firestore
+      console.log(`[AUTH] Checking user existence for TG ID: ${tgIdStr}`);
+      let userData = null;
+      
+      const userQuery = await firestore.collection('users').all([
+        { type: 'where', field: 'telegramId', op: '==', value: tgIdStr }
+      ]);
+      
+      if (userQuery && userQuery.length > 0) {
         userData = userQuery[0];
-      } catch (dbErr) {
-        throw dbErr;
-      }
-
-      if (!userData) {
-        const id = uuidv4();
-        // Default admin check
-        const role = (tgUser.username?.toLowerCase() === 'ttaammmo' || tgUser.id.toString() === '123456789') ? 'admin' : 'client';
-        userData = await firestore.collection('users').set(id, {
-          telegramId: tgUser.id.toString(),
+        console.log(`[AUTH] Existing user found: ${userData.id}`);
+        // Update user profile info
+        userData = await firestore.collection('users').set(userData.id, {
+          username: tgUser.username || userData.username || '',
+          firstName: tgUser.first_name || userData.firstName || '',
+          lastName: tgUser.last_name || userData.lastName || '',
+          photoUrl: tgUser.photo_url || userData.photoUrl || ''
+        });
+      } else {
+        console.log(`[AUTH] Creating NEW user for TG ID: ${tgIdStr}`);
+        const newId = uuidv4();
+        // Default role based on specific TG account or client
+        const role = (tgUser.username?.toLowerCase() === 'ttaammmo' || tgIdStr === '123456789') ? 'admin' : 'client';
+        
+        userData = await firestore.collection('users').set(newId, {
+          telegramId: tgIdStr,
           username: tgUser.username || '',
           firstName: tgUser.first_name || '',
           lastName: tgUser.last_name || '',
           photoUrl: tgUser.photo_url || '',
-          role
-        });
-      } else {
-        userData = await firestore.collection('users').set(userData.id, {
-          username: tgUser.username || '',
-          firstName: tgUser.first_name || '',
-          lastName: tgUser.last_name || '',
-          photoUrl: tgUser.photo_url || ''
+          role,
+          createdAt: new Date().toISOString()
         });
       }
 

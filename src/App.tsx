@@ -111,27 +111,19 @@ export default function App() {
 
   useEffect(() => {
     try {
-      // 1. Immediate Telegram UI setup
-      WebApp.ready();
-      WebApp.expand();
+      // UI settings only (ready/expand moved to main.tsx for faster auth)
+      const bgColor = '#000000';
+      WebApp.setHeaderColor(bgColor);
+      WebApp.setBackgroundColor(bgColor);
       
       if (WebApp.disableVerticalSwipes) {
         WebApp.disableVerticalSwipes();
       }
       
-      const bgColor = '#000000';
-      WebApp.setHeaderColor(bgColor);
-      WebApp.setBackgroundColor(bgColor);
-      
-      // 2. Safety timeout: if something hangs, show app anyway after 3s
-      const timer = setTimeout(() => {
-        setIsReady(true);
-      }, 3000);
-      
-      setIsReady(true);
+      const timer = setTimeout(() => setIsReady(true), 100);
       return () => clearTimeout(timer);
     } catch (e) {
-      console.error("WebApp Init error:", e);
+      console.error("App UI Init error:", e);
       setIsReady(true);
     }
   }, []);
