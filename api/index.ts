@@ -13,7 +13,7 @@ import { generateToken, authenticateToken, AuthRequest, isAdmin } from '../serve
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // Configure multer for memory storage (for Vercel compatibility)
-const upload = multer({ 
+const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
 });
@@ -224,40 +224,68 @@ async function startServer() {
     res.json({ request: { ...request, photos: typeof request.photos === 'string' ? JSON.parse(request.photos || '[]') : (request.photos || []) } });
   });
 
-  // File Upload
+  // File Upload with SUPER LOGS
   app.post('/api/upload', authenticateToken, upload.single('file'), async (req: any, res) => {
+    console.log('[UPLOAD] Request received');
     try {
-      if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+      if (!req.user) {
+        console.error('[UPLOAD] No user in request - Auth failed');
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
 
-      const blob = bucket.file(`uploads/${Date.now()}-${req.file.originalname}`);
-      const blobStream = blob.createWriteStream({
-        metadata: {
-          contentType: req.file.mimetype,
-        },
-        resumable: false
-      });
+      if (!req.file) {
+        console.error('[UPLOAD] No file in request. Body keys:', Object.keys(req.body || {}));
+        return res.status(400).json({ error: 'No file uploaded' });
+      }
 
-      blobStream.on('error', (error) => {
-        console.error('Blob upload error:', error);
-        res.status(500).json({ error: 'Upload failed' });
-      });
+      console.log(`[UPLOAD] File received: ${req.file.originalname}, size: ${req.file.size}, type: ${req.file.mimetype}`);
 
-      blobStream.on('finish', async () => {
-        try {
-          // Make the file public to get a permanent link
-          await blob.makePublic();
-          const publicUrl = `https://storage.googleapis.com/${bucket.name}/${blob.name}`;
-          res.json({ url: publicUrl });
-        } catch (err) {
-          console.error('Error making file public:', err);
-          res.status(500).json({ error: 'Failed to generate public URL' });
-        }
-      });
+      if (!bucket) {
+        console.error('[UPLOAD] Firebase Bucket is NULL or UNDEFINED');
+        return res.status(500).json({ error: 'Storage not initialized' });
+      }
 
-      blobStream.end(req.file.buffer);
+      console.log(`[UPLOAD] Using bucket: ${bucket.name}`);
+
+      const fileName = `uploads/${Date.now()}-${req.file.originalname}`;
+      const blob = bucket.file(fileName);
+
+      console.log(`[UPLOAD] Attempting to save blob: ${fileName}`);
+
+      // Save to Firebase Storage
+      try {
+        await blob.save(req.file.buffer, {
+          metadata: { contentType: req.file.mimetype },
+          resumable: false
+        });
+        console.log('[UPLOAD] Blob saved successfully');
+      } catch (saveErr: any) {
+        console.error('[UPLOAD] Error during blob.save():', saveErr);
+        throw new Error(`Firebase save failed: ${saveErr.message}`);
+      }
+
+      console.log('[UPLOAD] Attempting to get signed URL...');
+
+      // Get signed URL
+      try {
+        const [signedUrl] = await blob.getSignedUrl({
+          action: 'read',
+          expires: '01-01-2099'
+        });
+        console.log('[UPLOAD] Signed URL generated:', signedUrl.substring(0, 50) + '...');
+        res.json({ url: signedUrl });
+      } catch (urlErr: any) {
+        console.error('[UPLOAD] Error during getSignedUrl():', urlErr);
+        throw new Error(`Signed URL generation failed: ${urlErr.message}`);
+      }
+
     } catch (e: any) {
-      console.error('Upload endpoint error:', e);
-      res.status(500).json({ error: e.message });
+      console.error('[UPLOAD] CRITICAL ERROR:', e);
+      res.status(500).json({ 
+        error: e.message || 'File upload failed',
+        details: e.toString(),
+        stack: e.stack
+      });
     }
   });
 
