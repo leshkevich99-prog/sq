@@ -164,9 +164,12 @@ export const createNotification = async (
   type: string,
   link?: string
 ): Promise<void> => {
-  if (!_db) return;
+  if (!db) {
+    console.error('[Firebase] createNotification: db is not initialized');
+    return;
+  }
   try {
-    await addDoc(collection(_db, 'notifications'), {
+    await addDoc(collection(db, 'notifications'), {
       userId,
       title,
       body,
