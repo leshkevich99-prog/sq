@@ -79,9 +79,9 @@ async function startServer() {
   app.post('/api/auth/telegram-login', async (req, res) => {
     try {
       const { initData } = req.body;
-      if (!initData) return res.status(400).json({ error: 'Missing initData' });
+      // ВРЕМЕННЫЙ ХАРДКОД ДЛЯ ДИАГНОСТИКИ (игнорируем Vercel env)
+      const botToken = "8635277211:AAFILNiDWzXEfHWoIbTMB1PxFQEPsGMLgBU";
 
-      const botToken = process.env.TELEGRAM_BOT_TOKEN?.trim();
       if (!botToken) {
         console.error('TELEGRAM_BOT_TOKEN not set or empty');
         return res.status(500).json({ error: 'Server configuration error' });
