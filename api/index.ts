@@ -281,7 +281,10 @@ async function startServer() {
 
     } catch (e: any) {
       console.error('[UPLOAD] CRITICAL ERROR:', e);
+      // Если мы дошли сюда, значит что-то совсем плохо. 
+      // Попробуем хотя бы вернуть ошибку, которую фронтенд сможет отобразить.
       res.status(500).json({ 
+        url: null, // Чтобы фронтенд увидел отсутствие ссылки
         error: e.message || 'File upload failed',
         details: e.toString(),
         stack: e.stack
