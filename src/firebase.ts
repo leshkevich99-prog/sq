@@ -123,12 +123,12 @@ console.log("[Firebase] Config check:", {
 
 try {
   app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
-  db = getFirestore(app);
+  const dbId = import.meta.env.VITE_FIREBASE_DATABASE_ID;
+  db = getFirestore(app, dbId);
   auth = getAuth(app);
   storage = getStorage(app);
-  console.log("[Firebase] SDK initialized. App name:", app.name);
 } catch (error) {
-  console.error("[Firebase] Initialization failed:", error);
+  console.error("[Firebase] Init error");
   db = null as any;
   auth = null as any;
   storage = null as any;

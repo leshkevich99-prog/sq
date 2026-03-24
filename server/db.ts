@@ -17,29 +17,19 @@ if (!getApps().length) {
       });
       adminAuth = getAuth(app);
       
-      const configPath = path.join(process.cwd(), 'firebase-applet-config.json');
-      if (fs.existsSync(configPath)) {
-        const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
-        db = getFirestore(app, config.firestoreDatabaseId);
-      } else {
-        db = getFirestore(app);
-      }
+      const dbId = process.env.FIREBASE_DATABASE_ID;
+      db = getFirestore(app, dbId);
     } catch (error) {
-      console.error('Failed to parse FIREBASE_SERVICE_ACCOUNT_KEY:', error);
+      console.error('Firebase Admin init error');
     }
   } else {
-    console.warn('FIREBASE_SERVICE_ACCOUNT_KEY is missing or undefined.');
+    console.warn('FIREBASE_SERVICE_ACCOUNT_KEY is missing');
   }
 } else {
   const app = getApps()[0];
   adminAuth = getAuth(app);
-  const configPath = path.join(process.cwd(), 'firebase-applet-config.json');
-  if (fs.existsSync(configPath)) {
-    const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
-    db = getFirestore(app, config.firestoreDatabaseId);
-  } else {
-    db = getFirestore(app);
-  }
+  const dbId = process.env.FIREBASE_DATABASE_ID;
+  db = getFirestore(app, dbId);
 }
 
 // Helper to convert Firestore data to plain objects
