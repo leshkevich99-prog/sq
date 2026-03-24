@@ -118,21 +118,36 @@ async function startServer() {
       const tgUser = JSON.parse(userStr);
 
       // Check if user exists in Firestore
-      let user = await firestore.collection('users').all([{ type: 'where', field: 'telegramId', op: '==', value: tgUser.id.toString() }]);
-      let userData = user[0];
+      console.log(`[Firestore] Looking for user with telegramId: ${tgUser.id}`);
+      let userData;
+      try {
+        const userQuery = await firestore.collection('users').all([{ type: 'where', field: 'telegramId', op: '==', value: tgUser.id.toString() }]);
+        userData = userQuery[0];
+        console.log(`[Firestore] User ${userData ? 'FOUND' : 'NOT FOUND'} in database`);
+      } catch (dbErr) {
+        console.error(`[Firestore] Query error:`, dbErr);
+        throw dbErr;
+      }
 
       if (!userData) {
+        console.log(`[Firestore] Creating new user for: ${tgUser.username || tgUser.id}`);
         const id = uuidv4();
         // Default admin check
         const role = (tgUser.username?.toLowerCase() === 'ttaammmo' || tgUser.id.toString() === '123456789') ? 'admin' : 'client';
-        userData = await firestore.collection('users').set(id, {
-          telegramId: tgUser.id.toString(),
-          username: tgUser.username || '',
-          firstName: tgUser.first_name || '',
-          lastName: tgUser.last_name || '',
-          photoUrl: tgUser.photo_url || '',
-          role
-        });
+        try {
+          userData = await firestore.collection('users').set(id, {
+            telegramId: tgUser.id.toString(),
+            username: tgUser.username || '',
+            firstName: tgUser.first_name || '',
+            lastName: tgUser.last_name || '',
+            photoUrl: tgUser.photo_url || '',
+            role
+          });
+          console.log(`[Firestore] User created successfully with ID: ${id}`);
+        } catch (createErr) {
+          console.error(`[Firestore] Create error:`, createErr);
+          throw createErr;
+        }
       } else {
         userData = await firestore.collection('users').set(userData.id, {
           username: tgUser.username || '',

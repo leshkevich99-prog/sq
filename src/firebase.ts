@@ -114,11 +114,19 @@ let db: Firestore;
 let auth: Auth;
 let storage: FirebaseStorage;
 
+console.log("[Firebase] Starting initialization...");
+console.log("[Firebase] Config check:", {
+  apiKey: firebaseConfig.apiKey ? "present" : "MISSING",
+  projectId: firebaseConfig.projectId ? "present" : "MISSING",
+  appId: firebaseConfig.appId ? "present" : "MISSING"
+});
+
 try {
   app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
   db = getFirestore(app);
   auth = getAuth(app);
   storage = getStorage(app);
+  console.log("[Firebase] SDK initialized. App name:", app.name);
 } catch (error) {
   console.error("[Firebase] Initialization failed:", error);
   db = null as any;
