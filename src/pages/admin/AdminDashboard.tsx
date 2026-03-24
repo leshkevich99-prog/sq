@@ -123,6 +123,19 @@ export default function AdminDashboard() {
         setCars(crs);
       }
 
+      if (sosRes.ok) {
+        const data = await sosRes.json();
+        setSosAlerts(data.sos_alerts || []);
+      }
+
+      if (testRes.ok) {
+        const data = await testRes.json();
+        const drives = (data.test_drives || []).sort((a: any, b: any) => 
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+        setTestDrives(drives);
+      }
+
       setLoading(false);
     } catch (error) {
       console.error('Fetch dashboard error:', error);
