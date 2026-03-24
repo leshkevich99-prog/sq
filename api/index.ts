@@ -47,6 +47,31 @@ async function startServer() {
   });
 
   // ==========================================
+  // DIAGNOSTIC ENDPOINT
+  // ==========================================
+  app.get('/api/debug-env', async (req, res) => {
+    const botToken = process.env.TELEGRAM_BOT_TOKEN?.trim() || '';
+    const botId = botToken.split(':')[0] || 'none';
+    
+    let tgInfo = null;
+    try {
+      const resp = await fetch(`https://api.telegram.org/bot${botToken}/getMe`);
+      tgInfo = await resp.json();
+    } catch (e: any) {
+      tgInfo = { error: e.message };
+    }
+
+    res.json({
+      bot_id_env: botId,
+      token_length: botToken.length,
+      token_prefix: botToken.substring(0, 10) + '...',
+      telegram_api_status: tgInfo,
+      node_version: process.version,
+      timestamp: new Date().toISOString()
+    });
+  });
+
+  // ==========================================
   // API ROUTES (LOCAL DATABASE)
   // ==========================================
 
@@ -87,9 +112,20 @@ async function startServer() {
         .join('\n');
 
       const secretKey = crypto.createHmac('sha256', 'WebAppData').update(botToken).digest();
-      const calculatedHash = crypto.createHmac('sha256', secretKey).update(dataCheckString).digest('hex');
+      let calculatedHash = crypto.createHmac('sha256', secretKey).update(dataCheckString).digest('hex');
 
       console.log(`Hash check: calculated=${calculatedHash.slice(0, 8)}... received=${receivedHash.slice(0, 8)}...`);
+
+      if (calculatedHash !== receivedHash) {
+        // ПОПЫТКА №2: Некоторые версии Telegram Mini Apps могут не экранировать слэши в user JSON
+        const altDataCheckString = dataCheckString.replace(/\\\//g, '/');
+        const altHash = crypto.createHmac('sha256', secretKey).update(altDataCheckString).digest('hex');
+        
+        if (altHash === receivedHash) {
+          console.log('Hash matched on attempt #2 (unescaped slashes)');
+          calculatedHash = altHash;
+        }
+      }
 
       if (calculatedHash !== receivedHash) {
         console.error('Telegram hash mismatch!');
