@@ -77,22 +77,31 @@ async function startServer() {
         return res.status(500).json({ error: 'Server configuration error' });
       }
 
-      // 1. Standard Telegram Verification via URLSearchParams
-      const urlParams = new URLSearchParams(initData);
-      const hash = urlParams.get('hash');
-      urlParams.delete('hash');
-      urlParams.delete('signature'); // Just in case it's there
+      // 1. Classical Telegram Verification (Manual parse is more stable for TG)
+      const params: Record<string, string> = {};
+      let receivedHash = '';
+      
+      const parts = String(initData).split('&');
+      for (const part of parts) {
+        const [key, ...valueParts] = part.split('=');
+        const value = decodeURIComponent(valueParts.join('='));
+        if (key === 'hash') {
+          receivedHash = value;
+        } else {
+          params[key] = value;
+        }
+      }
 
-      const dataCheckString = Array.from(urlParams.entries())
-        .map(([key, value]) => `${key}=${value}`)
+      const dataCheckString = Object.keys(params)
         .sort()
+        .map(key => `${key}=${params[key]}`)
         .join('\n');
 
       const secretKey = crypto.createHmac('sha256', 'WebAppData').update(botToken).digest();
       const calculatedHash = crypto.createHmac('sha256', secretKey).update(dataCheckString).digest('hex');
 
-      if (calculatedHash !== hash) {
-        console.warn('[AUTH] Hash mismatch for user');
+      if (calculatedHash !== receivedHash) {
+        console.warn('[AUTH] Hash mismatch. Received:', receivedHash, 'Calculated:', calculatedHash);
         return res.status(401).json({ error: 'Invalid Telegram authentication' });
       }
 
