@@ -11,6 +11,9 @@ interface CarData {
   model: string;
   year: number;
   plate: string;
+  vin?: string;
+  techPassportFront?: string;
+  techPassportBack?: string;
   isApproved: boolean;
   createdAt: string;
 }
@@ -78,15 +81,20 @@ export default function AdminModeration() {
     }
   };
 
-  const handleApprove = async (carId: string) => {
-    const toastId = toast.loading('Одобрение автомобиля...');
+  const handleApprove = async (carId: string, updatedData?: Partial<CarData>) => {
+    const toastId = toast.loading('Оформление и одобрение...');
     try {
-      await updateDoc(doc(db, 'cars', carId), { isApproved: true });
+      const dataToSave = { 
+        ...updatedData,
+        isApproved: true,
+        updatedAt: new Date().toISOString()
+      };
+      await updateDoc(doc(db, 'cars', carId), dataToSave);
       if (selectedCar?.id === carId) setSelectedCar(null);
-      toast.success('Автомобиль одобрен', { id: toastId });
+      toast.success('Автомобиль успешно проверен и одобрен', { id: toastId });
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, `cars/${carId}`);
-      toast.error('Ошибка при одобрении', { id: toastId });
+      toast.error('Ошибка при сохранении', { id: toastId });
     }
   };
 
@@ -242,29 +250,83 @@ export default function AdminModeration() {
               </button>
             </div>
             
-            <div className="space-y-4 mb-6">
-              <div className="bg-black rounded-xl p-4 border border-zinc-800">
-                <div className="text-xs text-zinc-500 mb-1 uppercase tracking-wider">Марка и модель</div>
-                <div className="font-medium text-lg">{selectedCar.make} {selectedCar.model}</div>
+            <div className="space-y-4 mb-6 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+              <div className="bg-black rounded-xl p-4 border border-zinc-800 space-y-4">
+                <div>
+                  <label className="text-[10px] text-zinc-500 uppercase tracking-widest mb-1 block">Марка</label>
+                  <input 
+                    type="text" 
+                    value={selectedCar.make} 
+                    onChange={(e) => setSelectedCar({...selectedCar, make: e.target.value})}
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-lg py-2 px-3 text-white focus:outline-none focus:border-amber-500"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] text-zinc-500 uppercase tracking-widest mb-1 block">Модель</label>
+                  <input 
+                    type="text" 
+                    value={selectedCar.model} 
+                    onChange={(e) => setSelectedCar({...selectedCar, model: e.target.value})}
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-lg py-2 px-3 text-white focus:outline-none focus:border-amber-500"
+                  />
+                </div>
               </div>
               
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-black rounded-xl p-4 border border-zinc-800">
-                  <div className="text-xs text-zinc-500 mb-1 uppercase tracking-wider">Год выпуска</div>
-                  <div className="font-mono text-lg">{selectedCar.year}</div>
+                  <label className="text-[10px] text-zinc-500 uppercase tracking-widest mb-1 block">Год выпуска</label>
+                  <input 
+                    type="number" 
+                    value={selectedCar.year} 
+                    onChange={(e) => setSelectedCar({...selectedCar, year: parseInt(e.target.value)})}
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-lg py-2 px-3 text-white font-mono focus:outline-none focus:border-amber-500"
+                  />
                 </div>
                 <div className="bg-black rounded-xl p-4 border border-zinc-800">
-                  <div className="text-xs text-zinc-500 mb-1 uppercase tracking-wider">Гос. номер</div>
-                  <div className="font-mono text-lg uppercase">{selectedCar.plate}</div>
+                  <label className="text-[10px] text-zinc-500 uppercase tracking-widest mb-1 block">Гос. номер</label>
+                  <input 
+                    type="text" 
+                    value={selectedCar.plate} 
+                    onChange={(e) => setSelectedCar({...selectedCar, plate: e.target.value})}
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-lg py-2 px-3 text-white font-mono uppercase focus:outline-none focus:border-amber-500"
+                  />
                 </div>
               </div>
 
               <div className="bg-black rounded-xl p-4 border border-zinc-800">
-                <div className="text-xs text-zinc-500 mb-1 uppercase tracking-wider">Владелец</div>
-                <div className="font-medium">
-                  {users[selectedCar.userId] ? `${users[selectedCar.userId].firstName} (@${users[selectedCar.userId].username})` : 'Неизвестно'}
-                </div>
+                <label className="text-[10px] text-zinc-500 uppercase tracking-widest mb-1 block">VIN</label>
+                <input 
+                  type="text" 
+                  value={selectedCar.vin || ''} 
+                  onChange={(e) => setSelectedCar({...selectedCar, vin: e.target.value})}
+                  className="w-full bg-zinc-900 border border-zinc-800 rounded-lg py-2 px-3 text-white font-mono uppercase focus:outline-none focus:border-amber-500"
+                  placeholder="Не указан"
+                />
               </div>
+
+              {(selectedCar.techPassportFront || selectedCar.techPassportBack) && (
+                <div className="space-y-3">
+                  <label className="text-[10px] text-zinc-500 uppercase tracking-widest block">Фото техпаспорта</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {selectedCar.techPassportFront && (
+                      <div className="relative aspect-video bg-black rounded-lg overflow-hidden border border-zinc-800 group">
+                        <img src={selectedCar.techPassportFront} alt="Lice" className="w-full h-full object-cover" />
+                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <button onClick={() => window.open(selectedCar.techPassportFront, '_blank')} className="text-[10px] bg-white text-black px-2 py-1 rounded font-bold">СМОТРЕТЬ</button>
+                        </div>
+                      </div>
+                    )}
+                    {selectedCar.techPassportBack && (
+                      <div className="relative aspect-video bg-black rounded-lg overflow-hidden border border-zinc-800 group">
+                        <img src={selectedCar.techPassportBack} alt="Back" className="w-full h-full object-cover" />
+                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <button onClick={() => window.open(selectedCar.techPassportBack, '_blank')} className="text-[10px] bg-white text-black px-2 py-1 rounded font-bold">СМОТРЕТЬ</button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-3">
@@ -275,10 +337,10 @@ export default function AdminModeration() {
                 <X size={18} /> Отклонить
               </button>
               <button 
-                onClick={() => handleApprove(selectedCar.id)}
-                className="flex items-center justify-center gap-2 py-3 bg-emerald-500/10 text-emerald-500 text-sm font-bold uppercase tracking-wider rounded-xl hover:bg-emerald-500/20 transition-colors"
+                onClick={() => handleApprove(selectedCar.id, selectedCar)}
+                className="flex items-center justify-center gap-2 py-3 bg-emerald-500 text-black text-sm font-bold uppercase tracking-wider rounded-xl hover:bg-emerald-400 transition-colors shadow-lg shadow-emerald-500/20"
               >
-                <Check size={18} /> Одобрить
+                <Check size={18} /> Сохранить и Одобрить
               </button>
             </div>
           </div>

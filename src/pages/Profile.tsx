@@ -13,7 +13,8 @@ export default function Profile() {
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
-    phone: ''
+    phone: '',
+    tariff: ''
   });
 
   const [focusedField, setFocusedField] = useState<string | null>(null);
@@ -48,7 +49,8 @@ export default function Profile() {
       setFormData({
         firstName: user.firstName || '',
         lastName: user.lastName || '',
-        phone: user.phone || ''
+        phone: user.phone || '',
+        tariff: user.tariff || user.subscription || ''
       });
       setLoading(false);
     };
@@ -115,9 +117,6 @@ export default function Profile() {
             <p className="text-zinc-400 text-sm mt-1">Личные данные</p>
           </div>
         </div>
-        <button onClick={handleLogout} className="p-2 text-red-500 bg-red-500/10 rounded-full hover:bg-red-500/20 transition-colors">
-          <LogOut size={20} />
-        </button>
       </header>
 
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -223,6 +222,20 @@ export default function Profile() {
                   placeholder="+375 (29) 123-45-67"
                 />
               </div>
+            <div>
+              <label className="block text-xs font-medium text-zinc-400 uppercase tracking-wider mb-2">Ваш тариф</label>
+              <select
+                name="tariff"
+                value={formData.tariff}
+                onChange={(e) => setFormData({ ...formData, tariff: e.target.value })}
+                className="w-full bg-black border border-zinc-800 rounded-lg py-3 px-4 text-white focus:outline-none focus:border-accent appearance-none transition-colors"
+                style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='white'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 1rem center', backgroundSize: '1.2em' }}
+              >
+                <option value="">Без тарифа</option>
+                <option value="telemetry">TELEMETRY</option>
+                <option value="pitstop">PIT STOP</option>
+                <option value="family">SQUADRA FAMILY</option>
+              </select>
             </div>
           </div>
         </div>

@@ -97,11 +97,20 @@ export default function Tariffs() {
           });
         }
 
-        // 2. Update user subscription
-        await updateDoc(doc(db, 'users', user.uid), {
-          subscription: tariffName,
-          quotas: quotas
+        // 2. Update user tariff via API
+        const updRes = await fetch('/api/users/profile', {
+          method: 'PUT',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+          },
+          body: JSON.stringify({ 
+            tariff: tariffName,
+            quotas: quotas
+          })
         });
+
+        if (!updRes.ok) throw new Error('Failed to update tariff via API');
 
         toast.success(`Тариф ${tariffName} успешно активирован!`, { id: toastId });
         WebApp.HapticFeedback.notificationOccurred('success');
