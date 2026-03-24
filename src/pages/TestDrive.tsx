@@ -55,18 +55,26 @@ export default function TestDrive() {
 
     try {
       const testDrivePrice = 500;
-      const pendingOrderRef = await addDoc(collection(db, 'pending_orders'), {
-        userId: user.uid,
-        type: 'test_drive',
-        name,
-        phone,
-        carModel,
-        date,
-        time,
-        address,
-        price: testDrivePrice,
-        createdAt: new Date().toISOString()
+      const pendingOrderRes = await fetch('/api/pending_orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.id,
+          type: 'test_drive',
+          name,
+          phone,
+          carModel,
+          date,
+          time,
+          address,
+          price: testDrivePrice,
+          createdAt: new Date().toISOString()
+        })
       });
+
+      if (!pendingOrderRes.ok) throw new Error('Failed to create pending order via API');
+      const pendingOrder = await pendingOrderRes.json();
+      const pendingOrderId = pendingOrder.id;
 
       const response = await fetch('/api/payments/bepaid/create', {
         method: 'POST',
@@ -75,10 +83,10 @@ export default function TestDrive() {
           'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
         },
         body: JSON.stringify({
-          userId: user.uid,
+          userId: user.id,
           amount: testDrivePrice,
           type: 'test_drive',
-          pendingOrderId: pendingOrderRef.id,
+          pendingOrderId: pendingOrderId,
           description: `Оплата тест-драйва ${carModel}`
         })
       });

@@ -88,38 +88,41 @@ export default function AdminCRM() {
   const [selectedRole, setSelectedRole] = useState<'all' | 'admin' | 'pilot' | 'client'>('all');
   const [selectedTariff, setSelectedTariff] = useState('all');
 
-  useEffect(() => {
-    const unsubUsers = onSnapshot(collection(db, 'users'), (snapshot) => {
-      const usrs: UserData[] = [];
-      snapshot.forEach(doc => {
-        usrs.push({ id: doc.id, ...doc.data() } as UserData);
-      });
-      setUsers(usrs);
+  const fetchData = React.useCallback(async () => {
+    try {
+      const [userRes, carRes, txRes] = await Promise.all([
+        fetch('/api/admin/users'),
+        fetch('/api/admin/cars'), // Need an admin endpoint for ALL cars
+        fetch('/api/admin/transactions')
+      ]);
+
+      if (userRes.ok) {
+        const data = await userRes.json();
+        setUsers(data.users || []);
+      }
+
+      if (carRes.ok) {
+        const data = await carRes.json();
+        setCars(data.cars || []);
+      }
+
+      if (txRes.ok) {
+        const data = await txRes.json();
+        setTransactions(data.transactions || []);
+      }
+
       setLoading(false);
-    }, (error) => handleFirestoreError(error, OperationType.LIST, 'users'));
-
-    const unsubCars = onSnapshot(collection(db, 'cars'), (snapshot) => {
-      const crs: CarData[] = [];
-      snapshot.forEach(doc => {
-        crs.push({ id: doc.id, ...doc.data() } as CarData);
-      });
-      setCars(crs);
-    }, (error) => handleFirestoreError(error, OperationType.LIST, 'cars'));
-
-    const unsubTxs = onSnapshot(collection(db, 'transactions'), (snapshot) => {
-      const txs: TransactionData[] = [];
-      snapshot.forEach(doc => {
-        txs.push({ id: doc.id, ...doc.data() } as TransactionData);
-      });
-      setTransactions(txs);
-    }, (error) => handleFirestoreError(error, OperationType.LIST, 'transactions'));
-
-    return () => {
-      unsubUsers();
-      unsubCars();
-      unsubTxs();
-    };
+    } catch (error) {
+      console.error('CRM Fetch error:', error);
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchData();
+    const interval = setInterval(fetchData, 30000); // Poll every 30s
+    return () => clearInterval(interval);
+  }, [fetchData]);
 
   const openBilling = (user: UserData) => {
     setSelectedClient(user);

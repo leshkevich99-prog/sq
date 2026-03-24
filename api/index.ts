@@ -598,6 +598,50 @@ async function startServer() {
     res.json({ transactions });
   });
 
+  app.post('/api/admin/broadcast', authenticateToken, isAdmin, async (req, res) => {
+    const { title, body, type, target } = req.body;
+    
+    try {
+      let users: any[] = [];
+      if (target === 'all') {
+        users = await firestore.collection('users').all();
+      } else if (target === 'pilots') {
+        users = await firestore.collection('users').all([{ type: 'where', field: 'role', op: '==', value: 'pilot' }]);
+      } else if (target === 'clients') {
+        users = await firestore.collection('users').all([{ type: 'where', field: 'role', op: '==', value: 'client' }]);
+      }
+
+      const sentBy = (req as any).user?.username || 'Admin';
+      const sentAt = new Date().toISOString();
+
+      // Create notifications for each user
+      const promises = users.map(u => 
+        firestore.collection('notifications').set(uuidv4(), {
+          userId: u.id,
+          title,
+          body,
+          type,
+          link: '/notifications',
+          read: false,
+          createdAt: sentAt
+        })
+      );
+
+      await Promise.all(promises);
+
+      // Save to history
+      await firestore.collection('broadcasts').set(uuidv4(), {
+        title, body, type, target, sentAt, sentBy,
+        count: users.length
+      });
+
+      res.json({ success: true, count: users.length });
+    } catch (e) {
+      console.error('Broadcast failed:', e);
+      res.status(500).json({ error: 'Broadcast failed' });
+    }
+  });
+
   // Generic CRUD for Firestore
   app.get('/api/:collection', authenticateToken, async (req: AuthRequest, res) => {
     const { collection } = req.params;

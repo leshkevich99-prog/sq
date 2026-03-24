@@ -61,43 +61,27 @@ export default function AdminNotifications() {
     const toastId = toast.loading('Рассылка уведомлений...');
 
     try {
-      // 1. Get target users
-      let usersQuery;
-      if (target === 'all') {
-        usersQuery = collection(db, 'users');
-      } else if (target === 'pilots') {
-        usersQuery = query(collection(db, 'users'), where('role', '==', 'pilot'));
-      } else {
-        usersQuery = query(collection(db, 'users'), where('role', '==', 'client'));
-      }
-
-      const usersSnapshot = await getDocs(usersQuery);
-      const userIds: string[] = [];
-      usersSnapshot.forEach(doc => userIds.push(doc.id));
-
-      // 2. Send notifications in parallel
-      const notificationPromises = userIds.map(userId => 
-        createNotification(userId, title, body, type, '/notifications')
-      );
-
-      await Promise.all(notificationPromises);
-
-      // 3. Save to broadcast history
-      await addDoc(collection(db, 'broadcasts'), {
-        title,
-        body,
-        type,
-        target,
-        sentAt: new Date().toISOString(),
-        sentBy: 'admin', // In a real app, get current admin name
-        count: userIds.length
+      const response = await fetch('/api/admin/broadcast', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, body, type, target })
       });
 
-      toast.success(`Уведомление отправлено ${userIds.length} пользователям`, { id: toastId });
+      if (!response.ok) throw new Error('Broadcast failed');
+      const result = await response.json();
+
+      toast.success(`Уведомление отправлено ${result.count} пользователям`, { id: toastId });
       
       // Reset form
       setTitle('');
       setBody('');
+      
+      // Refresh list
+      const q = query(collection(db, 'broadcasts'), orderBy('sentAt', 'desc'), limit(20));
+      const snapshot = await getDocs(q);
+      const n: SentNotification[] = [];
+      snapshot.forEach(doc => n.push({ id: doc.id, ...doc.data() } as SentNotification));
+      setNotifications(n);
     } catch (error) {
       console.error('Broadcast error:', error);
       toast.error('Ошибка при выполнении рассылки', { id: toastId });

@@ -45,22 +45,12 @@ export default function Profile() {
   useEffect(() => {
     const fetchProfile = async () => {
       if (!user) return;
-      try {
-        const docRef = doc(db, 'users', user.uid);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          setFormData({
-            firstName: data.firstName || '',
-            lastName: data.lastName || '',
-            phone: data.phone || ''
-          });
-        }
-      } catch (error) {
-        handleFirestoreError(error, OperationType.GET, `users/${user.uid}`);
-      } finally {
-        setLoading(false);
-      }
+      setFormData({
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        phone: user.phone || ''
+      });
+      setLoading(false);
     };
 
     fetchProfile();
@@ -75,16 +65,26 @@ export default function Profile() {
     if (!user) return;
     
     setSaving(true);
+    const toastId = toast.loading('Сохранение...');
     try {
-      await updateDoc(doc(db, 'users', user.uid), {
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        phone: formData.phone
+      const response = await fetch('/api/users/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
       });
-      // Optionally show a success message
+
+      if (!response.ok) throw new Error('Failed to update profile');
+      
+      // Update global user state
+      if (typeof (user as any).refresh === 'function') {
+        await (user as any).refresh();
+      }
+      
+      toast.success('Профиль обновлен', { id: toastId });
       navigate(-1);
     } catch (error) {
-      handleFirestoreError(error, OperationType.UPDATE, `users/${user.uid}`);
+      console.error('Profile update error:', error);
+      toast.error('Ошибка при сохранении', { id: toastId });
     } finally {
       setSaving(false);
     }

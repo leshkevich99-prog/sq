@@ -240,27 +240,35 @@ export default function Order() {
           await updateDoc(doc(db, 'users', user.uid), updateData);
         }
 
-        // 3. Create request
-        const docRef = await addDoc(collection(db, 'requests'), {
-          userId: user.uid,
-          carId: selectedCarId,
-          serviceType: service,
-          status: 'pending',
-          usedQuota: useQuota,
-          pickupAddress,
-          deliveryAddress: service === 'logistics' ? deliveryAddress : '',
-          orderDate,
-          orderTime,
-          washType: service === 'wash' ? washType : '',
-          comment,
-          price,
-          balanceDeduction,
-          paidExternally: 0,
-          createdAt: new Date().toISOString()
+        // 3. Create request via API
+        const response = await fetch('/api/requests', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: user.id,
+            carId: selectedCarId,
+            serviceType: service,
+            status: 'pending',
+            usedQuota: useQuota,
+            pickupAddress,
+            deliveryAddress: service === 'logistics' ? deliveryAddress : '',
+            orderDate,
+            orderTime,
+            washType: service === 'wash' ? washType : '',
+            comment,
+            price,
+            balanceDeduction,
+            paidExternally: 0,
+            createdAt: new Date().toISOString()
+          })
         });
 
+        if (!response.ok) throw new Error('Failed to create request via API');
+        const newRequest = await response.json();
+        const requestId = newRequest.id;
+
         // 4. Notify admins
-        await notifyAdmins(docRef.id, service, useQuota, balanceDeduction, 0);
+        await notifyAdmins(requestId, service, useQuota, balanceDeduction, 0);
 
         toast.success('Поручение успешно отправлено!', { id: toastId });
         WebApp.HapticFeedback.notificationOccurred('success');

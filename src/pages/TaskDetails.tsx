@@ -333,8 +333,13 @@ export default function TaskDetails() {
 
       // Update request with external payment info if it's a large bill
       if (expenseType === 'large_bill_sto') {
-        await updateDoc(doc(db, 'requests', id), {
-          paidExternally: (request.paidExternally || 0) + amount
+        const amount = parseFloat(expenseAmount);
+        await fetch(`/api/requests/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            paidExternally: (request.paidExternally || 0) + amount
+          })
         });
       }
 
@@ -357,8 +362,12 @@ export default function TaskDetails() {
     const currentMetadata = request.photoMetadata?.[safeUrl] || { timestamp: new Date().toISOString() };
     
     try {
-      await updateDoc(doc(db, 'requests', id), {
-        [`photoMetadata.${safeUrl}.isDamage`]: !currentMetadata.isDamage
+      await fetch(`/api/requests/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          [`photoMetadata.${safeUrl}.isDamage`]: !currentMetadata.isDamage
+        })
       });
       toast.success(currentMetadata.isDamage ? 'Метка повреждения снята' : 'Отмечено как повреждение');
     } catch (e) {
@@ -386,8 +395,12 @@ export default function TaskDetails() {
       const currentPhotos = (request as any)[field] || [];
       const updatedPhotos = currentPhotos.filter((p: string) => p !== photoUrl);
       
-      await updateDoc(doc(db, 'requests', id), {
-        [field]: updatedPhotos
+      await fetch(`/api/requests/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          [field]: updatedPhotos
+        })
       });
       
       toast.success('Фото удалено', { id: toastId });
