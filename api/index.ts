@@ -52,7 +52,7 @@ async function startServer() {
   app.get('/api/debug-env', async (req, res) => {
     const botToken = process.env.TELEGRAM_BOT_TOKEN?.trim() || '';
     const botId = botToken.split(':')[0] || 'none';
-    
+
     let tgInfo = null;
     try {
       const resp = await fetch(`https://api.telegram.org/bot${botToken}/getMe`);
@@ -81,15 +81,16 @@ async function startServer() {
       const { initData } = req.body;
       // ВРЕМЕННЫЙ ХАРДКОД ДЛЯ ДИАГНОСТИКИ (игнорируем Vercel env)
       const botToken = "8635277211:AAFILNiDWzXEfHWoIbTMB1PxFQEPsGMLgBU";
+      const versionMarker = "VER_2026_03_24_12_40"; // УНИКАЛЬНЫЙ МАРКЕР
 
       if (!botToken) {
         console.error('TELEGRAM_BOT_TOKEN not set or empty');
         return res.status(500).json({ error: 'Server configuration error' });
       }
 
-      // Log token prefix for debugging (safe)
-      console.log(`Verifying with bot token starting with: ${botToken.substring(0, 4)}... (length: ${botToken.length})`);
-      console.log(`Raw initData length: ${initData.length}`);
+      console.log(`[AUTH] Marker: ${versionMarker}`);
+      console.log(`[AUTH] Token len: ${botToken.length}, prefix: ${botToken.substring(0, 10)}...`);
+      console.log(`[AUTH] Raw initData length: ${initData.length}`);
 
       // Ручной парсинг initData через decodeURIComponent (НЕ URLSearchParams)
       // URLSearchParams декодирует + как пробел (HTML form encoding) — это неверно для Telegram
@@ -120,7 +121,7 @@ async function startServer() {
         // ПОПЫТКА №2: Некоторые версии Telegram Mini Apps могут не экранировать слэши в user JSON
         const altDataCheckString = dataCheckString.replace(/\\\//g, '/');
         const altHash = crypto.createHmac('sha256', secretKey).update(altDataCheckString).digest('hex');
-        
+
         if (altHash === receivedHash) {
           console.log('Hash matched on attempt #2 (unescaped slashes)');
           calculatedHash = altHash;
