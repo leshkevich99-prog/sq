@@ -226,9 +226,9 @@ async function startServer() {
     res.json({ request: { ...request, photos: typeof request.photos === 'string' ? JSON.parse(request.photos || '[]') : (request.photos || []) } });
   });
 
-  // File Upload with SUPER LOGS & Base64 Support
-  app.post('/api/upload', authenticateToken, upload.single('file'), async (req: any, res) => {
-    console.log('[UPLOAD] Request received. Body keys:', Object.keys(req.body || {}));
+  // Unified File Upload Handler for /api/upload and /api/upload-proxy
+  const handleUpload = async (req: any, res: any) => {
+    console.log(`[UPLOAD] Request to ${req.path} received. Body keys:`, Object.keys(req.body || {}));
     try {
       let fileBuffer: Buffer;
       let mimetype: string;
@@ -242,16 +242,20 @@ async function startServer() {
       } else if (req.body.base64Data) {
         console.log('[UPLOAD] Detected base64Data in body');
         const base64String = req.body.base64Data;
+        
+        // Handle potential data URL format or raw base64
         const matches = base64String.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
         
-        if (!matches || matches.length !== 3) {
-          console.error('[UPLOAD] Invalid base64 format');
-          return res.status(400).json({ error: 'Invalid base64 format' });
+        if (matches && matches.length === 3) {
+          mimetype = matches[1];
+          fileBuffer = Buffer.from(matches[2], 'base64');
+        } else {
+          // Assume raw base64 if no matches, use generic mimetype
+          mimetype = 'image/jpeg';
+          fileBuffer = Buffer.from(base64String, 'base64');
         }
-
-        mimetype = matches[1];
-        fileBuffer = Buffer.from(matches[2], 'base64');
-        originalName = req.body.fileName ? path.basename(req.body.fileName) : 'image.jpg';
+        
+        originalName = req.body.fileName ? path.basename(req.body.fileName) : `upload_${Date.now()}.jpg`;
         console.log(`[UPLOAD] Decoded base64: ${mimetype}, size: ${fileBuffer.length}`);
       } else {
         console.error('[UPLOAD] No file or base64Data found');
@@ -263,9 +267,10 @@ async function startServer() {
         return res.status(500).json({ error: 'Storage not initialized' });
       }
 
-      const fileName = `uploads/${Date.now()}-${originalName}`;
+      // Use fileName from body if provided (for upload-proxy consistency)
+      const fileName = req.body.fileName || `uploads/${Date.now()}-${originalName}`;
       const blob = bucket.file(fileName);
-      console.log(`[UPLOAD] Saving to: ${fileName}`);
+      console.log(`[UPLOAD] Saving to bucket: ${bucket.name}, path: ${fileName}`);
 
       await blob.save(fileBuffer, {
         metadata: { contentType: mimetype },
@@ -273,13 +278,20 @@ async function startServer() {
       });
       console.log('[UPLOAD] Blob saved successfully');
 
-      const [signedUrl] = await blob.getSignedUrl({
-        action: 'read',
-        expires: '01-01-2099'
-      });
-      console.log('[UPLOAD] Signed URL generated:', signedUrl.substring(0, 50) + '...');
-      
-      res.json({ url: signedUrl });
+      // Attempt to get signed URL
+      try {
+        const [signedUrl] = await blob.getSignedUrl({
+          action: 'read',
+          expires: '01-01-2099'
+        });
+        console.log('[UPLOAD] Signed URL generated successfully');
+        return res.json({ url: signedUrl });
+      } catch (urlErr: any) {
+        console.warn('[UPLOAD] Signed URL failed, using public fallback:', urlErr.message);
+        // Fallback to official public URL format
+        const publicUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(fileName)}?alt=media`;
+        return res.json({ url: publicUrl });
+      }
 
     } catch (e: any) {
       console.error('[UPLOAD] CRITICAL ERROR:', e);
@@ -289,7 +301,10 @@ async function startServer() {
         details: e.toString()
       });
     }
-  });
+  };
+
+  app.post('/api/upload', authenticateToken, upload.single('file'), handleUpload);
+  app.post('/api/upload-proxy', authenticateToken, upload.single('file'), handleUpload);
 
   // Notifications
   app.get('/api/notifications', authenticateToken, async (req: AuthRequest, res) => {
