@@ -81,6 +81,8 @@ async function startServer() {
 
       if (calculatedHash !== hash) {
         console.error('Telegram hash mismatch!');
+        const botIdFromToken = botToken.split(':')[0];
+        console.log(`Bot ID in TELEGRAM_BOT_TOKEN: ${botIdFromToken}`);
         console.log('Data check string:', dataCheckString);
         console.log('Calculated hash:', calculatedHash);
         console.log('Received hash:', hash);
