@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Check, X, Car, Info } from 'lucide-react';
+import { Check, X, Car, Info, FileText } from 'lucide-react';
 import WebApp from '@twa-dev/sdk';
 import { db, handleFirestoreError, OperationType, collection, onSnapshot, doc, updateDoc, deleteDoc, query, where } from '../../firebase';
 import toast from 'react-hot-toast';
@@ -95,9 +95,15 @@ export default function AdminModeration() {
       await updateDoc(doc(db, 'cars', carId), dataToSave);
       if (selectedCar?.id === carId) setSelectedCar(null);
       toast.success('Автомобиль успешно проверен и одобрен', { id: toastId });
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Moderation approval error:', error);
       handleFirestoreError(error, OperationType.UPDATE, `cars/${carId}`);
-      toast.error('Ошибка при сохранении', { id: toastId });
+      
+      const errorMsg = error.code === 'permission-denied' 
+        ? 'Ошибка доступа. Возможно, заполнены недопустимые поля.'
+        : `Ошибка: ${error.message || 'не удалось сохранить'}`;
+        
+      toast.error(errorMsg, { id: toastId, duration: 5000 });
     }
   };
 
@@ -362,19 +368,41 @@ export default function AdminModeration() {
               )}
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <button 
-                onClick={() => handleReject(selectedCar.id)}
-                className="flex items-center justify-center gap-2 py-3 bg-red-500/10 text-red-500 text-sm font-bold uppercase tracking-wider rounded-xl hover:bg-red-500/20 transition-colors"
-              >
-                <X size={18} /> Отклонить
-              </button>
+            <div className="grid grid-cols-1 gap-3">
               <button 
                 onClick={() => handleApprove(selectedCar.id, selectedCar)}
                 className="flex items-center justify-center gap-2 py-3 bg-emerald-500 text-black text-sm font-bold uppercase tracking-wider rounded-xl hover:bg-emerald-400 transition-colors shadow-lg shadow-emerald-500/20"
               >
-                <Check size={18} /> Одобрить
+                <Check size={18} /> Одобрить и активировать
               </button>
+              
+              <div className="grid grid-cols-2 gap-3">
+                <button 
+                  onClick={async () => {
+                    if (!selectedCar) return;
+                    const toastId = toast.loading('Сохранение изменений...');
+                    try {
+                      await updateDoc(doc(db, 'cars', selectedCar.id), {
+                        ...selectedCar,
+                        updatedAt: new Date().toISOString()
+                      });
+                      toast.success('Изменения сохранены', { id: toastId });
+                    } catch (error: any) {
+                      console.error('Save error:', error);
+                      toast.error('Ошибка сохранения', { id: toastId });
+                    }
+                  }}
+                  className="flex items-center justify-center gap-2 py-3 bg-zinc-800 text-white text-sm font-bold uppercase tracking-wider rounded-xl hover:bg-zinc-700 transition-colors"
+                >
+                  <FileText size={18} /> Сохранить
+                </button>
+                <button 
+                  onClick={() => handleReject(selectedCar.id)}
+                  className="flex items-center justify-center gap-2 py-3 bg-red-500/10 text-red-500 text-sm font-bold uppercase tracking-wider rounded-xl hover:bg-red-500/20 transition-colors"
+                >
+                  <X size={18} /> Отклонить
+                </button>
+              </div>
             </div>
           </div>
         </div>

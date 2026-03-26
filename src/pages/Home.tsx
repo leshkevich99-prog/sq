@@ -82,9 +82,13 @@ export default function Home() {
 
       // Sort in memory to avoid 412 error (missing composite index)
       requests.sort((a, b) => {
-        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-        return dateB - dateA;
+        const parseDate = (val: any) => {
+          if (!val) return 0;
+          if (typeof val === 'object' && val.seconds) return val.seconds * 1000;
+          if (typeof val.toDate === 'function') return val.toDate().getTime();
+          return new Date(val).getTime() || 0;
+        };
+        return parseDate(b.createdAt) - parseDate(a.createdAt);
       });
 
       // Find active request (first one that is not completed or cancelled)
@@ -333,14 +337,19 @@ export default function Home() {
                   </div>
                   <div className="relative z-10">
                     <div className="inline-block px-2 py-1 bg-emerald-500/20 text-emerald-500 text-[10px] rounded-md mb-3 uppercase tracking-wider font-bold">
-                      Вы записаны
+                      {activeRequest?.status === 'pending' ? 'Заявка принята' : 
+                       activeRequest?.status === 'accepted' ? 'Пилот назначен' :
+                       activeRequest?.status === 'in_progress' ? 'Пилот в пути' : 'Вы записаны'}
                     </div>
                     <h2 className="text-2xl font-bold mb-1 uppercase tracking-tighter">TEST DRIVE</h2>
                     <p className="text-zinc-400 text-sm mb-4">
-                      Ожидайте подтверждения или звонка пилота
+                      {activeRequest?.status === 'pending' ? 'Ожидайте звонка для подтверждения деталей' : 
+                       activeRequest?.status === 'accepted' ? 'Ваш пилот скоро свяжется с вами' :
+                       activeRequest?.status === 'in_progress' ? 'Тест-драйв уже начался!' : 
+                       'Ожидайте подтверждения или звонка пилота'}
                     </p>
                     <div className="inline-flex items-center text-sm font-bold text-emerald-500 uppercase tracking-wider">
-                      Детали записи <ArrowRight size={16} className="ml-1" />
+                      {activeRequest?.status === 'in_progress' ? 'Смотреть статус' : 'Детали записи'} <ArrowRight size={16} className="ml-1" />
                     </div>
                   </div>
                 </div>

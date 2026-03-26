@@ -121,19 +121,26 @@ export async function handleSuccessfulPayment(chatId: number, payment: any) {
     if (userId) {
       if (type === 'subscription') {
         console.log(`[Payment] Updating subscription for user ${userId} to "${tariffName}"`);
-        console.log(`[Payment] Quotas to set:`, JSON.stringify(quotas));
         
         try {
-          await firestore.collection('users').update(userId, {
+          // Map UI name to internal tariff name if needed
+          let internalTariff = 'telemetry';
+          if (tariffName === 'PIT STOP') internalTariff = 'pitstop';
+          if (tariffName === 'SQUADRA FAMILY') internalTariff = 'family';
+          
+          const updateData = {
             subscription: tariffName,
+            tariff: internalTariff,
             quotas: quotas || {},
-            usedQuotas: {}, // Reset used quotas
-            limits: {},     // Clear manual limits if any
+            usedQuotas: {}, 
+            limits: {},     
             updatedAt: new Date().toISOString()
-          });
-          console.log(`[Payment] User ${userId} updated successfully`);
+          };
+          
+          await firestore.collection('users').update(userId, updateData);
+          console.log(`[Payment] User ${userId} updated successfully with payload:`, JSON.stringify(updateData));
         } catch (updateErr) {
-          console.error(`[Payment] Error updating user ${userId}:`, updateErr);
+          console.error(`[Payment] CRITICAL: Error updating user ${userId}:`, updateErr);
           throw updateErr;
         }
 
@@ -207,18 +214,19 @@ export async function handleSuccessfulPayment(chatId: number, payment: any) {
         if (orderData) {
           // 1. Create real request in common collection 'requests'
           const requestId = uuidv4();
-          await firestore.collection('requests').set(requestId, {
-            id: requestId,
+          const requestData = {
             userId: orderData.userId,
-            clientName: orderData.name,
-            clientPhone: orderData.phone,
-            title: `Тест-драйв: ${orderData.carModel}`,
-            description: `Запись на тест-драйв. Адрес: ${orderData.address || '—'}. Дата: ${orderData.date} ${orderData.time}`,
-            type: 'test_drive',
+            carId: 'none', // Required field
+            serviceType: 'test_drive',
             status: 'pending',
-            paidExternally: amount || (payment.total_amount / 100),
-            createdAt: new Date().toISOString()
-          });
+            description: `Запись на тест-драйв от ${orderData.name}. Адрес: ${orderData.address || '—'}. Дата: ${orderData.date} ${orderData.time}. Телефон: ${orderData.phone}`,
+            actualCost: amount || (payment.total_amount / 100),
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          };
+
+          await firestore.collection('requests').set(requestId, requestData);
+          console.log(`[Payment] Test drive request ${requestId} created for user ${orderData.userId}`);
 
           // 2. Notify admins
           const admins = await firestore.collection('users').all([{ type: 'where', field: 'role', op: '==', value: 'admin' }]);

@@ -52,7 +52,7 @@ service cloud.firestore {
     // Domain Validators
     // ===============================================================
     function isValidUser(data) {
-      return hasOnlyAllowedFields(['uid', 'telegramId', 'username', 'firstName', 'lastName', 'phone', 'email', 'role', 'subscription', 'quotas', 'createdAt', 'updatedAt', 'isOnShift', 'tariff', 'balance', 'limits', 'usedQuotas', 'isVerified', 'completedTasks', 'rating', 'photoUrl']) &&
+      return hasOnlyAllowedFields(['uid', 'telegramId', 'username', 'firstName', 'lastName', 'phone', 'email', 'role', 'subscription', 'quotas', 'createdAt', 'updatedAt', 'isOnShift', 'lastShiftUpdate', 'tariff', 'balance', 'limits', 'usedQuotas', 'isVerified', 'completedTasks', 'rating', 'photoUrl']) &&
              (!('uid' in data) || data.uid is string || data.uid == null) &&
              (!('telegramId' in data) || data.telegramId is string || data.telegramId is number || data.telegramId == null) &&
              data.role in ['client', 'admin', 'pilot'] &&
@@ -65,6 +65,7 @@ service cloud.firestore {
              (!('subscription' in data) || data.subscription is string || data.subscription == null) &&
              (!('quotas' in data) || data.quotas is map || data.quotas == null) &&
              (!('isOnShift' in data) || data.isOnShift is bool || data.isOnShift == null) &&
+             (!('lastShiftUpdate' in data) || data.lastShiftUpdate is string || data.lastShiftUpdate == null) &&
              (!('tariff' in data) || data.tariff in ['telemetry', 'pitstop', 'family', 'test_drive'] || data.tariff == null) &&
              (!('balance' in data) || data.balance is number || data.balance == null) &&
              (!('limits' in data) || data.limits is map || data.limits == null) &&
@@ -76,7 +77,7 @@ service cloud.firestore {
     }
 
     function isValidCar(data) {
-      return hasOnlyAllowedFields(['userId', 'make', 'model', 'year', 'plate', 'isApproved', 'createdAt', 'updatedAt', 'maintenanceSchedule', 'inspectionDate', 'insuranceDate', 'malfunctions', 'vin', 'color', 'plateNumber']) &&
+      return hasOnlyAllowedFields(['userId', 'make', 'model', 'year', 'plate', 'isApproved', 'createdAt', 'updatedAt', 'maintenanceSchedule', 'inspectionDate', 'insuranceDate', 'malfunctions', 'vin', 'color', 'plateNumber', 'techPassportFront', 'techPassportBack']) &&
              data.userId is string &&
              data.make is string && data.make.size() > 0 && data.make.size() < 50 &&
              data.model is string && data.model.size() > 0 && data.model.size() < 50 &&
@@ -89,6 +90,8 @@ service cloud.firestore {
              (!('maintenanceSchedule' in data) || data.maintenanceSchedule is string || data.maintenanceSchedule == null) &&
              (!('inspectionDate' in data) || data.inspectionDate is string || data.inspectionDate == null) &&
              (!('insuranceDate' in data) || data.insuranceDate is string || data.insuranceDate == null) &&
+             (!('techPassportFront' in data) || data.techPassportFront is string || data.techPassportFront == null) &&
+             (!('techPassportBack' in data) || data.techPassportBack is string || data.techPassportBack == null) &&
              (!('malfunctions' in data) || data.malfunctions is list || data.malfunctions == null) &&
              data.createdAt is string;
     }
