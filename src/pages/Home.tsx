@@ -91,6 +91,10 @@ export default function Home() {
       const active = requests.find(r => r.status !== 'completed' && r.status !== 'cancelled');
       setActiveRequest(active || null);
       
+      // Specifically look for active test-drive to update the banner independently if needed
+      const hasActiveTestDrive = requests.some(r => r.serviceType === 'test_drive' && r.status !== 'completed' && r.status !== 'cancelled');
+      (window as any).hasActiveTestDrive = hasActiveTestDrive; // Optional: for global access if needed
+      
       // If there's an active request with a pilot, fetch pilot data
       if (active?.pilotId) {
         getDoc(doc(db, 'users', active.pilotId)).then(pilotSnap => {
@@ -320,7 +324,7 @@ export default function Home() {
         </section>
       ) : (
         <>
-          {activeRequest?.serviceType === 'test_drive' ? (
+          {recentRequests.some(r => r.serviceType === 'test_drive' && r.status !== 'completed' && r.status !== 'cancelled') || activeRequest?.serviceType === 'test_drive' ? (
             <section className="mb-8">
               <Link to={`/task/${activeRequest.id}`} className="block">
                 <div className="bg-zinc-900 rounded-2xl p-5 relative overflow-hidden border border-emerald-500/30 hover:border-emerald-500/50 transition-colors">

@@ -15,6 +15,9 @@ interface CarData {
   techPassportFront?: string;
   techPassportBack?: string;
   isApproved: boolean;
+  maintenanceSchedule?: string;
+  inspectionDate?: string;
+  insuranceDate?: string;
   createdAt: string;
 }
 
@@ -304,6 +307,36 @@ export default function AdminModeration() {
                 />
               </div>
 
+              <div className="grid grid-cols-1 gap-4">
+                <div className="bg-black rounded-xl p-4 border border-zinc-800">
+                  <label className="text-[10px] text-zinc-500 uppercase tracking-widest mb-1 block">Страховка до</label>
+                  <input 
+                    type="date" 
+                    value={selectedCar.insuranceDate || ''} 
+                    onChange={(e) => setSelectedCar({...selectedCar, insuranceDate: e.target.value})}
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-lg py-2 px-3 text-white focus:outline-none focus:border-amber-500 [color-scheme:dark]"
+                  />
+                </div>
+                <div className="bg-black rounded-xl p-4 border border-zinc-800">
+                  <label className="text-[10px] text-zinc-500 uppercase tracking-widest mb-1 block">Техосмотр до</label>
+                  <input 
+                    type="date" 
+                    value={selectedCar.inspectionDate || ''} 
+                    onChange={(e) => setSelectedCar({...selectedCar, inspectionDate: e.target.value})}
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-lg py-2 px-3 text-white focus:outline-none focus:border-amber-500 [color-scheme:dark]"
+                  />
+                </div>
+                <div className="bg-black rounded-xl p-4 border border-zinc-800">
+                  <label className="text-[10px] text-zinc-500 uppercase tracking-widest mb-1 block">Следующее ТО</label>
+                  <input 
+                    type="date" 
+                    value={selectedCar.maintenanceSchedule || ''} 
+                    onChange={(e) => setSelectedCar({...selectedCar, maintenanceSchedule: e.target.value})}
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-lg py-2 px-3 text-white focus:outline-none focus:border-amber-500 [color-scheme:dark]"
+                  />
+                </div>
+              </div>
+
               {(selectedCar.techPassportFront || selectedCar.techPassportBack) && (
                 <div className="space-y-3">
                   <label className="text-[10px] text-zinc-500 uppercase tracking-widest block">Фото техпаспорта</label>
@@ -340,7 +373,7 @@ export default function AdminModeration() {
                 onClick={() => handleApprove(selectedCar.id, selectedCar)}
                 className="flex items-center justify-center gap-2 py-3 bg-emerald-500 text-black text-sm font-bold uppercase tracking-wider rounded-xl hover:bg-emerald-400 transition-colors shadow-lg shadow-emerald-500/20"
               >
-                <Check size={18} /> Сохранить и Одобрить
+                <Check size={18} /> Одобрить
               </button>
             </div>
           </div>

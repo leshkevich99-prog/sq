@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import imageCompression from 'browser-image-compression';
 import toast from 'react-hot-toast';
+import WebApp from '@twa-dev/sdk';
 import { 
   Camera, 
   MapPin, 
@@ -146,14 +147,26 @@ export default function PilotDashboard() {
   }, [user]);
 
   const toggleShift = async () => {
-    if (!user) return;
+    if (!user?.uid) return;
+    
+    setLoading(true);
+    const toastId = toast.loading(isOnShift ? 'Завершение смены...' : 'Выход на линию...');
+    
     try {
-      await updateDoc(doc(db, 'users', user.uid), {
-        isOnShift: !isOnShift
+      const userRef = doc(db, 'users', user.uid);
+      await updateDoc(userRef, { 
+        isOnShift: !isOnShift,
+        lastShiftUpdate: new Date().toISOString()
       });
-      toast.success(isOnShift ? 'Вы ушли со смены' : 'Вы вышли на смену');
+      
+      toast.success(isOnShift ? 'Вы ушли со смены' : 'Вы на линии!', { id: toastId });
+      WebApp.HapticFeedback.notificationOccurred('success');
     } catch (error) {
-      toast.error('Ошибка при смене статуса');
+      console.error('Error toggling shift:', error);
+      toast.error('Ошибка при смене статуса', { id: toastId });
+      WebApp.HapticFeedback.notificationOccurred('error');
+    } finally {
+      setLoading(false);
     }
   };
 

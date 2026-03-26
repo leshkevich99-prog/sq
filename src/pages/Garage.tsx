@@ -345,6 +345,7 @@ function AddCarModal({ onClose, userId }: { onClose: () => void, userId?: string
           <button disabled={submitting} type="submit" className="w-full bg-accent text-white rounded-xl py-2 text-sm font-medium mt-2 disabled:opacity-50">
             {submitting ? 'Сохранение...' : 'Отправить на модерацию'}
           </button>
+          <div className="pb-8 sm:pb-0" />
         </form>
       </div>
     </div>

@@ -172,7 +172,7 @@ export const createNotification = async (
     await addDoc(collection(db, 'notifications'), {
       userId,
       title,
-      body,
+      message: body,
       type,
       link: link || null,
       read: false,

@@ -42,9 +42,6 @@ export default function Header() {
       </Link>
       
       <div className="flex items-center gap-2 sm:gap-3">
-        <Link to="/profile" className="p-2 text-zinc-400 hover:text-white transition-colors">
-          <User size={20} />
-        </Link>
         <Link to="/notifications" className="relative p-2 text-zinc-400 hover:text-white transition-colors cursor-pointer select-none">
           <Bell size={20} />
           {unreadCount > 0 && (

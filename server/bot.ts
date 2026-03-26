@@ -120,16 +120,25 @@ export async function handleSuccessfulPayment(chatId: number, payment: any) {
 
     if (userId) {
       if (type === 'subscription') {
-        console.log(`Updating subscription for user ${userId} to ${tariffName}`);
-        await firestore.collection('users').update(userId, {
-          subscription: tariffName,
-          quotas: quotas,
-          usedQuotas: null,
-          limits: null
-        });
+        console.log(`[Payment] Updating subscription for user ${userId} to "${tariffName}"`);
+        console.log(`[Payment] Quotas to set:`, JSON.stringify(quotas));
+        
+        try {
+          await firestore.collection('users').update(userId, {
+            subscription: tariffName,
+            quotas: quotas || {},
+            usedQuotas: {}, // Reset used quotas
+            limits: {},     // Clear manual limits if any
+            updatedAt: new Date().toISOString()
+          });
+          console.log(`[Payment] User ${userId} updated successfully`);
+        } catch (updateErr) {
+          console.error(`[Payment] Error updating user ${userId}:`, updateErr);
+          throw updateErr;
+        }
 
         if (balanceDeduction && balanceDeduction > 0) {
-          console.log(`Recording balance deduction of ${balanceDeduction} for user ${userId}`);
+          console.log(`[Payment] Recording balance deduction of ${balanceDeduction} for user ${userId}`);
           await firestore.collection('transactions').add({
             userId,
             type: 'deposit_deduction',
@@ -218,7 +227,7 @@ export async function handleSuccessfulPayment(chatId: number, payment: any) {
             await firestore.collection('notifications').set(uuidv4(), {
               userId: adminUser.id,
               title: 'Новый тест-драйв',
-              body: `Поступила оплаченная заявка на тест-драйв от ${orderData.name}.`,
+              message: `Поступила оплаченная заявка на тест-драйв от ${orderData.name}.`,
               type: 'info',
               link: `/task/${requestId}`,
               read: false,

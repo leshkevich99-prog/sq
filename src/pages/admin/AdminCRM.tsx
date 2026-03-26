@@ -37,6 +37,9 @@ interface CarData {
   year?: string;
   color?: string;
   plateNumber?: string;
+  maintenanceSchedule?: string;
+  inspectionDate?: string;
+  insuranceDate?: string;
 }
 
 interface TransactionData {
@@ -83,6 +86,9 @@ export default function AdminCRM() {
   const [editCarColor, setEditCarColor] = useState('');
   const [editCarPlateNumber, setEditCarPlateNumber] = useState('');
   const [editCarVin, setEditCarVin] = useState('');
+  const [editCarMaintenance, setEditCarMaintenance] = useState('');
+  const [editCarInspection, setEditCarInspection] = useState('');
+  const [editCarInsurance, setEditCarInsurance] = useState('');
   const [editCarSubmitting, setEditCarSubmitting] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'kanban'>('kanban');
   const [selectedRole, setSelectedRole] = useState<'all' | 'admin' | 'pilot' | 'client'>('all');
@@ -154,6 +160,9 @@ export default function AdminCRM() {
     setEditCarColor(car.color || '');
     setEditCarPlateNumber(car.plateNumber || '');
     setEditCarVin(car.vin || '');
+    setEditCarMaintenance(car.maintenanceSchedule || '');
+    setEditCarInspection(car.inspectionDate || '');
+    setEditCarInsurance(car.insuranceDate || '');
     setEditCarModalOpen(true);
   };
 
@@ -247,7 +256,10 @@ export default function AdminCRM() {
         year: editCarYear,
         color: editCarColor,
         plateNumber: editCarPlateNumber,
-        vin: editCarVin
+        vin: editCarVin,
+        maintenanceSchedule: editCarMaintenance,
+        inspectionDate: editCarInspection,
+        insuranceDate: editCarInsurance
       });
       toast.success('Автомобиль обновлен', { id: toastId });
       setEditCarModalOpen(false);
@@ -499,7 +511,7 @@ export default function AdminCRM() {
       {/* User Details Modal */}
       {userDetailsModalOpen && selectedClient && (
         <div className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200 overflow-y-auto">
-          <div className="bg-zinc-900 border-t sm:border border-zinc-800 rounded-t-3xl sm:rounded-3xl w-full max-w-2xl p-6 sm:p-8 shadow-2xl max-h-[90vh] overflow-y-auto">
+          <div className="bg-zinc-900 border-t sm:border border-zinc-800 rounded-t-3xl sm:rounded-3xl w-full max-w-2xl p-6 sm:p-8 shadow-2xl max-h-[85vh] sm:max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-start mb-6 sm:mb-8">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-zinc-800 flex items-center justify-center text-xl sm:text-2xl font-bold border border-zinc-700">
@@ -627,7 +639,7 @@ export default function AdminCRM() {
       {/* Manual Billing Modal */}
       {billingModalOpen && selectedClient && (
         <div className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
-          <div className="bg-zinc-900 border-t sm:border border-zinc-800 rounded-t-3xl sm:rounded-2xl w-full max-w-md p-6 shadow-2xl">
+          <div className="bg-zinc-900 border-t sm:border border-zinc-800 rounded-t-3xl sm:rounded-2xl w-full max-w-md p-6 shadow-2xl max-h-[85vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-bold uppercase tracking-tighter">Ручной биллинг</h2>
               <button onClick={() => setBillingModalOpen(false)} className="text-zinc-500 hover:text-white">
@@ -700,7 +712,7 @@ export default function AdminCRM() {
       {/* Edit User Modal */}
       {editUserModalOpen && selectedClient && (
         <div className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200 overflow-y-auto">
-          <div className="bg-zinc-900 border-t sm:border border-zinc-800 rounded-t-3xl sm:rounded-2xl w-full max-w-md p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+          <div className="bg-zinc-900 border-t sm:border border-zinc-800 rounded-t-3xl sm:rounded-2xl w-full max-w-md p-6 shadow-2xl max-h-[85vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-bold uppercase tracking-tighter">Настройки клиента</h2>
               <button onClick={() => setEditUserModalOpen(false)} className="text-zinc-500 hover:text-white">
@@ -832,7 +844,7 @@ export default function AdminCRM() {
       {/* Edit Car Modal */}
       {editCarModalOpen && selectedCar && (
         <div className="fixed inset-0 z-[210] bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
-          <div className="bg-zinc-900 border-t sm:border border-zinc-800 rounded-t-3xl sm:rounded-2xl w-full max-w-sm p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+          <div className="bg-zinc-900 border-t sm:border border-zinc-800 rounded-t-3xl sm:rounded-2xl w-full max-w-sm p-6 shadow-2xl max-h-[85vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-bold uppercase tracking-tighter">Редактировать авто</h2>
               <button onClick={() => setEditCarModalOpen(false)} className="text-zinc-500 hover:text-white">
@@ -905,6 +917,36 @@ export default function AdminCRM() {
                   placeholder="WBA..."
                   className="w-full bg-black border border-zinc-800 rounded-xl p-3 text-sm font-mono focus:outline-none focus:border-accent text-white"
                 />
+              </div>
+
+              <div className="grid grid-cols-1 gap-4">
+                <div className="bg-black rounded-xl p-4 border border-zinc-800">
+                  <label className="text-[10px] text-zinc-500 uppercase tracking-widest mb-1 block">Страховка до</label>
+                  <input 
+                    type="date" 
+                    value={editCarInsurance || ''} 
+                    onChange={(e) => setEditCarInsurance(e.target.value)}
+                    className="w-full bg-black border border-zinc-800 rounded-xl p-3 text-white focus:outline-none focus:border-accent [color-scheme:dark]"
+                  />
+                </div>
+                <div className="bg-black rounded-xl p-4 border border-zinc-800">
+                  <label className="text-[10px] text-zinc-500 uppercase tracking-widest mb-1 block">Техосмотр до</label>
+                  <input 
+                    type="date" 
+                    value={editCarInspection || ''} 
+                    onChange={(e) => setEditCarInspection(e.target.value)}
+                    className="w-full bg-black border border-zinc-800 rounded-xl p-3 text-white focus:outline-none focus:border-accent [color-scheme:dark]"
+                  />
+                </div>
+                <div className="bg-black rounded-xl p-4 border border-zinc-800">
+                  <label className="text-[10px] text-zinc-500 uppercase tracking-widest mb-1 block">Следующее ТО</label>
+                  <input 
+                    type="date" 
+                    value={editCarMaintenance || ''} 
+                    onChange={(e) => setEditCarMaintenance(e.target.value)}
+                    className="w-full bg-black border border-zinc-800 rounded-xl p-3 text-white focus:outline-none focus:border-accent [color-scheme:dark]"
+                  />
+                </div>
               </div>
               <button 
                 onClick={handleEditCarSubmit}
