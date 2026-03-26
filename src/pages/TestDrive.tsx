@@ -22,6 +22,13 @@ export default function TestDrive() {
   const [loading, setLoading] = useState(true);
 
   React.useEffect(() => {
+    if (user) {
+      if (!name) setName(user.firstName || '');
+      if (!phone) setPhone(user.phone || '');
+    }
+  }, [user]);
+
+  React.useEffect(() => {
     const checkBookings = async () => {
       if (!user) return;
       try {
@@ -139,9 +146,9 @@ export default function TestDrive() {
         }
         navigate('/');
       }
-    } catch (error) {
-      console.error('Payment error:', error);
-      toast.error('Ошибка при создании счета', { id: toastId });
+    } catch (error: any) {
+      console.error('Payment error:', error); // Reverted to original console.error message
+      toast.error('Ошибка при создании счета', { id: toastId }); // Reverted to original toast message
     } finally {
       setSubmitting(false);
     }

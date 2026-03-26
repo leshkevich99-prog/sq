@@ -121,7 +121,7 @@ export async function handleSuccessfulPayment(chatId: number, payment: any) {
     if (userId) {
       if (type === 'subscription') {
         console.log(`Updating subscription for user ${userId} to ${tariffName}`);
-        await firestore.collection('users').set(userId, {
+        await firestore.collection('users').update(userId, {
           subscription: tariffName,
           quotas: quotas,
           usedQuotas: null,

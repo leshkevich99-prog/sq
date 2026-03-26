@@ -320,27 +320,51 @@ export default function Home() {
         </section>
       ) : (
         <>
-          <section className="mb-8">
-            <Link to="/test-drive" className="block">
-              <div className="bg-zinc-900 rounded-2xl p-5 relative overflow-hidden border border-amber-500/30 hover:border-amber-500/50 transition-colors">
-                <div className="absolute top-0 right-0 p-4 opacity-10">
-                  <CarIcon size={120} />
-                </div>
-                <div className="relative z-10">
-                  <div className="inline-block px-2 py-1 bg-amber-500/20 text-amber-500 text-[10px] rounded-md mb-3 uppercase tracking-wider font-bold">
-                    Доступен тест-драйв
+          {activeRequest?.serviceType === 'test_drive' ? (
+            <section className="mb-8">
+              <Link to={`/task/${activeRequest.id}`} className="block">
+                <div className="bg-zinc-900 rounded-2xl p-5 relative overflow-hidden border border-emerald-500/30 hover:border-emerald-500/50 transition-colors">
+                  <div className="absolute top-0 right-0 p-4 opacity-10">
+                    <CarIcon size={120} />
                   </div>
-                  <h2 className="text-2xl font-bold mb-1 uppercase tracking-tighter">TEST DRIVE</h2>
-                  <p className="text-zinc-400 text-sm mb-4">
-                    Попробуйте наш сервис за 500 Br
-                  </p>
-                  <div className="inline-flex items-center text-sm font-bold text-amber-500 uppercase tracking-wider">
-                    Записаться <ArrowRight size={16} className="ml-1" />
+                  <div className="relative z-10">
+                    <div className="inline-block px-2 py-1 bg-emerald-500/20 text-emerald-500 text-[10px] rounded-md mb-3 uppercase tracking-wider font-bold">
+                      Вы записаны
+                    </div>
+                    <h2 className="text-2xl font-bold mb-1 uppercase tracking-tighter">TEST DRIVE</h2>
+                    <p className="text-zinc-400 text-sm mb-4">
+                      Ожидайте подтверждения или звонка пилота
+                    </p>
+                    <div className="inline-flex items-center text-sm font-bold text-emerald-500 uppercase tracking-wider">
+                      Детали записи <ArrowRight size={16} className="ml-1" />
+                    </div>
                   </div>
                 </div>
-              </div>
-            </Link>
-          </section>
+              </Link>
+            </section>
+          ) : (
+            <section className="mb-8">
+              <Link to="/test-drive" className="block">
+                <div className="bg-zinc-900 rounded-2xl p-5 relative overflow-hidden border border-amber-500/30 hover:border-amber-500/50 transition-colors">
+                  <div className="absolute top-0 right-0 p-4 opacity-10">
+                    <CarIcon size={120} />
+                  </div>
+                  <div className="relative z-10">
+                    <div className="inline-block px-2 py-1 bg-amber-500/20 text-amber-500 text-[10px] rounded-md mb-3 uppercase tracking-wider font-bold">
+                      Доступен тест-драйв
+                    </div>
+                    <h2 className="text-2xl font-bold mb-1 uppercase tracking-tighter">TEST DRIVE</h2>
+                    <p className="text-zinc-400 text-sm mb-4">
+                      Попробуйте наш сервис за 500 Br
+                    </p>
+                    <div className="inline-flex items-center text-sm font-bold text-amber-500 uppercase tracking-wider">
+                      Записаться <ArrowRight size={16} className="ml-1" />
+                    </div>
+                  </div>
+                </div>
+              </Link>
+            </section>
+          )}
 
           <section className="mb-8">
             <div className="bg-zinc-900 rounded-2xl p-5 border border-zinc-800">

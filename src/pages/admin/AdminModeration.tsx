@@ -287,7 +287,7 @@ export default function AdminModeration() {
                   <input 
                     type="text" 
                     value={selectedCar.plate} 
-                    onChange={(e) => setSelectedCar({...selectedCar, plate: e.target.value})}
+                    onChange={(e) => setSelectedCar({...selectedCar, plate: e.target.value.toUpperCase()})}
                     className="w-full bg-zinc-900 border border-zinc-800 rounded-lg py-2 px-3 text-white font-mono uppercase focus:outline-none focus:border-amber-500"
                   />
                 </div>

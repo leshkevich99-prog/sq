@@ -41,19 +41,18 @@ export default function Header() {
         <span className="text-xs font-bold uppercase tracking-widest">{user?.firstName || 'Guest'}</span>
       </Link>
       
-      <div className="flex items-center gap-3">
-        <div onClick={handleSecretTap} className="relative p-2 text-zinc-400 hover:text-white transition-colors cursor-pointer select-none">
+      <div className="flex items-center gap-2 sm:gap-3">
+        <Link to="/profile" className="p-2 text-zinc-400 hover:text-white transition-colors">
+          <User size={20} />
+        </Link>
+        <Link to="/notifications" className="relative p-2 text-zinc-400 hover:text-white transition-colors cursor-pointer select-none">
           <Bell size={20} />
-          {unreadCount > 0 ? (
+          {unreadCount > 0 && (
             <span className="absolute top-1 right-1 w-4 h-4 bg-amber-500 text-black text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-black">
               {unreadCount}
             </span>
-          ) : (
-            tapCount > 0 && (
-              <span className="absolute -top-1 -right-1 text-[8px] font-black text-accent/40">{tapCount}</span>
-            )
           )}
-        </div>
+        </Link>
       </div>
 
       {showDebug && <DebugSwitcher onClose={() => setShowDebug(false)} />}

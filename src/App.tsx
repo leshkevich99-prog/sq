@@ -85,6 +85,7 @@ function AppRoutes() {
               <Route path="settings" element={<AdminSettings />} />
               <Route path="analytics" element={<AdminAnalytics />} />
               <Route path="task/:id" element={<TaskDetails />} />
+              <Route path="profile" element={<Profile />} />
               <Route path="notifications" element={<AdminNotifications />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Route>
@@ -98,6 +99,7 @@ function AppRoutes() {
               <Route index element={<PilotDashboard />} />
               <Route path="task/:id" element={<TaskDetails />} />
               <Route path="history" element={<PilotHistory />} />
+              <Route path="profile" element={<Profile />} />
               <Route path="notifications" element={<Notifications />} />
               <Route path="sos" element={<SOS />} />
               <Route path="*" element={<Navigate to="/" replace />} />

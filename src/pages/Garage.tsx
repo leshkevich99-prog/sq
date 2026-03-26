@@ -288,7 +288,7 @@ function AddCarModal({ onClose, userId }: { onClose: () => void, userId?: string
             </div>
             <div>
               <label className="block text-[9px] text-zinc-500 mb-0.5 uppercase tracking-wider">Номер</label>
-              <input required value={plate} onChange={e => setPlate(e.target.value)} className="w-full min-w-0 bg-black border border-zinc-800 rounded-lg px-2 py-1.5 text-xs text-white focus:border-accent outline-none box-border appearance-none" placeholder="0001 MI-7" />
+              <input required value={plate} onChange={e => setPlate(e.target.value.toUpperCase())} className="w-full min-w-0 bg-black border border-zinc-800 rounded-lg px-2 py-1.5 text-xs text-white focus:border-accent outline-none box-border appearance-none font-mono" placeholder="0001 MI-7" />
             </div>
           </div>
 

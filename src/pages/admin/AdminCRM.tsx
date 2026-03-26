@@ -226,9 +226,10 @@ export default function AdminCRM() {
       await updateDoc(doc(db, 'users', selectedClient.id), updateData);
       toast.success('Данные пользователя обновлены', { id: toastId });
       setEditUserModalOpen(false);
-    } catch (error) {
-      handleFirestoreError(error, OperationType.UPDATE, `users/${selectedClient.id}`);
-      toast.error('Ошибка при сохранении', { id: toastId });
+    } catch (error: any) {
+      console.error('Save user error:', error);
+      const isPermissionError = error.message?.includes('permission-denied') || error.code === 'permission-denied';
+      toast.error(isPermissionError ? 'Ошибка доступа: некоторые поля защищены от изменений' : 'Ошибка при сохранении', { id: toastId });
     } finally {
       setEditSubmitting(false);
     }
@@ -946,96 +947,96 @@ const ClientCard: React.FC<{
   };
 
   return (
-    <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 sm:p-5 transition-all hover:border-zinc-700">
-      <div className="flex justify-between items-start mb-4">
-        <div className="cursor-pointer flex-1" onClick={onViewClick}>
-          <div className="flex items-center gap-2">
-            <h3 className="font-bold text-lg text-white leading-tight">{name}</h3>
-            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider ${statusColors[status] || statusColors.client}`}>
+    <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-3 sm:p-5 transition-all hover:border-zinc-700">
+      <div className="flex justify-between items-start mb-3 sm:mb-4">
+        <div className="cursor-pointer flex-1 min-w-0" onClick={onViewClick}>
+          <div className="flex items-center gap-2 flex-wrap">
+            <h3 className="font-bold text-base sm:text-lg text-white leading-tight truncate">{name}</h3>
+            <span className={`text-[8px] sm:text-[9px] font-bold px-1 py-0.5 rounded uppercase tracking-wider ${statusColors[status] || statusColors.client}`}>
               {statusLabels[status] || status}
             </span>
           </div>
-          {username && <p className="text-xs text-zinc-500 mt-0.5">@{username}</p>}
+          {username && <p className="text-[10px] sm:text-xs text-zinc-500 mt-0.5 truncate">@{username}</p>}
         </div>
-        <div className="flex gap-1">
+        <div className="flex gap-1 ml-2">
           <button 
             onClick={onEditClick}
-            className="p-2 text-zinc-500 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors"
+            className="p-1.5 sm:p-2 text-zinc-500 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors"
             title="Настройки"
           >
-            <Edit2 size={18} />
+            <Edit2 size={16} />
           </button>
         </div>
       </div>
       
-      <div className="grid grid-cols-2 gap-3 mb-5 cursor-pointer" onClick={onViewClick}>
-        <div className="space-y-3">
-          <div className="flex items-center gap-2.5 text-sm text-zinc-300">
-            <div className="w-8 h-8 flex-shrink-0 rounded-lg bg-black flex items-center justify-center border border-zinc-800">
-              <Car size={14} className="text-zinc-500" />
+      <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-4 sm:mb-5 cursor-pointer" onClick={onViewClick}>
+        <div className="space-y-2 sm:space-y-3">
+          <div className="flex items-center gap-2 text-sm text-zinc-300">
+            <div className="w-7 h-7 sm:w-8 sm:h-8 flex-shrink-0 rounded-lg bg-black flex items-center justify-center border border-zinc-800">
+              <Car size={12} className="text-zinc-500" />
             </div>
             <div className="flex flex-col min-w-0">
-              <span className="text-[9px] uppercase text-zinc-500 font-bold tracking-wider truncate">Авто</span>
-              <span className="font-medium text-xs truncate">{car}</span>
+              <span className="text-[8px] sm:text-[9px] uppercase text-zinc-500 font-bold tracking-wider truncate">Авто</span>
+              <span className="font-bold text-[10px] sm:text-xs truncate">{car || 'Нет'}</span>
             </div>
           </div>
-          <div className="flex items-center gap-2.5 text-sm text-zinc-300">
-            <div className="w-8 h-8 flex-shrink-0 rounded-lg bg-black flex items-center justify-center border border-zinc-800">
-              <CreditCard size={14} className="text-zinc-500" />
+          <div className="flex items-center gap-2 text-sm text-zinc-300">
+            <div className="w-7 h-7 sm:w-8 sm:h-8 flex-shrink-0 rounded-lg bg-black flex items-center justify-center border border-zinc-800">
+              <CreditCard size={12} className="text-zinc-500" />
             </div>
             <div className="flex flex-col min-w-0">
-              <span className="text-[9px] uppercase text-zinc-500 font-bold tracking-wider truncate">Депозит</span>
-              <span className={`font-medium text-xs truncate ${parseFloat(deposit) < 0 ? 'text-red-600' : 'text-emerald-500'}`}>
+              <span className="text-[8px] sm:text-[9px] uppercase text-zinc-500 font-bold tracking-wider truncate">Депозит</span>
+              <span className={`font-bold text-[10px] sm:text-xs truncate ${parseFloat(deposit) < 0 ? 'text-red-500' : 'text-emerald-500'}`}>
                 {deposit} <BynIcon size="1em" />
               </span>
             </div>
           </div>
         </div>
-        <div className="space-y-3">
-          <div className="flex items-center gap-2.5 text-sm text-zinc-300">
-            <div className="w-8 h-8 flex-shrink-0 rounded-lg bg-black flex items-center justify-center border border-zinc-800">
-              <ShieldAlert size={14} className="text-zinc-500" />
+        <div className="space-y-2 sm:space-y-3">
+          <div className="flex items-center gap-2 text-sm text-zinc-300">
+            <div className="w-7 h-7 sm:w-8 sm:h-8 flex-shrink-0 rounded-lg bg-black flex items-center justify-center border border-zinc-800">
+              <ShieldAlert size={12} className="text-zinc-500" />
             </div>
             <div className="flex flex-col min-w-0">
-              <span className="text-[9px] uppercase text-zinc-500 font-bold tracking-wider truncate">Тариф</span>
-              <span className="font-medium text-xs truncate">{tariff}</span>
+              <span className="text-[8px] sm:text-[9px] uppercase text-zinc-500 font-bold tracking-wider truncate">Тариф</span>
+              <span className="font-bold text-[10px] sm:text-xs truncate">{tariff || 'Стандарт'}</span>
             </div>
           </div>
         </div>
       </div>
 
       {quotas && (
-        <div className="mb-5 p-3 bg-black/50 border border-zinc-800/50 rounded-xl">
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Квоты (Остаток)</span>
+        <div className="mb-4 sm:mb-5 p-2 sm:p-3 bg-black/50 border border-zinc-800/50 rounded-xl">
+          <div className="flex justify-between items-center mb-1.5">
+            <span className="text-[8px] sm:text-[10px] font-bold uppercase tracking-wider text-zinc-500">Квоты (Остаток)</span>
           </div>
-          <div className="grid grid-cols-3 gap-2 text-[10px]">
+          <div className="grid grid-cols-3 gap-1.5 text-[8px] sm:text-[10px]">
             <div className="flex flex-col">
-              <span className="text-zinc-500 uppercase">Лог.</span>
+              <span className="text-zinc-500 uppercase tracking-tighter">Лог.</span>
               <span className="text-white font-bold">{quotas.logistics || 0}</span>
             </div>
             <div className="flex flex-col">
-              <span className="text-zinc-500 uppercase">Мойка</span>
+              <span className="text-zinc-500 uppercase tracking-tighter">Мойка</span>
               <span className="text-white font-bold">{quotas.wash || 0}</span>
             </div>
             <div className="flex flex-col">
-              <span className="text-zinc-500 uppercase">Валет</span>
+              <span className="text-zinc-500 uppercase tracking-tighter">Валет</span>
               <span className="text-white font-bold">{quotas.valet || 0}</span>
             </div>
           </div>
         </div>
       )}
 
-      <div className="flex gap-2">
+      <div className="flex gap-1.5 sm:gap-2">
         <button 
           onClick={onViewClick} 
-          className="flex-1 py-2.5 bg-zinc-800 text-white text-[10px] font-bold uppercase tracking-wider rounded-xl hover:bg-zinc-700 transition-colors"
+          className="flex-1 py-2 sm:py-2.5 bg-zinc-800 text-white text-[9px] sm:text-[10px] font-bold uppercase tracking-wider rounded-xl hover:bg-zinc-700 transition-colors"
         >
           Профиль
         </button>
         <button 
           onClick={onBillingClick} 
-          className="flex-1 py-2.5 bg-white text-black text-[10px] font-bold uppercase tracking-wider rounded-xl hover:bg-zinc-200 transition-colors"
+          className="flex-1 py-2 sm:py-2.5 bg-white text-black text-[9px] sm:text-[10px] font-bold uppercase tracking-wider rounded-xl hover:bg-zinc-200 transition-colors"
         >
           Биллинг
         </button>
