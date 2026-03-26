@@ -14,26 +14,16 @@ const ROLES = [
 ];
 
 export default function DebugSwitcher({ onClose }: DebugSwitcherProps) {
-  const [debugKey, setDebugKey] = useState(localStorage.getItem('debug_auth_key') || '');
   const [loading, setLoading] = useState(false);
   const [setupLoading, setSetupLoading] = useState(false);
 
-  const saveKey = (val: string) => {
-    setDebugKey(val);
-    localStorage.setItem('debug_auth_key', val);
-  };
-
   const handleSetup = async () => {
-    if (!debugKey) {
-      toast.error('Введите DEBUG_AUTH_KEY');
-      return;
-    }
     setSetupLoading(true);
     try {
       const res = await fetch('/api/auth/setup-test-accounts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key: debugKey })
+        body: JSON.stringify({})
       });
       const data = await res.json();
       if (res.ok) {
@@ -49,10 +39,6 @@ export default function DebugSwitcher({ onClose }: DebugSwitcherProps) {
   };
 
   const handleLogin = async (tester: string, role: string) => {
-    if (!debugKey) {
-      toast.error('Введите DEBUG_AUTH_KEY');
-      return;
-    }
     const userId = `${tester}_${role}`.toLowerCase();
     setLoading(true);
     const tid = toast.loading(`Вход как ${userId}...`);
@@ -61,7 +47,7 @@ export default function DebugSwitcher({ onClose }: DebugSwitcherProps) {
       const res = await fetch('/api/auth/debug-login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, key: debugKey })
+        body: JSON.stringify({ userId })
       });
       const data = await res.json();
       
@@ -94,28 +80,25 @@ export default function DebugSwitcher({ onClose }: DebugSwitcherProps) {
         </div>
 
         <div className="p-6 space-y-6">
-          {/* Key Input */}
-          <div className="space-y-2">
-            <label className="text-[10px] font-bold uppercase text-zinc-500 tracking-widest flex items-center gap-2">
-              <Key size={12} /> Debug Auth Key
-            </label>
-            <div className="flex gap-2">
-              <input
-                type="password"
-                value={debugKey}
-                onChange={(e) => saveKey(e.target.value)}
-                className="flex-1 bg-black border border-zinc-800 rounded-xl px-4 py-2 text-sm focus:border-accent outline-none transition-colors"
-                placeholder="Вставьте ключ из .env"
-              />
-              <button 
-                onClick={handleSetup}
-                disabled={setupLoading}
-                className="bg-zinc-800 hover:bg-zinc-700 disabled:opacity-50 px-4 py-2 rounded-xl text-xs font-bold uppercase transition-colors flex items-center gap-2"
-              >
-                {setupLoading ? <RefreshCw size={14} className="animate-spin" /> : <CheckCircle2 size={14} />}
-                Setup
-              </button>
+          {/* Setup Button */}
+          <div className="flex justify-between items-center bg-zinc-900/40 p-4 rounded-2xl border border-zinc-900">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-zinc-800 rounded-lg">
+                <Shield size={18} className="text-accent" />
+              </div>
+              <div>
+                <p className="text-xs font-bold uppercase text-white">Инициализация</p>
+                <p className="text-[10px] text-zinc-500">Создать 9 тестовых аккаунтов</p>
+              </div>
             </div>
+            <button 
+              onClick={handleSetup}
+              disabled={setupLoading}
+              className="bg-accent hover:bg-accent/90 disabled:opacity-50 px-6 py-2 rounded-xl text-xs font-bold uppercase text-black transition-colors flex items-center gap-2"
+            >
+              {setupLoading ? <RefreshCw size={14} className="animate-spin" /> : <CheckCircle2 size={14} />}
+              Setup
+            </button>
           </div>
 
           {/* Grid */}

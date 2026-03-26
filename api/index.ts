@@ -209,13 +209,6 @@ async function startServer() {
   
   // Setup standard test accounts for 3 testers
   app.post('/api/auth/setup-test-accounts', async (req, res) => {
-    const { key } = req.body;
-    const masterKey = process.env.DEBUG_AUTH_KEY || 'test_secret_123';
-    
-    if (key !== masterKey) {
-      return res.status(403).json({ error: 'Invalid debug key' });
-    }
-
     try {
       const testers = ['Tester1', 'Tester2', 'Tester3'];
       const roles = ['admin', 'pilot', 'client'];
@@ -254,12 +247,7 @@ async function startServer() {
   // Direct login as any user (for testing)
   app.post('/api/auth/debug-login', async (req, res) => {
     try {
-      const { userId, key } = req.body;
-      const masterKey = process.env.DEBUG_AUTH_KEY || 'test_secret_123';
-
-      if (key !== masterKey) {
-        return res.status(403).json({ error: 'Invalid debug key' });
-      }
+      const { userId } = req.body;
 
       const userData = await firestore.collection('users').get(userId);
       if (!userData) {
