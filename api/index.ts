@@ -203,6 +203,97 @@ async function startServer() {
     res.json({ success: true });
   });
 
+  // ==========================================
+  // DEBUG / TESTING AUTH (DEVELOPMENT ONLY)
+  // ==========================================
+  
+  // Setup standard test accounts for 3 testers
+  app.post('/api/auth/setup-test-accounts', async (req, res) => {
+    const { key } = req.body;
+    const masterKey = process.env.DEBUG_AUTH_KEY || 'test_secret_123';
+    
+    if (key !== masterKey) {
+      return res.status(403).json({ error: 'Invalid debug key' });
+    }
+
+    try {
+      const testers = ['Tester1', 'Tester2', 'Tester3'];
+      const roles = ['admin', 'pilot', 'client'];
+      const results = [];
+
+      for (const tester of testers) {
+        for (const role of roles) {
+          const testId = `${tester}_${role}`.toLowerCase();
+          const existing = await firestore.collection('users').get(testId);
+          
+          if (!existing) {
+            const userData = {
+              id: testId,
+              telegramId: `test_${testId}`,
+              username: testId,
+              firstName: tester,
+              lastName: role.toUpperCase(),
+              photoUrl: '',
+              role,
+              createdAt: new Date().toISOString(),
+              isTestAccount: true
+            };
+            await firestore.collection('users').set(testId, userData);
+            results.push({ id: testId, status: 'created' });
+          } else {
+            results.push({ id: testId, status: 'exists' });
+          }
+        }
+      }
+      res.json({ success: true, accounts: results });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // Direct login as any user (for testing)
+  app.post('/api/auth/debug-login', async (req, res) => {
+    try {
+      const { userId, key } = req.body;
+      const masterKey = process.env.DEBUG_AUTH_KEY || 'test_secret_123';
+
+      if (key !== masterKey) {
+        return res.status(403).json({ error: 'Invalid debug key' });
+      }
+
+      const userData = await firestore.collection('users').get(userId);
+      if (!userData) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      const token = generateToken({ 
+        id: userData.id, 
+        telegramId: userData.telegramId, 
+        role: userData.role 
+      });
+
+      let firebaseCustomToken = null;
+      try {
+        if (adminAuth) {
+          firebaseCustomToken = await adminAuth.createCustomToken(userData.id);
+        }
+      } catch (authErr) {
+        console.error('Error creating custom token:', authErr);
+      }
+
+      res.cookie('token', token, {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'none',
+        maxAge: 7 * 24 * 60 * 60 * 1000
+      });
+
+      res.json({ user: userData, firebaseCustomToken, token });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Cars API
   app.get('/api/cars', authenticateToken, async (req: AuthRequest, res) => {
     const cars = await firestore.collection('cars').all([{ type: 'where', field: 'userId', op: '==', value: req.user?.id }]);

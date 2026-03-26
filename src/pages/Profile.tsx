@@ -4,6 +4,7 @@ import { db, handleFirestoreError, OperationType, doc, getDoc, updateDoc } from 
 import { User, Phone, Save, ArrowLeft, LogOut, Check } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import DebugSwitcher from '../components/DebugSwitcher';
 
 export default function Profile() {
   const { user, logout } = useFirebase();
@@ -18,6 +19,8 @@ export default function Profile() {
   });
 
   const [focusedField, setFocusedField] = useState<string | null>(null);
+  const [showDebug, setShowDebug] = useState(false);
+  const [tapCount, setTapCount] = useState(0);
   const firstNameRef = useRef<HTMLInputElement>(null);
   const lastNameRef = useRef<HTMLInputElement>(null);
   const phoneRef = useRef<HTMLInputElement>(null);
@@ -29,18 +32,13 @@ export default function Profile() {
     }, 300);
   };
 
-  const [tapCount, setTapCount] = useState(0);
-
   const handleSecretTap = () => {
-    /*
     const newCount = tapCount + 1;
     setTapCount(newCount);
     if (newCount === 5) {
-      localStorage.setItem('isDev', 'true');
-      toast.success('Режим разработчика активирован! Обновите страницу.');
+      setShowDebug(true);
       setTapCount(0);
     }
-    */
   };
 
   useEffect(() => {
@@ -112,7 +110,7 @@ export default function Profile() {
           <button onClick={() => navigate(-1)} className="p-2 bg-zinc-900 rounded-full hover:bg-zinc-800 transition-colors">
             <ArrowLeft size={20} />
           </button>
-          <div>
+          <div onClick={handleSecretTap}>
             <h1 className="text-3xl font-serif font-normal tracking-wide uppercase select-none">Профиль</h1>
             <p className="text-zinc-400 text-sm mt-1">Личные данные</p>
           </div>
@@ -250,6 +248,7 @@ export default function Profile() {
           {saving ? 'Сохранение...' : 'Сохранить изменения'}
         </button>
       </form>
+      {showDebug && <DebugSwitcher onClose={() => setShowDebug(false)} />}
     </div>
   );
 }
