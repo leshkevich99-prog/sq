@@ -98,7 +98,7 @@ service cloud.firestore {
     }
 
     function isValidRequest(data) {
-      return hasOnlyAllowedFields(['userId', 'carId', 'serviceType', 'status', 'pilotId', 'usedQuota', 'pickupAddress', 'deliveryAddress', 'orderDate', 'orderTime', 'washType', 'comment', 'price', 'balanceDeduction', 'paidExternally', 'actualCost', 'createdAt', 'updatedAt', 'photoProtocol', 'photosBefore', 'photosAfter', 'photoMetadata', 'totalPrice', 'description', 'priority', 'scheduledDate']) &&
+      return hasOnlyAllowedFields(['userId', 'id', 'carId', 'serviceType', 'status', 'pilotId', 'usedQuota', 'pickupAddress', 'deliveryAddress', 'orderDate', 'orderTime', 'washType', 'comment', 'price', 'balanceDeduction', 'paidExternally', 'actualCost', 'createdAt', 'updatedAt', 'photoProtocol', 'photosBefore', 'photosAfter', 'photoMetadata', 'totalPrice', 'description', 'priority', 'scheduledDate']) &&
              data.userId is string &&
              data.carId is string &&
              data.serviceType is string && data.serviceType.size() > 0 && data.serviceType.size() < 100 &&

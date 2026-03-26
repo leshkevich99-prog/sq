@@ -56,17 +56,17 @@ export default function Notifications() {
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col gap-4 mb-6">
         <div className="flex items-center gap-4">
           <button onClick={() => navigate(-1)} className="p-2 bg-zinc-900 rounded-full border border-zinc-800">
             <ArrowLeft size={20} />
           </button>
-          <h1 className="text-2xl font-bold uppercase tracking-wider">Уведомления</h1>
+          <h1 className="text-xl sm:text-2xl font-bold uppercase tracking-wider">Уведомления</h1>
         </div>
         {notifications.some(n => !n.read) && (
           <button 
             onClick={markAllAsRead}
-            className="text-xs text-amber-500 font-bold uppercase tracking-widest hover:text-amber-400 transition-colors"
+            className="w-full sm:w-auto text-[10px] sm:text-xs text-amber-500 font-bold uppercase tracking-widest hover:text-amber-400 transition-colors bg-amber-500/5 px-4 py-2 rounded-xl border border-amber-500/20 text-center"
           >
             Прочитать все
           </button>
