@@ -87,11 +87,18 @@ export default function AdminModeration() {
   const handleApprove = async (carId: string, updatedData?: Partial<CarData>) => {
     const toastId = toast.loading('Оформление и одобрение...');
     try {
+      // Create a clean object without 'id' or other meta-fields
+      const { id, ...sanitizedData } = (updatedData || {}) as any;
+      
       const dataToSave = { 
-        ...updatedData,
+        ...sanitizedData,
         isApproved: true,
         updatedAt: new Date().toISOString()
       };
+      
+      // Ensure we don't send 'id' or other prohibited fields
+      delete dataToSave.id;
+      
       await updateDoc(doc(db, 'cars', carId), dataToSave);
       if (selectedCar?.id === carId) setSelectedCar(null);
       toast.success('Автомобиль успешно проверен и одобрен', { id: toastId });
@@ -382,8 +389,9 @@ export default function AdminModeration() {
                     if (!selectedCar) return;
                     const toastId = toast.loading('Сохранение изменений...');
                     try {
-                      await updateDoc(doc(db, 'cars', selectedCar.id), {
-                        ...selectedCar,
+                      const { id, ...updateData } = selectedCar;
+                      await updateDoc(doc(db, 'cars', id), {
+                        ...updateData,
                         updatedAt: new Date().toISOString()
                       });
                       toast.success('Изменения сохранены', { id: toastId });

@@ -48,7 +48,8 @@ async function startServer() {
         has_bot_token: !!process.env.TELEGRAM_BOT_TOKEN,
         has_service_account: !!process.env.FIREBASE_SERVICE_ACCOUNT_KEY,
         db_id: process.env.FIREBASE_DATABASE_ID || '(default)',
-        project_id: 'unknown'
+        project_id: 'unknown',
+        squadra_url: !!process.env.SQUADRA_URL
       },
       firestore: 'checking...',
       auth: !!adminAuth,
@@ -533,10 +534,17 @@ async function startServer() {
             handled = true;
           } else if (msg.text) {
             if (msg.text.startsWith('/start')) {
-            console.log('Webhook received /start command');
-            const host = req.headers.host || 'sq-topaz.vercel.app';
-            const protocol = req.headers['x-forwarded-proto'] || 'https';
-            const appUrl = `${protocol}://${host}/`;
+              console.log('Webhook received /start command');
+              // Priority: Header host > Environment SQUADRA_URL
+              const host = req.headers.host;
+              const protocol = req.headers['x-forwarded-proto'] || 'https';
+              const appUrl = host ? `${protocol}://${host}/` : (process.env.SQUADRA_URL || '');
+              
+              if (!appUrl) {
+                console.error('No host header and no SQUADRA_URL set. Cannot send link.');
+                return;
+              }
+
               await bot.sendMessage(chatId, 'Добро пожаловать в Squadra! 🏎️\n\nВаш автомобильный консьерж-сервис. Нажмите кнопку ниже, чтобы открыть приложение.', {
                 reply_markup: {
                   inline_keyboard: [
@@ -701,6 +709,11 @@ async function startServer() {
   app.get('/api/admin/users', authenticateToken, isAdmin, async (req, res) => {
     const users = await firestore.collection('users').all();
     res.json({ users });
+  });
+
+  app.get('/api/admin/cars', authenticateToken, isAdmin, async (req, res) => {
+    const cars = await firestore.collection('cars').all();
+    res.json({ cars: cars.map((c: any) => ({ ...c, photos: typeof c.photos === 'string' ? JSON.parse(c.photos || '[]') : (c.photos || []) })) });
   });
 
   app.get('/api/admin/requests', authenticateToken, isAdmin, async (req, res) => {

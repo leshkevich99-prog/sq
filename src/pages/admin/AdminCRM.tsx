@@ -250,7 +250,8 @@ export default function AdminCRM() {
     setEditCarSubmitting(true);
     const toastId = toast.loading('Обновление автомобиля...');
     try {
-      await updateDoc(doc(db, 'cars', selectedCar.id), {
+      const { id, ...updateData } = selectedCar;
+      await updateDoc(doc(db, 'cars', id), {
         make: editCarMake,
         model: editCarModel,
         year: editCarYear,
@@ -259,7 +260,8 @@ export default function AdminCRM() {
         vin: editCarVin,
         maintenanceSchedule: editCarMaintenance,
         inspectionDate: editCarInspection,
-        insuranceDate: editCarInsurance
+        insuranceDate: editCarInsurance,
+        updatedAt: new Date().toISOString()
       });
       toast.success('Автомобиль обновлен', { id: toastId });
       setEditCarModalOpen(false);

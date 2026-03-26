@@ -52,7 +52,14 @@ export async function initBot() {
 
   bot.onText(/\/start/, async (msg) => {
     const chatId = msg.chat.id;
-    const appUrl = process.env.APP_URL || 'https://sq-topaz.vercel.app/';
+    // Use the custom SQUADRA_URL to avoid conflicts with Vercel system variables
+    const appUrl = process.env.SQUADRA_URL;
+    
+    if (!appUrl) {
+      console.error('SQUADRA_URL environment variable is missing! Bot cannot provide the link.');
+      bot?.sendMessage(chatId, '⚠️ Системная ошибка: SQUADRA_URL не настроен. Пожалуйста, сообщите администратору.');
+      return;
+    }
     
     bot?.sendMessage(chatId, 'Добро пожаловать в Squadra! 🏎️\n\nВаш автомобильный консьерж-сервис. Нажмите кнопку ниже, чтобы открыть приложение.', {
       reply_markup: {
