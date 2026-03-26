@@ -52,7 +52,7 @@ service cloud.firestore {
     // Domain Validators
     // ===============================================================
     function isValidUser(data) {
-      return hasOnlyAllowedFields(['uid', 'telegramId', 'username', 'firstName', 'lastName', 'phone', 'email', 'role', 'subscription', 'quotas', 'createdAt', 'updatedAt', 'isOnShift', 'lastShiftUpdate', 'tariff', 'balance', 'limits', 'usedQuotas', 'isVerified', 'completedTasks', 'rating', 'photoUrl']) &&
+      return hasOnlyAllowedFields(['uid', 'id', 'telegramId', 'username', 'firstName', 'lastName', 'phone', 'email', 'role', 'subscription', 'quotas', 'createdAt', 'updatedAt', 'isOnShift', 'lastShiftUpdate', 'tariff', 'balance', 'limits', 'usedQuotas', 'isVerified', 'completedTasks', 'rating', 'photoUrl', 'isTestAccount']) &&
              (!('uid' in data) || data.uid is string || data.uid == null) &&
              (!('telegramId' in data) || data.telegramId is string || data.telegramId is number || data.telegramId == null) &&
              data.role in ['client', 'admin', 'pilot'] &&
@@ -73,6 +73,7 @@ service cloud.firestore {
              (!('isVerified' in data) || data.isVerified is bool || data.isVerified == null) &&
              (!('completedTasks' in data) || data.completedTasks is number || data.completedTasks == null) &&
              (!('rating' in data) || data.rating is number || data.rating == null) &&
+             (!('isTestAccount' in data) || data.isTestAccount is bool || data.isTestAccount == null) &&
              (!('createdAt' in data) || data.createdAt is string || data.createdAt == null);
     }
 

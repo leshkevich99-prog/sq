@@ -6,7 +6,7 @@ import cookieParser from 'cookie-parser';
 import multer from 'multer';
 import { v4 as uuidv4 } from 'uuid';
 import { fileURLToPath } from 'url';
-import { initBot, sendNotification, getBot, createInvoiceLink } from '../server/bot.js';
+import { initBot, sendNotification, getBot, createInvoiceLink, handleSuccessfulPayment } from '../server/bot.js';
 import { firestore, adminAuth, bucket } from '../server/db.js';
 import { generateToken, authenticateToken, AuthRequest, isAdmin } from '../server/auth.js';
 
@@ -529,8 +529,7 @@ async function startServer() {
 
           if (msg.successful_payment) {
             console.log('Webhook received successful_payment, processing...');
-            const { handleSuccessfulPayment: processPayment } = await import('../server/bot');
-            await processPayment(chatId, msg.successful_payment);
+            await handleSuccessfulPayment(chatId, msg.successful_payment);
             handled = true;
           } else if (msg.text) {
             if (msg.text.startsWith('/start')) {
