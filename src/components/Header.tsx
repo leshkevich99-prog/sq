@@ -3,10 +3,22 @@ import { Link } from 'react-router-dom';
 import { Bell, User, Settings } from 'lucide-react';
 import { useFirebase } from './FirebaseProvider';
 import { db, collection, query, where, onSnapshot } from '../firebase';
+import DebugSwitcher from './DebugSwitcher';
 
 export default function Header() {
   const { user } = useFirebase();
   const [unreadCount, setUnreadCount] = useState(0);
+  const [tapCount, setTapCount] = useState(0);
+  const [showDebug, setShowDebug] = useState(false);
+
+  const handleSecretTap = () => {
+    const newCount = tapCount + 1;
+    setTapCount(newCount);
+    if (newCount === 5) {
+      setShowDebug(true);
+      setTapCount(0);
+    }
+  };
 
   useEffect(() => {
     if (!user) return;
@@ -22,12 +34,12 @@ export default function Header() {
 
   return (
     <header className="sticky top-0 z-40 bg-black/80 backdrop-blur-md border-b border-zinc-900 px-4 py-3 flex justify-between items-center">
-      <Link to="/profile" className="flex items-center gap-2">
+      <div onClick={handleSecretTap} className="flex items-center gap-2 cursor-pointer select-none border-0 bg-transparent p-0">
         <div className="w-8 h-8 bg-zinc-900 rounded-full flex items-center justify-center border border-zinc-800 overflow-hidden">
           <User size={16} className="text-zinc-500" />
         </div>
-        <span className="text-xs font-bold uppercase tracking-widest">{user?.firstName}</span>
-      </Link>
+        <span className="text-xs font-bold uppercase tracking-widest">{user?.firstName || 'Guest'}</span>
+      </div>
       
       <div className="flex items-center gap-3">
         <Link to="/notifications" className="relative p-2 text-zinc-400 hover:text-white transition-colors">
@@ -39,6 +51,8 @@ export default function Header() {
           )}
         </Link>
       </div>
+
+      {showDebug && <DebugSwitcher onClose={() => setShowDebug(false)} />}
     </header>
   );
 }

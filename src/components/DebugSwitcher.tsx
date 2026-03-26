@@ -15,28 +15,6 @@ const ROLES = [
 
 export default function DebugSwitcher({ onClose }: DebugSwitcherProps) {
   const [loading, setLoading] = useState(false);
-  const [setupLoading, setSetupLoading] = useState(false);
-
-  const handleSetup = async () => {
-    setSetupLoading(true);
-    try {
-      const res = await fetch('/api/auth/setup-test-accounts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({})
-      });
-      const data = await res.json();
-      if (res.ok) {
-        toast.success('Тестовые аккаунты созданы/проверены');
-      } else {
-        toast.error(data.error || 'Ошибка настройки');
-      }
-    } catch (e) {
-      toast.error('Сетевая ошибка');
-    } finally {
-      setSetupLoading(false);
-    }
-  };
 
   const handleLogin = async (tester: string, role: string) => {
     const userId = `${tester}_${role}`.toLowerCase();
@@ -80,26 +58,6 @@ export default function DebugSwitcher({ onClose }: DebugSwitcherProps) {
         </div>
 
         <div className="p-6 space-y-6">
-          {/* Setup Button */}
-          <div className="flex justify-between items-center bg-zinc-900/40 p-4 rounded-2xl border border-zinc-900">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-zinc-800 rounded-lg">
-                <Shield size={18} className="text-accent" />
-              </div>
-              <div>
-                <p className="text-xs font-bold uppercase text-white">Инициализация</p>
-                <p className="text-[10px] text-zinc-500">Создать 9 тестовых аккаунтов</p>
-              </div>
-            </div>
-            <button 
-              onClick={handleSetup}
-              disabled={setupLoading}
-              className="bg-accent hover:bg-accent/90 disabled:opacity-50 px-6 py-2 rounded-xl text-xs font-bold uppercase text-black transition-colors flex items-center gap-2"
-            >
-              {setupLoading ? <RefreshCw size={14} className="animate-spin" /> : <CheckCircle2 size={14} />}
-              Setup
-            </button>
-          </div>
 
           {/* Grid */}
           <div className="grid grid-cols-1 gap-4">

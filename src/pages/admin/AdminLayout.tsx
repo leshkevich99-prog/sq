@@ -14,19 +14,29 @@ import {
   BarChart3
 } from 'lucide-react';
 import { useFirebase } from '../../components/FirebaseProvider';
+import DebugSwitcher from '../../components/DebugSwitcher';
 
 export default function AdminLayout() {
   const { user, logout } = useFirebase();
   const navigate = useNavigate();
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+  const [tapCount, setTapCount] = useState(0);
+  const [showDebug, setShowDebug] = useState(false);
+
+  const handleSecretTap = () => {
+    const newCount = tapCount + 1;
+    setTapCount(newCount);
+    if (newCount === 5) {
+      setShowDebug(true);
+      setTapCount(0);
+    }
+  };
 
   useEffect(() => {
     const handleViewportChange = () => {
       const viewport = window.visualViewport;
       if (!viewport) return;
       
-      // If the viewport height is significantly smaller than the window height, 
-      // it's likely the keyboard is visible.
       const isKeyboardOpen = viewport.height < window.innerHeight * 0.85;
       setIsKeyboardVisible(isKeyboardOpen);
     };
@@ -39,7 +49,6 @@ export default function AdminLayout() {
     };
 
     const handleBlur = () => {
-      // Small delay to check if focus moved to another input
       setTimeout(() => {
         if (document.activeElement?.tagName !== 'INPUT' && 
             document.activeElement?.tagName !== 'TEXTAREA') {
@@ -68,7 +77,7 @@ export default function AdminLayout() {
     <div className="min-h-[100dvh] bg-black text-white font-sans flex flex-col md:flex-row relative w-full max-w-full overflow-x-hidden">
       {/* Desktop Sidebar */}
       <aside className="hidden md:flex w-64 bg-zinc-950 border-r border-zinc-900 flex-col sticky top-0 h-screen">
-        <div className="p-6 border-b border-zinc-900">
+        <div className="p-6 border-b border-zinc-900 cursor-pointer select-none" onClick={handleSecretTap}>
           <div className="text-2xl font-serif font-bold tracking-tighter uppercase">Admin Panel</div>
           <div className="text-[10px] text-zinc-500 uppercase tracking-widest mt-1">Control Center</div>
         </div>
@@ -117,6 +126,8 @@ export default function AdminLayout() {
           <NavItem to="/moderation" icon={<CheckSquare size={24} />} label="Доки" />
         </nav>
       </div>
+
+      {showDebug && <DebugSwitcher onClose={() => setShowDebug(false)} />}
     </div>
   );
 }

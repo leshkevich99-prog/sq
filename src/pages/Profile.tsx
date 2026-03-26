@@ -221,21 +221,6 @@ export default function Profile() {
                 />
               </div>
             </div>
-            <div>
-              <label className="block text-xs font-medium text-zinc-400 uppercase tracking-wider mb-2">Ваш тариф</label>
-              <select
-                name="tariff"
-                value={formData.tariff}
-                onChange={(e) => setFormData({ ...formData, tariff: e.target.value })}
-                className="w-full bg-black border border-zinc-800 rounded-lg py-3 px-4 text-white focus:outline-none focus:border-accent appearance-none transition-colors"
-                style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='white'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 1rem center', backgroundSize: '1.2em' }}
-              >
-                <option value="">Без тарифа</option>
-                <option value="telemetry">TELEMETRY</option>
-                <option value="pitstop">PIT STOP</option>
-                <option value="family">SQUADRA FAMILY</option>
-              </select>
-            </div>
           </div>
         </div>
 
