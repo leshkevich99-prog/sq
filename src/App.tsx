@@ -36,8 +36,12 @@ import PilotDashboard from './pages/pilot/PilotDashboard';
 import PilotHistory from './pages/pilot/PilotHistory';
 import SOS from './pages/pilot/SOS';
 
+import { Terminal } from 'lucide-react';
+import DebugSwitcher from './components/DebugSwitcher';
+
 function AppRoutes() {
   const { user, loading } = useFirebase();
+  const [showDebug, setShowDebug] = React.useState(false);
 
   if (loading) {
     return <div className="flex items-center justify-center min-h-screen bg-black text-white">Загрузка...</div>;
@@ -50,7 +54,7 @@ function AppRoutes() {
   const role = user.role || 'client';
 
   return (
-    <div className="w-full h-full">
+    <div className="w-full h-full relative">
       <Routes>
         {role === 'client' && (
           <>
@@ -102,6 +106,17 @@ function AppRoutes() {
           </>
         )}
       </Routes>
+
+      {/* Floating QA Button */}
+      <button 
+        onClick={() => setShowDebug(true)}
+        className="fixed bottom-24 right-4 z-[9999] bg-accent text-black font-bold p-3 rounded-full shadow-2xl hover:scale-110 active:scale-95 transition-all flex items-center gap-2 border-2 border-black"
+      >
+        <Terminal size={18} />
+        <span className="text-[10px] uppercase font-black tracking-tighter pr-1">QA</span>
+      </button>
+
+      {showDebug && <DebugSwitcher onClose={() => setShowDebug(false)} />}
     </div>
   );
 }

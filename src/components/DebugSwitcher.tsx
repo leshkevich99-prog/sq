@@ -44,8 +44,8 @@ export default function DebugSwitcher({ onClose }: DebugSwitcherProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
-      <div className="w-full max-w-lg bg-zinc-950 border border-zinc-800 rounded-3xl overflow-hidden shadow-2xl">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/90 backdrop-blur-xl animate-in fade-in duration-300">
+      <div className="w-full max-w-lg bg-zinc-950 border border-zinc-800 rounded-3xl overflow-hidden shadow-[0_0_50px_-12px_rgba(255,255,255,0.1)]">
         {/* Header */}
         <div className="p-6 border-b border-zinc-900 flex justify-between items-center bg-zinc-900/50">
           <div>
