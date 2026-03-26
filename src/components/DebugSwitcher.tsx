@@ -6,7 +6,11 @@ interface DebugSwitcherProps {
   onClose: () => void;
 }
 
-const TESTERS = ['Tester1', 'Tester2', 'Tester3'];
+const TESTERS = [
+  { id: 'tester1', name: 'Иван' },
+  { id: 'tester2', name: 'Виталий' },
+  { id: 'tester3', name: 'Александр' },
+];
 const ROLES = [
   { id: 'admin', label: 'Админ', icon: Shield, color: 'text-red-400' },
   { id: 'pilot', label: 'Пилот', icon: Hammer, color: 'text-blue-400' },
@@ -59,16 +63,15 @@ export default function DebugSwitcher({ onClose }: DebugSwitcherProps) {
 
         <div className="p-6 space-y-6">
 
-          {/* Grid */}
           <div className="grid grid-cols-1 gap-4">
             {TESTERS.map((tester) => (
-              <div key={tester} className="space-y-2">
-                <p className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.2em] px-1">{tester}</p>
+              <div key={tester.id} className="space-y-2">
+                <p className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.2em] px-1">{tester.name}</p>
                 <div className="grid grid-cols-3 gap-2">
                   {ROLES.map((role) => (
                     <button
                       key={role.id}
-                      onClick={() => handleLogin(tester, role.id)}
+                      onClick={() => handleLogin(tester.id, role.id)}
                       disabled={loading}
                       className="group flex flex-col items-center justify-center p-4 bg-zinc-900/40 border border-zinc-900 rounded-2xl hover:border-zinc-700 hover:bg-zinc-900 transition-all active:scale-95 disabled:opacity-50"
                     >
