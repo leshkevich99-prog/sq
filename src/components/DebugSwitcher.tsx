@@ -47,18 +47,45 @@ export default function DebugSwitcher({ onClose }: DebugSwitcherProps) {
     }
   };
 
+  const handleSetup = async () => {
+    setLoading(true);
+    const tid = toast.loading('Обновление имен в БД...');
+    try {
+      const res = await fetch('/api/auth/setup-test-accounts', { method: 'POST' });
+      if (res.ok) {
+        toast.success('Имена обновлены в базе!', { id: tid });
+      } else {
+        toast.error('Ошибка обновления', { id: tid });
+      }
+    } catch (e) {
+      toast.error('Ошибка сети', { id: tid });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/90 backdrop-blur-xl animate-in fade-in duration-300">
-      <div className="w-full max-w-lg bg-zinc-950 border border-zinc-800 rounded-3xl overflow-hidden shadow-[0_0_50px_-12px_rgba(255,255,255,0.1)]">
+      <div className="w-full max-lg bg-zinc-950 border border-zinc-800 rounded-3xl overflow-hidden shadow-[0_0_50px_-12px_rgba(255,255,255,0.1)]">
         {/* Header */}
         <div className="p-6 border-b border-zinc-900 flex justify-between items-center bg-zinc-900/50">
           <div>
             <h2 className="text-xl font-serif uppercase tracking-widest text-white">Debug Panel</h2>
             <p className="text-xs text-zinc-500 mt-1 uppercase tracking-tighter">Переключатель тестовых ролей</p>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-zinc-800 rounded-full transition-colors text-zinc-400">
-            <X size={20} />
-          </button>
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={handleSetup}
+              disabled={loading}
+              title="Обновить имена в базе данных"
+              className="p-2 hover:bg-zinc-800 rounded-full transition-colors text-accent disabled:opacity-50"
+            >
+              <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
+            </button>
+            <button onClick={onClose} className="p-2 hover:bg-zinc-800 rounded-full transition-colors text-zinc-400">
+              <X size={20} />
+            </button>
+          </div>
         </div>
 
         <div className="p-6 space-y-6">

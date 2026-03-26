@@ -210,32 +210,32 @@ async function startServer() {
   // Setup standard test accounts for 3 testers
   app.post('/api/auth/setup-test-accounts', async (req, res) => {
     try {
-      const testers = ['Tester1', 'Tester2', 'Tester3'];
+      const testers = [
+        { id: 'tester1', name: 'Иван' },
+        { id: 'tester2', name: 'Виталий' },
+        { id: 'tester3', name: 'Александр' }
+      ];
       const roles = ['admin', 'pilot', 'client'];
       const results = [];
 
       for (const tester of testers) {
         for (const role of roles) {
-          const testId = `${tester}_${role}`.toLowerCase();
-          const existing = await firestore.collection('users').get(testId);
+          const testId = `${tester.id}_${role}`.toLowerCase();
           
-          if (!existing) {
-            const userData = {
-              id: testId,
-              telegramId: `test_${testId}`,
-              username: testId,
-              firstName: tester,
-              lastName: role.toUpperCase(),
-              photoUrl: '',
-              role,
-              createdAt: new Date().toISOString(),
-              isTestAccount: true
-            };
-            await firestore.collection('users').set(testId, userData);
-            results.push({ id: testId, status: 'created' });
-          } else {
-            results.push({ id: testId, status: 'exists' });
-          }
+          const userData = {
+            id: testId,
+            telegramId: `test_${testId}`,
+            username: testId,
+            firstName: tester.name,
+            lastName: role.toUpperCase(),
+            photoUrl: '',
+            role,
+            createdAt: new Date().toISOString(),
+            isTestAccount: true
+          };
+          
+          await firestore.collection('users').set(testId, userData);
+          results.push({ id: testId, status: 'updated' });
         }
       }
       res.json({ success: true, accounts: results });
