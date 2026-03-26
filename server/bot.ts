@@ -52,7 +52,7 @@ export async function initBot() {
 
   bot.onText(/\/start/, async (msg) => {
     const chatId = msg.chat.id;
-    const appUrl = 'https://sq-topaz.vercel.app/';
+    const appUrl = process.env.APP_URL || 'https://sq-topaz.vercel.app/';
     
     bot?.sendMessage(chatId, 'Добро пожаловать в Squadra! 🏎️\n\nВаш автомобильный консьерж-сервис. Нажмите кнопку ниже, чтобы открыть приложение.', {
       reply_markup: {

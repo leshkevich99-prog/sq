@@ -13,7 +13,9 @@ if (!getApps().length) {
   const envJson = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
   if (envJson && envJson !== 'undefined') {
     try {
-      const serviceAccount = JSON.parse(envJson);
+      // Clean up string: handle escaped newlines/quotes that can happen in some hosting envs
+      const cleaned = envJson.trim().replace(/\\n/g, '\n');
+      const serviceAccount = JSON.parse(cleaned);
       const app = initializeApp({
         credential: cert(serviceAccount),
         storageBucket: 'gen-lang-client-0402816336.firebasestorage.app'

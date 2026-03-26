@@ -38,8 +38,42 @@ async function startServer() {
   });
 
   // ==========================================
-  // DIAGNOSTIC ENDPOINT
+  // DIAGNOSTIC ENDPOINTS
   // ==========================================
+  app.get('/api/status', async (req, res) => {
+    const status: any = {
+      timestamp: new Date().toISOString(),
+      env: {
+        node_version: process.version,
+        has_bot_token: !!process.env.TELEGRAM_BOT_TOKEN,
+        has_service_account: !!process.env.FIREBASE_SERVICE_ACCOUNT_KEY,
+        db_id: process.env.FIREBASE_DATABASE_ID || '(default)',
+        project_id: 'unknown'
+      },
+      firestore: 'checking...',
+      auth: !!adminAuth,
+      storage: !!bucket
+    };
+
+    try {
+      if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
+        const sa = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
+        status.env.project_id = sa.project_id;
+      }
+      
+      // Test firestore write/read
+      const testRef = firestore.collection('_system_health');
+      const testId = 'last_check';
+      await testRef.set(testId, { time: new Date().toISOString() });
+      const verify = await testRef.get(testId);
+      status.firestore = verify ? 'connected' : 'write_failed';
+    } catch (e: any) {
+      status.firestore = `error: ${e.message}`;
+    }
+
+    res.json(status);
+  });
+
   app.get('/api/debug-env', async (req, res) => {
     const botToken = process.env.TELEGRAM_BOT_TOKEN?.trim() || '';
     const botId = botToken.split(':')[0] || 'none';
@@ -499,8 +533,10 @@ async function startServer() {
             handled = true;
           } else if (msg.text) {
             if (msg.text.startsWith('/start')) {
-              console.log('Webhook received /start command');
-              const appUrl = 'https://sq-topaz.vercel.app/';
+            console.log('Webhook received /start command');
+            const host = req.headers.host || 'sq-topaz.vercel.app';
+            const protocol = req.headers['x-forwarded-proto'] || 'https';
+            const appUrl = `${protocol}://${host}/`;
               await bot.sendMessage(chatId, 'Добро пожаловать в Squadra! 🏎️\n\nВаш автомобильный консьерж-сервис. Нажмите кнопку ниже, чтобы открыть приложение.', {
                 reply_markup: {
                   inline_keyboard: [

@@ -66,7 +66,7 @@ service cloud.firestore {
              (!('quotas' in data) || data.quotas is map || data.quotas == null) &&
              (!('isOnShift' in data) || data.isOnShift is bool || data.isOnShift == null) &&
              (!('lastShiftUpdate' in data) || data.lastShiftUpdate is string || data.lastShiftUpdate == null) &&
-             (!('tariff' in data) || data.tariff in ['telemetry', 'pitstop', 'family', 'test_drive'] || data.tariff == null) &&
+             (!('tariff' in data) || data.tariff is string || data.tariff == null) &&
              (!('balance' in data) || data.balance is number || data.balance == null) &&
              (!('limits' in data) || data.limits is map || data.limits == null) &&
              (!('usedQuotas' in data) || data.usedQuotas is map || data.usedQuotas == null) &&

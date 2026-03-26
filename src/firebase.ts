@@ -136,6 +136,20 @@ try {
 
 export { app, db, auth, storage };
 
+// ─── Диагностика (видима в консоли разработчика) ─────────────────────────────
+if (typeof window !== 'undefined') {
+  (window as any).__FIREBASE_DEBUG__ = {
+    projectId: firebaseConfig.projectId,
+    databaseId: (db as any)._databaseId?.database || '(default)',
+    appId: firebaseConfig.appId,
+    timestamp: new Date().toISOString()
+  };
+  console.log("%c[Firebase Diagnostic]", "color: #ff9900; font-weight: bold; font-size: 1.2em;");
+  console.log("Project ID:", firebaseConfig.projectId);
+  console.log("Database ID:", (db as any)._databaseId?.database || '(default)');
+  console.log("Check this against your Vercel Environment Variables!");
+}
+
 // ─── OperationType ────────────────────────────────────────────────────────────
 export const OperationType = {
   LIST: 'LIST',

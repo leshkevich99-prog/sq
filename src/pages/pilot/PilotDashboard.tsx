@@ -103,9 +103,13 @@ export default function PilotDashboard() {
       
       // Sort in memory to avoid 412 error (missing composite index)
       reqs.sort((a, b) => {
-        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-        return dateB - dateA;
+        const parseDate = (val: any) => {
+          if (!val) return 0;
+          if (typeof val === 'object' && val.seconds) return val.seconds * 1000;
+          if (typeof val.toDate === 'function') return val.toDate().getTime();
+          return new Date(val).getTime() || 0;
+        };
+        return parseDate(b.createdAt) - parseDate(a.createdAt);
       });
       
       setAvailableRequests(reqs.slice(0, 20));
