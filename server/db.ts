@@ -26,14 +26,20 @@ function ensureInit() {
 
     console.log(`[Firebase Init] Key length: ${rawEnv.length} chars. First 10 chars: "${rawEnv.substring(0, 10)}..."`);
 
-    // Clean up the key:
-    // 1. Handle common escaping issues in hosting environments
-    // 2. Remove leading/trailing quotes if they exist
-    let cleaned = rawEnv.trim();
+    // NUCLEAR CLEANING:
+    // Some hosting environments insert literal \n or \r or \t that break JSON.parse.
+    // We replace real control characters with spaces (JSON likes spaces, not raw newlines).
+    // Note: this won't break "\n" (escaped), but will fix "
+    // " (unescaped newline in string literal).
+    let cleaned = rawEnv.replace(/[\n\r\t]/g, ' ').trim();
+    
+    // Remove wrapping quotes if Vercel dashboard added them
     if (cleaned.startsWith('"') && cleaned.endsWith('"')) {
       cleaned = cleaned.substring(1, cleaned.length - 1);
     }
-    cleaned = cleaned.replace(/\\n/g, '\n');
+    
+    // Ensure all internal escaped \n are preserved if and only if they are true backslashes
+    cleaned = cleaned.replace(/\\\\n/g, '\\n');
 
     let serviceAccount;
     try {
