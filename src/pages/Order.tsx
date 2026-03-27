@@ -5,6 +5,7 @@ import WebApp from '@twa-dev/sdk';
 import { useFirebase } from '../components/FirebaseProvider';
 import { db, handleFirestoreError, OperationType, createNotification, collection, query, where, getDocs, addDoc, onSnapshot, updateDoc, doc, orderBy, limit } from '../firebase';
 import toast from 'react-hot-toast';
+import { useNavigate } from 'react-router-dom';
 
 interface CarData {
   id: string;
@@ -42,6 +43,7 @@ const SERVICE_LABELS: Record<string, string> = {
 
 export default function Order() {
   const { user } = useFirebase();
+  const navigate = useNavigate();
   const [service, setService] = useState('logistics');
   const [cars, setCars] = useState<CarData[]>([]);
   const [selectedCarId, setSelectedCarId] = useState<string>('');
@@ -208,44 +210,11 @@ export default function Order() {
 
     setSubmitting(true);
 
-    // Case 1: No external payment needed
+    // Case 1: External payment NOT needed
     if (payableAmount === 0) {
       const toastId = toast.loading('Оформление поручения...');
       try {
-        // 1. Deduct from balance if needed
-        if (balanceDeduction > 0) {
-          await addDoc(collection(db, 'transactions'), {
-            userId: user.uid,
-            type: 'deposit_deduction',
-            amount: balanceDeduction,
-            description: `Оплата услуги "${service}"`,
-            createdAt: new Date().toISOString()
-          });
-        }
-
-        // 2. Decrement quota/limit and increment usedQuotas
-        if (useQuota) {
-          const updateData: any = {};
-          
-          // Check where the quota actually is and decrement it there
-          if (user.limits && user.limits[service] > 0) {
-            const newLimits = { ...user.limits };
-            newLimits[service] -= 1;
-            updateData.limits = newLimits;
-          } else if (user.quotas && user.quotas[service] > 0) {
-            const newQuotas = { ...user.quotas };
-            newQuotas[service] -= 1;
-            updateData.quotas = newQuotas;
-          }
-
-          const newUsedQuotas = { ...(user.usedQuotas || {}) };
-          newUsedQuotas[service] = (newUsedQuotas[service] || 0) + 1;
-          updateData.usedQuotas = newUsedQuotas;
-
-          await updateDoc(doc(db, 'users', user.uid), updateData);
-        }
-
-        // 3. Create request via API
+        // Create request via API - it now handles quotas and balance deduction safely on server side
         const response = await fetch('/api/requests', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -253,30 +222,35 @@ export default function Order() {
             userId: user.uid,
             carId: selectedCarId,
             serviceType: service,
-            status: 'pending',
-            usedQuota: useQuota,
             pickupAddress,
             deliveryAddress: service === 'logistics' ? deliveryAddress : '',
             orderDate,
             orderTime,
             washType: service === 'wash' ? washType : '',
             comment,
-            price,
+            useQuota,
+            totalPrice: useQuota ? 0 : price,
             balanceDeduction,
-            paidExternally: 0,
-            createdAt: new Date().toISOString()
+            paymentStatus: balanceDeduction > 0 || useQuota ? 'paid' : 'pending'
           })
         });
 
-        if (!response.ok) throw new Error('Failed to create request via API');
-        const newRequest = await response.json();
-        const requestId = newRequest.id;
+        if (!response.ok) {
+          const err = await response.json();
+          throw new Error(err.error || 'Ошибка при создании поручения');
+        }
 
-        // 4. Notify admins
-        await notifyAdmins(requestId, service, useQuota, balanceDeduction, 0);
+        const newRequest = await response.json();
+        
+        // Notify admins (moved to helper or inline if needed, but the server also can do this)
+        // For now keep frontend notification if notifyAdmins exists
+        if (typeof notifyAdmins === 'function') {
+          await notifyAdmins(newRequest.id, service, useQuota, balanceDeduction, 0);
+        }
 
         toast.success('Поручение успешно отправлено!', { id: toastId });
         WebApp.HapticFeedback.notificationOccurred('success');
+        navigate('/');
         
         // Reset form
         setPickupAddress('');
@@ -464,7 +438,7 @@ export default function Order() {
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-xs font-mono text-zinc-400 flex items-center gap-1">{(order.price || 0).toFixed(2)} <BynIcon size="0.8em" /></p>
+                  <p className="text-xs font-mono text-zinc-400 flex items-center gap-1">{(order.totalPrice ?? order.price ?? 0).toFixed(2)} <BynIcon size="0.8em" /></p>
                 </div>
               </div>
             ))}

@@ -814,6 +814,81 @@ async function startServer() {
     }
   });
 
+  // Specialized Request Creation (Handles Quotas & Balance safer on backend)
+  app.post('/api/requests', authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      const id = uuidv4();
+      const { 
+        useQuota, 
+        serviceType, 
+        totalPrice, 
+        balanceDeduction,
+        ...rest 
+      } = req.body;
+      const userId = req.user?.id;
+
+      if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+      // 1. If using quota or balance, process it here
+      if (useQuota || (balanceDeduction && balanceDeduction > 0)) {
+        const userDoc = await firestore.collection('users').get(userId);
+        if (!userDoc) return res.status(404).json({ error: 'User not found' });
+        const userData = userDoc;
+
+        // 1a. Process Quota
+        if (useQuota) {
+          const limits = userData?.limits || {};
+          const quotas = userData?.quotas || {};
+          const usedQuotas = userData?.usedQuotas || {};
+          const updateData: any = {};
+
+          if (limits[serviceType] > 0) {
+            updateData[`limits.${serviceType}`] = limits[serviceType] - 1;
+            updateData[`usedQuotas.${serviceType}`] = (usedQuotas[serviceType] || 0) + 1;
+          } else if (quotas[serviceType] > 0) {
+            updateData[`quotas.${serviceType}`] = quotas[serviceType] - 1;
+            updateData[`usedQuotas.${serviceType}`] = (usedQuotas[serviceType] || 0) + 1;
+          } else {
+            return res.status(400).json({ error: 'No quotas available' });
+          }
+
+          if (Object.keys(updateData).length > 0) {
+            await firestore.collection('users').update(userId, updateData);
+          }
+        }
+
+        // 1b. Process Balance Deduction
+        if (balanceDeduction && balanceDeduction > 0) {
+          await firestore.collection('transactions').set(uuidv4(), {
+            userId,
+            type: 'deposit_deduction',
+            amount: balanceDeduction,
+            description: `Оплата услуги "${serviceType}"`,
+            createdAt: new Date().toISOString(),
+            status: 'completed'
+          });
+        }
+      }
+
+      // 2. Create the actual request
+      const taskData = {
+        ...rest,
+        id,
+        userId,
+        serviceType,
+        totalPrice: useQuota ? 0 : totalPrice,
+        createdAt: new Date().toISOString(),
+        status: 'pending'
+      };
+
+      await firestore.collection('requests').set(id, taskData);
+      res.json(taskData);
+    } catch (e: any) {
+      console.error('[API] Create Request Error:', e);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   // Generic CRUD for Firestore
   app.get('/api/:collection', authenticateToken, async (req: AuthRequest, res) => {
     const { collection } = req.params;
