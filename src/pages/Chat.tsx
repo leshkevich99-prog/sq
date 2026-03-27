@@ -124,15 +124,17 @@ export default function Chat() {
   return (
     <div className="flex flex-col h-screen bg-black text-white">
       {/* Header */}
-      <div className="sticky top-0 z-40 bg-zinc-950 border-b border-zinc-900 px-4 py-3 flex items-center gap-4">
-        <button onClick={() => navigate(-1)} className="p-2 bg-zinc-900 rounded-full border border-zinc-800">
-          <ArrowLeft size={20} />
-        </button>
-        <div>
-          <h1 className="text-lg font-bold uppercase tracking-wider">Чат по поручению</h1>
-          <p className="text-xs text-zinc-500">ID: {id?.slice(0, 8)}...</p>
+      <header className="sticky top-0 z-40 bg-black/95 backdrop-blur-md px-4 py-4 border-b border-zinc-900/50">
+        <div className="flex items-center gap-4">
+          <button onClick={() => navigate(-1)} className="p-2 bg-zinc-900 rounded-full border border-zinc-800 active:scale-90 transition-transform">
+            <ArrowLeft size={20} />
+          </button>
+          <div>
+            <h1 className="text-lg font-bold uppercase tracking-wider">Чат по поручению</h1>
+            <p className="text-[10px] text-zinc-500 uppercase tracking-tighter">ID: #{id?.slice(-8)}</p>
+          </div>
         </div>
-      </div>
+      </header>
 
       {/* Messages Area */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-24">

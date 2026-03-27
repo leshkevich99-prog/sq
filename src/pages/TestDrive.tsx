@@ -156,13 +156,15 @@ export default function TestDrive() {
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 w-full max-w-full overflow-x-hidden">
-      <header className="mb-6 flex items-center gap-4">
-        <button onClick={() => navigate(-1)} className="p-2 bg-zinc-900 rounded-full border border-zinc-800">
-          <ArrowLeft size={20} />
-        </button>
-        <div>
-          <h1 className="text-xl font-bold uppercase tracking-wider">Тест-драйв</h1>
-          <p className="text-xs text-zinc-500">Попробуйте наш сервис за 500 Br</p>
+      <header className="sticky top-0 z-40 bg-black/95 backdrop-blur-md pt-4 pb-4 -mx-4 px-4 mb-4 border-b border-zinc-900/50">
+        <div className="flex items-center gap-4">
+          <button onClick={() => navigate(-1)} className="p-2 bg-zinc-900 rounded-full border border-zinc-800 active:scale-90 transition-transform">
+            <ArrowLeft size={20} />
+          </button>
+          <div>
+            <h1 className="text-xl font-bold uppercase tracking-wider">Тест-драйв</h1>
+            <p className="text-[10px] text-zinc-500 uppercase tracking-tighter">Попробуйте наш сервис за 500 Br</p>
+          </div>
         </div>
       </header>
 

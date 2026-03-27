@@ -55,7 +55,7 @@ export default function Layout() {
         <Outlet />
       </main>
 
-      <nav className={`${isKeyboardVisible ? 'hidden' : 'fixed'} bottom-0 left-0 right-0 bg-zinc-950 border-t border-zinc-900 px-1 pt-4 pb-safe flex justify-around items-center z-50`}>
+      <nav className={`${isKeyboardVisible ? 'hidden' : 'fixed'} bottom-0 left-0 right-0 bg-zinc-950 border-t border-zinc-900 px-1 pt-4 pb-safe flex justify-around items-center z-30`}>
         <NavItem to="/" icon={<Home size={24} />} label="Главная" />
         <NavItem to="/garage" icon={<Car size={24} />} label="Гараж" />
         <NavItem to="/order" icon={<PlusCircle size={24} />} label="Заказ" />

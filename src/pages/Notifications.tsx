@@ -56,22 +56,24 @@ export default function Notifications() {
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="flex flex-col gap-4 mb-6">
-        <div className="flex items-center gap-4">
-          <button onClick={() => navigate(-1)} className="p-2 bg-zinc-900 rounded-full border border-zinc-800">
-            <ArrowLeft size={20} />
-          </button>
-          <h1 className="text-xl sm:text-2xl font-bold uppercase tracking-wider">Уведомления</h1>
+      <header className="sticky top-0 z-40 bg-black/95 backdrop-blur-md pt-4 pb-4 -mx-4 px-4 mb-6 border-b border-zinc-900/50">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <button onClick={() => navigate(-1)} className="p-2 bg-zinc-900 rounded-full border border-zinc-800 active:scale-90 transition-transform">
+              <ArrowLeft size={20} />
+            </button>
+            <h1 className="text-xl font-bold uppercase tracking-wider">Уведомления</h1>
+          </div>
+          {notifications.some(n => !n.read) && (
+            <button 
+              onClick={markAllAsRead}
+              className="text-[10px] text-amber-500 font-bold uppercase tracking-widest bg-amber-500/10 px-3 py-2 rounded-lg border border-amber-500/20 active:scale-95 transition-transform"
+            >
+              Прочитать все
+            </button>
+          )}
         </div>
-        {notifications.some(n => !n.read) && (
-          <button 
-            onClick={markAllAsRead}
-            className="w-full sm:w-auto text-[10px] sm:text-xs text-amber-500 font-bold uppercase tracking-widest hover:text-amber-400 transition-colors bg-amber-500/5 px-4 py-2 rounded-xl border border-amber-500/20 text-center"
-          >
-            Прочитать все
-          </button>
-        )}
-      </div>
+      </header>
 
       {notifications.length === 0 ? (
         <div className="text-center py-20 bg-zinc-900 rounded-2xl border border-zinc-800">

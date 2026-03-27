@@ -177,11 +177,7 @@ export default function PilotDashboard() {
   const handleAcceptRequest = async (requestId: string) => {
     if (!user) return;
     
-    // Check if already has active task
-    if (requests.length > 0) {
-      toast.error('У вас уже есть активное поручение');
-      return;
-    }
+    // Removed limit: pilots can now take multiple tasks
 
     try {
       await updateDoc(doc(db, 'requests', requestId), {
