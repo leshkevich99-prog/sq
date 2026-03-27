@@ -641,17 +641,15 @@ export default function AdminCRM() {
       {/* Manual Billing Modal */}
       {billingModalOpen && selectedClient && (
         <div className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
-          <div className="bg-zinc-900 border-t sm:border border-zinc-800 rounded-t-3xl sm:rounded-2xl w-full max-w-md p-6 shadow-2xl max-h-[85vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-6">
+          <div className="bg-zinc-900 border-t sm:border border-zinc-800 rounded-t-3xl sm:rounded-2xl w-full max-w-md shadow-2xl max-h-[85vh] flex flex-col overflow-hidden">
+            <div className="sticky top-0 z-10 bg-zinc-900 p-6 pb-2 border-b border-zinc-800/50 flex justify-between items-center">
               <h2 className="text-xl font-bold uppercase tracking-tighter">Ручной биллинг</h2>
-              <button onClick={() => setBillingModalOpen(false)} className="text-zinc-500 hover:text-white">
+              <button onClick={() => setBillingModalOpen(false)} className="text-zinc-500 hover:text-white p-2">
                 <X size={24} />
               </button>
             </div>
-            
-            <p className="text-sm text-zinc-400 mb-4">Клиент: <span className="text-white font-medium">{selectedClient.firstName} (@{selectedClient.username})</span></p>
-
-            <div className="space-y-4">
+            <div className="p-6 pt-4 space-y-4 overflow-y-auto pb-[max(env(safe-area-inset-bottom),1.5rem)]">
+              <p className="text-sm text-zinc-400 mb-2">Клиент: <span className="text-white font-medium">{selectedClient.firstName} (@{selectedClient.username})</span></p>
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-zinc-500 mb-2">Тип операции</label>
                 <select 
@@ -714,17 +712,15 @@ export default function AdminCRM() {
       {/* Edit User Modal */}
       {editUserModalOpen && selectedClient && (
         <div className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200 overflow-y-auto">
-          <div className="bg-zinc-900 border-t sm:border border-zinc-800 rounded-t-3xl sm:rounded-2xl w-full max-w-md p-6 shadow-2xl max-h-[85vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-6">
+          <div className="bg-zinc-900 border-t sm:border border-zinc-800 rounded-t-3xl sm:rounded-2xl w-full max-w-md shadow-2xl max-h-[85vh] flex flex-col overflow-hidden">
+            <div className="sticky top-0 z-10 bg-zinc-900 p-6 pb-2 border-b border-zinc-800/50 flex justify-between items-center">
               <h2 className="text-xl font-bold uppercase tracking-tighter">Настройки клиента</h2>
-              <button onClick={() => setEditUserModalOpen(false)} className="text-zinc-500 hover:text-white">
+              <button onClick={() => setEditUserModalOpen(false)} className="text-zinc-500 hover:text-white p-2">
                 <X size={24} />
               </button>
             </div>
-            
-            <p className="text-sm text-zinc-400 mb-4">Клиент: <span className="text-white font-medium">{selectedClient.firstName} (@{selectedClient.username})</span></p>
-
-            <div className="space-y-4">
+            <div className="p-6 pt-4 space-y-4 overflow-y-auto pb-[max(env(safe-area-inset-bottom),1.5rem)]">
+              <p className="text-sm text-zinc-400 mb-2">Клиент: <span className="text-white font-medium">{selectedClient.firstName} (@{selectedClient.username})</span></p>
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-zinc-500 mb-2">Имя / Фамилия</label>
                 <input 

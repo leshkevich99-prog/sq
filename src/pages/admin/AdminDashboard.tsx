@@ -608,19 +608,19 @@ export default function AdminDashboard() {
 
       {assignModalOpen && (
         <div className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-sm flex items-end md:items-center justify-center p-0 md:p-4 animate-in fade-in duration-200">
-          <div className="bg-zinc-900 border-t md:border border-zinc-800 rounded-t-3xl md:rounded-3xl w-full max-w-md p-6 shadow-2xl animate-in slide-in-from-bottom-full duration-300">
-            <div className="w-12 h-1.5 bg-zinc-800 rounded-full mx-auto mb-6 md:hidden" />
-            <div className="flex justify-between items-center mb-6">
+          <div className="bg-zinc-900 border-t md:border border-zinc-800 rounded-t-3xl md:rounded-3xl w-full max-w-md shadow-2xl animate-in slide-in-from-bottom-full duration-300 max-h-[85vh] flex flex-col overflow-hidden">
+            <div className="sticky top-0 z-10 bg-zinc-900 p-6 pb-2 border-b border-zinc-800/50 flex justify-between items-center md:rounded-t-3xl">
               <h2 className="text-xl font-bold uppercase tracking-tighter">Назначить пилота</h2>
               <button onClick={() => setAssignModalOpen(false)} className="text-zinc-500 hover:text-white p-2">
                 <X size={24} />
               </button>
             </div>
             
-            {pilots.length === 0 ? (
-              <p className="text-zinc-400 text-sm text-center py-8">Нет доступных пилотов</p>
-            ) : (
-              <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar pb-8 md:pb-0">
+            <div className="p-6 pt-4 space-y-2 overflow-y-auto pb-[max(env(safe-area-inset-bottom),1.5rem)]">
+              {pilots.length === 0 ? (
+                <p className="text-zinc-400 text-sm text-center py-8">Нет доступных пилотов</p>
+              ) : (
+                <>
                 {pilots.map(pilot => (
                   <button
                     key={pilot.id}
@@ -640,8 +640,9 @@ export default function AdminDashboard() {
                     </div>
                   </button>
                 ))}
-              </div>
-            )}
+                </>
+              )}
+            </div>
           </div>
         </div>
       )}

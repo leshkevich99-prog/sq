@@ -258,10 +258,10 @@ export default function PilotDashboard() {
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <header className="mb-6 mt-2 flex justify-between items-center">
+      <header className="sticky top-0 z-50 bg-black/95 backdrop-blur-md pt-4 pb-4 -mx-4 px-4 mb-6 border-b border-zinc-900/50 flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-serif font-normal tracking-wide uppercase">Кабинет пилота</h1>
-          <p className="text-zinc-400 text-sm mt-1">{user?.firstName}</p>
+          <h1 className="text-xl font-bold uppercase tracking-wider">Кабинет пилота</h1>
+          <p className="text-zinc-500 text-[10px] uppercase font-bold tracking-widest mt-0.5">{user?.firstName}</p>
         </div>
         <button 
           onClick={toggleShift}
@@ -271,9 +271,9 @@ export default function PilotDashboard() {
             : 'bg-zinc-800 border-zinc-700 text-zinc-500'
           }`}
         >
-          <Power size={16} className={isOnShift ? 'animate-pulse' : ''} />
-          <span className="text-xs font-bold uppercase tracking-widest">
-            {isOnShift ? 'На смене' : 'Не на смене'}
+          <Power size={14} className={isOnShift ? 'animate-pulse' : ''} />
+          <span className="text-[10px] font-bold uppercase tracking-widest">
+            {isOnShift ? 'На линии' : 'Оффлайн'}
           </span>
         </button>
       </header>
@@ -445,7 +445,7 @@ export default function PilotDashboard() {
       </div>
       {/* Navigation Modal */}
       {showNavModal && (
-        <div className="fixed inset-0 z-[400] bg-black/80 backdrop-blur-sm flex items-end justify-center animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[500] bg-black/80 backdrop-blur-sm flex items-end justify-center animate-in fade-in duration-200">
           <div className="w-full max-w-md bg-zinc-900 rounded-t-3xl p-6 pb-[max(env(safe-area-inset-bottom),2.5rem)] animate-in slide-in-from-bottom-full duration-300">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-lg font-bold uppercase tracking-widest">Выбрать навигатор</h3>

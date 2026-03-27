@@ -132,8 +132,10 @@ export default function TaskDetails() {
       }
       setLoading(false);
     }, (error) => {
+      console.error('TaskDetails Snapshot Error:', error);
       handleFirestoreError(error, OperationType.GET, `requests/${id}`);
       setLoading(false);
+      toast.error('Ошибка при загрузке данных задачи');
     });
 
     const qExpenses = query(collection(db, 'transactions'), where('requestId', '==', id));
@@ -550,7 +552,7 @@ export default function TaskDetails() {
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="sticky top-0 z-40 bg-black/95 backdrop-blur-md pt-4 pb-4 -mx-4 px-4 mb-2 border-b border-zinc-900/50">
+      <div className="sticky top-0 z-50 bg-black/95 backdrop-blur-md pt-4 pb-4 -mx-4 px-4 mb-2 border-b border-zinc-900/50">
         <div className="flex items-center gap-4">
           <button onClick={() => navigate(-1)} className="p-2 bg-zinc-900 rounded-full border border-zinc-800 active:scale-90 transition-transform">
             <ArrowLeft size={20} />
@@ -894,7 +896,7 @@ export default function TaskDetails() {
         {/* Photo Viewer Modal */}
         {selectedPhoto && (
           <div 
-            className="fixed inset-0 z-[300] bg-black/95 flex flex-col animate-in fade-in duration-200"
+            className="fixed inset-0 z-[500] bg-black/95 flex flex-col animate-in fade-in duration-200"
             onClick={() => setSelectedPhoto(null)}
           >
             <div className="flex justify-end p-4 gap-2">
@@ -1048,15 +1050,15 @@ export default function TaskDetails() {
         {/* Expense Modal */}
         {showExpenseModal && (
           <div className="fixed inset-0 z-[400] bg-black/80 backdrop-blur-sm flex items-end justify-center animate-in fade-in duration-200">
-            <div className="w-full max-w-md bg-zinc-900 rounded-t-3xl p-6 pb-[max(env(safe-area-inset-bottom),2.5rem)] animate-in slide-in-from-bottom-full duration-300 max-h-[90vh] overflow-y-auto">
-              <div className="flex justify-between items-center mb-6">
+            <div className="w-full max-w-md bg-zinc-900 rounded-t-3xl pb-[max(env(safe-area-inset-bottom),2.5rem)] animate-in slide-in-from-bottom-full duration-300 max-h-[90vh] flex flex-col">
+              <div className="sticky top-0 z-10 bg-zinc-900 p-6 pb-2 border-b border-zinc-800/50 rounded-t-3xl flex justify-between items-center">
                 <h3 className="text-lg font-bold uppercase tracking-widest">Добавить расход</h3>
                 <button onClick={() => setShowExpenseModal(false)} className="p-2 bg-zinc-800 rounded-full">
                   <CloseIcon size={20} />
                 </button>
               </div>
               
-              <div className="space-y-4">
+              <div className="p-6 pt-4 space-y-4 overflow-y-auto">
                 <div>
                   <label className="block text-xs text-zinc-500 uppercase tracking-widest mb-2">Тип расхода</label>
                   <select 

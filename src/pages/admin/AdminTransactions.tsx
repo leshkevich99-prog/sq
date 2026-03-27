@@ -108,22 +108,25 @@ export default function AdminTransactions() {
         </div>
       </div>
 
-      <div className="bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden">
-        <div className="p-4 border-b border-zinc-800 flex items-center justify-between gap-4">
+      <div className="sticky top-0 z-40 bg-black/95 backdrop-blur-md pt-4 pb-4 -mx-4 px-4 mb-2 border-b border-zinc-900/50">
+        <div className="flex items-center justify-between gap-4">
           <div className="relative flex-1">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
             <input 
               type="text" 
               placeholder="Поиск по клиенту или описанию..."
-              className="w-full bg-black border border-zinc-800 rounded-xl py-2.5 pl-10 pr-4 text-sm focus:outline-none focus:border-white transition-colors"
+              className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-2.5 pl-10 pr-4 text-sm focus:outline-none focus:border-white transition-colors"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          <button className="p-2.5 bg-black border border-zinc-800 rounded-xl text-zinc-400 hover:text-white transition-colors">
+          <button className="p-2.5 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-400 hover:text-white transition-colors">
             <Filter size={18} />
           </button>
         </div>
+      </div>
+
+      <div className="bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden mt-4">
 
         <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left border-collapse">
