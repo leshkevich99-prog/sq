@@ -145,7 +145,7 @@ export default function Order() {
     
     // Validation
     if (!pickupAddress) {
-      toast.error('Укажите адрес подачи');
+      toast.error('Укажите адрес забора');
       return;
     }
     if (service === 'logistics' && !deliveryAddress) {
@@ -510,7 +510,7 @@ export default function Order() {
             {/* Pickup Address */}
             <div className="space-y-2 relative">
               <div className="flex justify-between items-center ml-1">
-                <label className="block text-xs text-zinc-500 uppercase tracking-wider">Адрес подачи</label>
+                <label className="block text-xs text-zinc-500 uppercase tracking-wider">Адрес забора</label>
                 {isPickupFocused && (
                   <button 
                     onClick={() => {

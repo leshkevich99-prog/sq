@@ -703,47 +703,60 @@ function TaskCard({ req, user, car, pilot, onAssign }: { req: RequestData; user?
   };
 
   return (
-    <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 hover:border-zinc-700 transition-all group active:scale-[0.98]">
-      <div className="flex justify-between items-start mb-3">
-        <span className="text-[9px] font-bold px-2 py-0.5 bg-black border border-zinc-800 rounded uppercase tracking-widest text-zinc-500">
-          {typeLabels[req.serviceType] || req.serviceType}
-        </span>
-        <Link to={`/task/${req.id}`} className="text-zinc-700 group-hover:text-white transition-colors p-1">
-          <ArrowUpRight size={16} />
-        </Link>
-      </div>
-      
-      <div className="mb-3">
-        <div className="flex items-center gap-2 mb-0.5">
-          <h3 className="font-bold text-sm truncate">{user?.firstName || 'Клиент'}</h3>
-          <span className="text-[9px] font-mono text-zinc-600">#{req.id?.slice(-4)}</span>
+    <div className="relative group">
+      <Link 
+        to={`/task/${req.id}`} 
+        className="block bg-zinc-900 border border-zinc-800 rounded-2xl p-4 hover:border-zinc-700 transition-all active:scale-[0.98]"
+      >
+        <div className="flex justify-between items-start mb-3">
+          <span className="text-[9px] font-bold px-2 py-0.5 bg-black border border-zinc-800 rounded uppercase tracking-widest text-zinc-500">
+            {typeLabels[req.serviceType] || req.serviceType}
+          </span>
+          <div className="text-zinc-700 group-hover:text-white transition-colors p-1">
+            <ArrowUpRight size={16} />
+          </div>
         </div>
-        <p className="text-[9px] text-zinc-500 uppercase tracking-widest truncate">@{user?.username || '---'}</p>
-      </div>
+        
+        <div className="mb-3">
+          <div className="flex items-center gap-2 mb-0.5">
+            <h3 className="font-bold text-sm truncate">{user?.firstName || 'Клиент'}</h3>
+            <span className="text-[9px] font-mono text-zinc-600">#{req.id?.slice(-4)}</span>
+          </div>
+          <p className="text-[9px] text-zinc-500 uppercase tracking-widest truncate">@{user?.username || '---'}</p>
+        </div>
 
-      <div className="flex items-center gap-2 text-zinc-400 text-[11px] mb-4 bg-black/40 p-2 rounded-xl border border-zinc-800/50">
-        <CarIcon size={14} className="text-zinc-600 flex-shrink-0" />
-        <span className="truncate font-medium">{car ? `${car.make} ${car.model}` : 'Автомобиль'}</span>
-      </div>
-      
-      {pilot ? (
-        <div className="flex items-center justify-between pt-3 border-t border-zinc-800/50">
-          <div className="flex items-center gap-2">
-            <div className="w-5 h-5 rounded-full bg-zinc-800 flex items-center justify-center text-[8px] font-bold border border-zinc-700">
-              {pilot.firstName?.charAt(0) || '?'}
-            </div>
-            <div className="text-[9px] font-bold uppercase tracking-widest text-amber-500 truncate max-w-[100px]">
-              {pilot.firstName || 'Пилот'}
-            </div>
-          </div>
-          <div className="text-[8px] text-zinc-600 font-mono">
-            {new Date(req.createdAt).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' })}
-          </div>
+        <div className="flex items-center gap-2 text-zinc-400 text-[11px] mb-4 bg-black/40 p-2 rounded-xl border border-zinc-800/50">
+          <CarIcon size={14} className="text-zinc-600 flex-shrink-0" />
+          <span className="truncate font-medium">{car ? `${car.make} ${car.model}` : 'Автомобиль'}</span>
         </div>
-      ) : (
+        
+        {pilot ? (
+          <div className="flex items-center justify-between pt-3 border-t border-zinc-800/50">
+            <div className="flex items-center gap-2">
+              <div className="w-5 h-5 rounded-full bg-zinc-800 flex items-center justify-center text-[8px] font-bold border border-zinc-700">
+                {pilot.firstName?.charAt(0) || '?'}
+              </div>
+              <div className="text-[9px] font-bold uppercase tracking-widest text-amber-500 truncate max-w-[100px]">
+                {pilot.firstName || 'Пилот'}
+              </div>
+            </div>
+            <div className="text-[8px] text-zinc-600 font-mono">
+              {new Date(req.createdAt).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' })}
+            </div>
+          </div>
+        ) : (
+          <div className="h-9" /> // Placeholder to keep height consistent
+        )}
+      </Link>
+      
+      {!pilot && onAssign && (
         <button 
-          onClick={onAssign}
-          className="w-full py-2.5 bg-white text-black text-[9px] font-bold uppercase tracking-[0.2em] rounded-xl hover:bg-zinc-200 transition-all active:scale-95 shadow-lg shadow-white/5"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onAssign();
+          }}
+          className="absolute bottom-4 left-4 right-4 py-2.5 bg-white text-black text-[9px] font-bold uppercase tracking-[0.2em] rounded-xl hover:bg-zinc-200 transition-all active:scale-95 shadow-lg shadow-white/5 z-10"
         >
           Назначить
         </button>

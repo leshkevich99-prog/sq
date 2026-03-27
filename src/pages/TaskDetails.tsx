@@ -415,13 +415,21 @@ export default function TaskDetails() {
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    if (files.length === 0 || !id || !user) return;
+    if (files.length === 0 || !id || !user || !request) return;
 
     setUploading(uploadType);
     const toastId = toast.loading(`Подготовка (${files.length} фото)...`);
 
     try {
       try { WebApp.expand(); } catch (e) {}
+
+      const newUrls: string[] = [];
+      const field = uploadType === 'before' ? 'photosBefore' : 'photosAfter';
+      const currentUser = auth.currentUser;
+      if (!currentUser) throw new Error('Пользователь не авторизован');
+      
+      const token = await currentUser.getIdToken();
+      const bucket = storage.app.options.storageBucket;
 
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
@@ -444,8 +452,6 @@ export default function TaskDetails() {
         });
 
         const fileName = `requests/${id}/${uploadType}_${Date.now()}_${i}.jpg`;
-        const token = await auth.currentUser?.getIdToken();
-        const bucket = storage.app.options.storageBucket;
 
         const response = await fetch('/api/upload-proxy', {
           method: 'POST',
@@ -456,16 +462,34 @@ export default function TaskDetails() {
         if (!response.ok) throw new Error(`Ошибка при загрузке фото ${i + 1}`);
 
         const { url: downloadURL } = await response.json();
-        const field = uploadType === 'before' ? 'photosBefore' : 'photosAfter';
-        const safeUrl = getSafeUrl(downloadURL);
-        const docRef = doc(db, 'requests', id);
-        
-        await updateDoc(docRef, {
-          [field]: arrayUnion(downloadURL),
-          [`photoMetadata.${safeUrl}`]: {
-            timestamp: new Date().toISOString()
-          }
-        });
+        newUrls.push(downloadURL);
+      }
+      
+      // Calculate final arrays and metadata
+      const currentPhotos = Array.isArray((request as any)[field]) ? (request as any)[field] : [];
+      const updatedPhotos = [...currentPhotos, ...newUrls];
+      
+      const updateData: any = {
+        [field]: updatedPhotos
+      };
+
+      // Add timestamps for new photos
+      newUrls.forEach(url => {
+        const safeUrl = getSafeUrl(url);
+        updateData[`photoMetadata.${safeUrl}`] = {
+          timestamp: new Date().toISOString()
+        };
+      });
+
+      // Update via API
+      const updateResponse = await fetch(`/api/requests/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updateData)
+      });
+
+      if (!updateResponse.ok) {
+        throw new Error('Ошибка при обновлении задачи в базе данных');
       }
       
       toast.success('Все фото успешно добавлены!', { id: toastId });
@@ -597,7 +621,7 @@ export default function TaskDetails() {
 
           <div className="space-y-3 pt-3 border-t border-zinc-800">
             <div>
-              <div className="text-[10px] text-zinc-500 uppercase tracking-widest mb-1">Адрес подачи</div>
+              <div className="text-[10px] text-zinc-500 uppercase tracking-widest mb-1">Адрес забора</div>
               <div className="text-sm font-medium">{request.pickupAddress}</div>
             </div>
             {request.serviceType === 'logistics' && (
@@ -709,7 +733,7 @@ export default function TaskDetails() {
                 )
               ) : (
                 <div className="grid grid-cols-4 gap-2">
-                  {request.photosBefore.map((photo, i) => (
+                  {Array.isArray(request.photosBefore) && request.photosBefore.map((photo, i) => (
                     <div key={i} className="aspect-square bg-zinc-800 rounded-lg overflow-hidden border border-zinc-700 relative group">
                       <img 
                         src={photo} 
@@ -791,7 +815,7 @@ export default function TaskDetails() {
                 )
               ) : (
                 <div className="grid grid-cols-4 gap-2">
-                  {request.photosAfter.map((photo, i) => (
+                  {Array.isArray(request.photosAfter) && request.photosAfter.map((photo, i) => (
                     <div key={i} className="aspect-square bg-zinc-800 rounded-lg overflow-hidden border border-zinc-700 relative group">
                       <img 
                         src={photo} 

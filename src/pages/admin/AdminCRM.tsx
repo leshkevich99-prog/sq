@@ -77,6 +77,7 @@ export default function AdminCRM() {
   const [editQuotaValet, setEditQuotaValet] = useState(0);
   const [editQuotaParking, setEditQuotaParking] = useState(0);
   const [editQuotaBureaucracy, setEditQuotaBureaucracy] = useState(0);
+  const [editQuotaService, setEditQuotaService] = useState(0);
   const [editSubmitting, setEditSubmitting] = useState(false);
 
   // Edit Car State
@@ -149,6 +150,7 @@ export default function AdminCRM() {
     setEditQuotaValet(user.limits?.valet || user.quotas?.valet || 0);
     setEditQuotaParking(user.limits?.parking || user.quotas?.parking || 0);
     setEditQuotaBureaucracy(user.limits?.bureaucracy || user.quotas?.bureaucracy || 0);
+    setEditQuotaService(user.limits?.service || user.quotas?.service || 0);
     setEditUserModalOpen(true);
   };
 
@@ -229,7 +231,8 @@ export default function AdminCRM() {
         wash: editQuotaWash,
         valet: editQuotaValet,
         parking: editQuotaParking,
-        bureaucracy: editQuotaBureaucracy
+        bureaucracy: editQuotaBureaucracy,
+        service: editQuotaService
       };
 
       await updateDoc(doc(db, 'users', selectedClient.id), updateData);
@@ -796,12 +799,21 @@ export default function AdminCRM() {
                     className="w-full bg-black border border-zinc-800 rounded-xl py-3 px-4 text-sm focus:outline-none focus:border-accent text-white" 
                   />
                 </div>
-                <div className="col-span-2">
+                <div className="col-span-1">
                   <label className="block text-xs font-bold uppercase tracking-wider text-zinc-500 mb-2">Квота: Бюрократия</label>
                   <input 
                     type="number" 
                     value={editQuotaBureaucracy}
                     onChange={(e) => setEditQuotaBureaucracy(parseInt(e.target.value) || 0)}
+                    className="w-full bg-black border border-zinc-800 rounded-xl py-3 px-4 text-sm focus:outline-none focus:border-accent text-white" 
+                  />
+                </div>
+                <div className="col-span-1">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-zinc-500 mb-2">Квота: СТО / ТО</label>
+                  <input 
+                    type="number" 
+                    value={editQuotaService}
+                    onChange={(e) => setEditQuotaService(parseInt(e.target.value) || 0)}
                     className="w-full bg-black border border-zinc-800 rounded-xl py-3 px-4 text-sm focus:outline-none focus:border-accent text-white" 
                   />
                 </div>
@@ -968,8 +980,8 @@ const ClientCard: React.FC<{
   car: string, 
   deposit: string, 
   tariff: string, 
-  quotas?: { logistics?: number, wash?: number, valet?: number, parking?: number, bureaucracy?: number },
-  usedQuotas?: { logistics?: number, wash?: number, valet?: number, parking?: number, bureaucracy?: number },
+  quotas?: { logistics?: number, wash?: number, valet?: number, parking?: number, bureaucracy?: number, service?: number },
+  usedQuotas?: { logistics?: number, wash?: number, valet?: number, parking?: number, bureaucracy?: number, service?: number },
   onBillingClick: () => void,
   onEditClick: () => void,
   onViewClick: () => void
