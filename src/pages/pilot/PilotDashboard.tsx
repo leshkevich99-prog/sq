@@ -13,7 +13,8 @@ import {
   Car as CarIcon,
   Power,
   Filter,
-  Navigation
+  Navigation,
+  MessageSquare
 } from 'lucide-react';
 import { useFirebase } from '../../components/FirebaseProvider';
 import { db, handleFirestoreError, OperationType, createNotification, collection, query, where, onSnapshot, doc, updateDoc, getDoc, orderBy, limit } from '../../firebase';
@@ -350,12 +351,20 @@ export default function PilotDashboard() {
                   </div>
 
                   {isAccepted ? (
-                    <button 
-                      onClick={() => navigate(`/task/${req.id}`)}
-                      className="w-full py-3 bg-amber-500 text-black text-xs font-bold uppercase tracking-widest rounded-xl active:scale-[0.98] transition-transform"
-                    >
-                      Начать выполнение
-                    </button>
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={() => navigate(`/task/${req.id}`)}
+                        className="flex-1 py-3 bg-amber-500 text-black text-xs font-bold uppercase tracking-widest rounded-xl active:scale-[0.98] transition-transform"
+                      >
+                        Начать выполнение
+                      </button>
+                      <button 
+                        onClick={() => navigate(`/task/${req.id}/chat`)}
+                        className="w-12 h-12 bg-zinc-800 border border-zinc-700 rounded-xl flex items-center justify-center text-zinc-400 active:scale-[0.98] transition-all"
+                      >
+                        <MessageSquare size={18} />
+                      </button>
+                    </div>
                   ) : isReview ? (
                     <div className="text-center py-2 text-zinc-500 text-[10px] uppercase tracking-widest">
                       Ожидание подтверждения админом

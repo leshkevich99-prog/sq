@@ -959,12 +959,20 @@ export default function TaskDetails() {
         {user?.role === 'pilot' && (
           <div className="space-y-3 mt-6">
             {request.status === 'accepted' && (
-              <button 
-                onClick={() => updateStatus('in_progress')}
-                className="w-full py-4 bg-white text-black rounded-xl font-bold uppercase tracking-widest text-sm shadow-lg shadow-white/10"
-              >
-                Начать выполнение
-              </button>
+              <>
+                <button 
+                  onClick={() => updateStatus('in_progress')}
+                  className="w-full py-4 bg-white text-black rounded-xl font-bold uppercase tracking-widest text-sm shadow-lg shadow-white/10"
+                >
+                  Начать выполнение
+                </button>
+                <button 
+                  onClick={() => navigate(`/task/${id}/chat`)}
+                  className="w-full flex items-center justify-center gap-2 py-4 bg-zinc-900 border border-zinc-800 rounded-xl font-bold uppercase tracking-widest text-xs"
+                >
+                  <MessageSquare size={16} /> Чат с клиентом
+                </button>
+              </>
             )}
             
             {request.status === 'in_progress' && (
@@ -1169,7 +1177,7 @@ export default function TaskDetails() {
         )}
 
         {/* Action Buttons for Client */}
-        {user?.role === 'client' && (
+        {(user?.role === 'client' || !user?.role) && (
           <div className="space-y-3 mt-6">
             {(request.status === 'accepted' || request.status === 'in_progress' || request.status === 'review') && (
               <button 
