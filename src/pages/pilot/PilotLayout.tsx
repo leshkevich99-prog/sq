@@ -45,10 +45,12 @@ export default function PilotLayout() {
     };
   }, []);
 
+  const isTaskPage = window.location.pathname.startsWith('/task/');
+
   return (
     <div className="min-h-[100dvh] bg-black text-white pb-28 font-sans relative flex flex-col w-full max-w-full overflow-x-hidden">
-      <Header />
-      <main className="flex-1 p-4 w-full max-w-full overflow-x-hidden">
+      {!isTaskPage && <Header />}
+      <main className={`flex-1 w-full max-w-full overflow-x-hidden ${isTaskPage ? 'p-0' : 'p-4'}`}>
         <Outlet />
       </main>
 

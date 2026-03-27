@@ -531,12 +531,25 @@ export default function TaskDetails() {
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <header className="sticky top-[56px] z-30 bg-black/95 backdrop-blur-md py-3 -mx-4 px-4 mb-4 border-b border-zinc-900/50">
-        <div className="flex items-center gap-4">
-          <button onClick={() => navigate(-1)} className="p-2 bg-zinc-900 rounded-full border border-zinc-800 active:scale-90 transition-transform">
-            <ArrowLeft size={18} />
-          </button>
-          <h1 className="text-lg font-bold uppercase tracking-wider">Детали поручения</h1>
+      <header className="sticky top-0 z-30 bg-black/95 backdrop-blur-md py-4 px-4 mb-4 border-b border-zinc-900/50 pt-safe">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <button onClick={() => navigate(-1)} className="p-2.5 bg-zinc-900 rounded-full border border-zinc-800 active:scale-90 transition-transform">
+              <ArrowLeft size={20} />
+            </button>
+            <h1 className="text-lg font-bold uppercase tracking-wider">Детали поручения</h1>
+          </div>
+          
+          {(user?.role === 'client' || user?.role === 'pilot' || user?.role === 'admin') && 
+           (request.status === 'accepted' || request.status === 'in_progress' || request.status === 'review') && (
+            <button 
+              onClick={() => navigate(`/task/${id}/chat`)}
+              className="p-2.5 bg-accent/10 text-accent rounded-full border border-accent/20 active:scale-90 transition-transform relative"
+            >
+              <MessageSquare size={20} />
+              <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-black animate-pulse" />
+            </button>
+          )}
         </div>
       </header>
 

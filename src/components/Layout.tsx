@@ -47,11 +47,13 @@ export default function Layout() {
     };
   }, []);
 
+  const isTaskPage = window.location.pathname.startsWith('/task/');
+
   return (
     <div className="min-h-[100dvh] bg-black text-white pb-28 font-sans selection:bg-zinc-800 relative flex flex-col w-full max-w-full overflow-x-hidden">
-      <Header />
+      {!isTaskPage && <Header />}
 
-      <main className="flex-1 p-4 w-full max-w-full overflow-x-hidden">
+      <main className={`flex-1 w-full max-w-full overflow-x-hidden ${isTaskPage ? 'p-0' : 'p-4'}`}>
         <Outlet />
       </main>
 

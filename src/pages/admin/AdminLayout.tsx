@@ -115,7 +115,7 @@ export default function AdminLayout() {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-h-[100dvh] relative pb-28 md:pb-0 w-full max-w-full overflow-x-hidden">
-        <main className="flex-1 p-4 md:p-8 max-w-7xl mx-auto w-full overflow-x-hidden">
+        <main className={`flex-1 max-w-7xl mx-auto w-full overflow-x-hidden ${window.location.pathname.startsWith('/task/') ? 'p-0' : 'p-4 md:p-8'}`}>
           <Outlet />
         </main>
 
