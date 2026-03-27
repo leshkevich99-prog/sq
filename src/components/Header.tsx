@@ -33,7 +33,7 @@ export default function Header() {
   }, [user]);
 
   return (
-    <header className="sticky top-0 z-40 bg-black/80 backdrop-blur-md border-b border-zinc-900 px-4 py-3 flex justify-between items-center">
+    <header className="relative z-40 bg-black/80 backdrop-blur-md border-b border-zinc-900 px-4 py-3 pb-4 flex justify-between items-center pt-safe">
       <Link to="/profile" className="flex items-center gap-2">
         <div className="w-8 h-8 bg-zinc-900 rounded-full flex items-center justify-center border border-zinc-800 overflow-hidden">
           <User size={16} className="text-zinc-500" />
