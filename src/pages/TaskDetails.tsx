@@ -174,16 +174,13 @@ export default function TaskDetails() {
     }
 
     try {
+      const docRef = doc(db, 'requests', id);
       const updateData: any = { status: newStatus };
-      if (newStatus === 'accepted' && user?.role === 'pilot') {
+      if (newStatus === 'accepted' && user?.id) {
         updateData.pilotId = user.id;
       }
       
-      await fetch(`/api/requests/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updateData)
-      });
+      await updateDoc(docRef, updateData);
       
       // Notify client
       const statusLabels: Record<string, string> = {
@@ -461,17 +458,13 @@ export default function TaskDetails() {
         const { url: downloadURL } = await response.json();
         const field = uploadType === 'before' ? 'photosBefore' : 'photosAfter';
         const safeUrl = getSafeUrl(downloadURL);
+        const docRef = doc(db, 'requests', id);
         
-        // Get fresh request data for concurrent updates if necessary, or use functional update
-        await fetch(`/api/requests/${id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            [field]: arrayUnion(downloadURL), // Use arrayUnion for safer concurrent updates if backend supports it
-            [`photoMetadata.${safeUrl}`]: {
-              timestamp: new Date().toISOString()
-            }
-          })
+        await updateDoc(docRef, {
+          [field]: arrayUnion(downloadURL),
+          [`photoMetadata.${safeUrl}`]: {
+            timestamp: new Date().toISOString()
+          }
         });
       }
       
@@ -514,17 +507,17 @@ export default function TaskDetails() {
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="sticky top-[56px] z-50 bg-black/95 backdrop-blur-md pt-4 pb-4 -mx-4 px-4 mb-2 border-b border-zinc-900/50">
+      <header className="sticky top-[56px] z-30 bg-black/95 backdrop-blur-md py-3 -mx-4 px-4 mb-4 border-b border-zinc-900/50">
         <div className="flex items-center gap-4">
           <button onClick={() => navigate(-1)} className="p-2 bg-zinc-900 rounded-full border border-zinc-800 active:scale-90 transition-transform">
-            <ArrowLeft size={20} />
+            <ArrowLeft size={18} />
           </button>
-          <h1 className="text-xl font-bold uppercase tracking-wider">Детали поручения</h1>
+          <h1 className="text-lg font-bold uppercase tracking-wider">Детали поручения</h1>
         </div>
-      </div>
+      </header>
 
       {/* Status Timeline */}
-      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 mb-6">
+      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 mb-6 mt-2">
         <div className="flex justify-between relative">
           {/* Line */}
           <div className="absolute top-4 left-0 right-0 h-0.5 bg-zinc-800 -z-0" />

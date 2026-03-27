@@ -105,14 +105,14 @@ export default function Profile() {
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <header className="sticky top-0 z-40 bg-black/95 backdrop-blur-md pt-4 pb-4 -mx-4 px-4 mb-6 border-b border-zinc-900/50">
+      <header className="sticky top-[56px] z-30 bg-black/95 backdrop-blur-md py-3 -mx-4 px-4 mb-6 border-b border-zinc-900/50">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <button onClick={() => navigate(-1)} className="p-2 bg-zinc-900 rounded-full border border-zinc-800 active:scale-90 transition-transform">
-              <ArrowLeft size={20} />
+              <ArrowLeft size={18} />
             </button>
             <div onClick={handleSecretTap}>
-              <h1 className="text-2xl font-serif font-normal tracking-wide uppercase select-none">Профиль</h1>
+              <h1 className="text-xl font-bold uppercase tracking-wider select-none">Профиль</h1>
               <p className="text-zinc-500 text-[10px] uppercase tracking-tighter">Личные данные</p>
             </div>
           </div>

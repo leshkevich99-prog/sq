@@ -253,7 +253,7 @@ export default function TestDrive() {
         </div>
 
         <div className="space-y-2 w-full">
-          <label className="block text-xs text-zinc-500 uppercase tracking-wider ml-1">Адрес забора (подачи)</label>
+          <label className="block text-xs text-zinc-500 uppercase tracking-wider ml-1">Адрес забора</label>
           <div className="relative w-full">
             <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
             <input 

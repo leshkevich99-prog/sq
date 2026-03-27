@@ -304,13 +304,13 @@ export default function Home() {
                 <div className="bg-black/50 rounded-lg px-3 py-2 border border-zinc-800">
                   <div className="text-[10px] text-zinc-500 uppercase tracking-wider">Логистика</div>
                   <div className="text-sm font-bold text-white">
-                    {user.limits?.logistics ?? user.quotas?.logistics ?? tariffTotals?.logistics ?? 0} {tariffTotals ? `/ ${tariffTotals.logistics}` : ''}
+                    {(user.limits?.logistics ?? user.quotas?.logistics ?? 0)} {tariffTotals ? `/ ${tariffTotals.logistics}` : ''}
                   </div>
                 </div>
                 <div className="bg-black/50 rounded-lg px-3 py-2 border border-zinc-800">
                   <div className="text-[10px] text-zinc-500 uppercase tracking-wider">Мойки</div>
                   <div className="text-sm font-bold text-white">
-                    {user.limits?.wash ?? user.quotas?.wash ?? tariffTotals?.wash ?? 0} {tariffTotals ? `/ ${tariffTotals.wash}` : ''}
+                    {(user.limits?.wash ?? user.quotas?.wash ?? 0)} {tariffTotals ? `/ ${tariffTotals.wash}` : ''}
                   </div>
                 </div>
               </div>

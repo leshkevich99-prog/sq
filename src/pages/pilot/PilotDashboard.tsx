@@ -259,9 +259,9 @@ export default function PilotDashboard() {
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <header className="sticky top-0 z-50 bg-black/95 backdrop-blur-md pt-4 pb-4 -mx-4 px-4 mb-6 border-b border-zinc-900/50 flex justify-between items-center">
+      <header className="sticky top-[56px] z-30 bg-black/95 backdrop-blur-md py-3 -mx-4 px-4 mb-6 border-b border-zinc-900/50 flex justify-between items-center">
         <div>
-          <h1 className="text-xl font-bold uppercase tracking-wider">Кабинет пилота</h1>
+          <h1 className="text-lg font-bold uppercase tracking-wider">Кабинет пилота</h1>
           <p className="text-zinc-500 text-[10px] uppercase font-bold tracking-widest mt-0.5">{user?.firstName}</p>
         </div>
         <button 

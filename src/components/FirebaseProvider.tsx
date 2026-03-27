@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import WebApp from '@twa-dev/sdk';
-import { auth } from '../firebase';
+import { auth, db, doc, onSnapshot } from '../firebase';
 import { signInWithCustomToken, signOut } from 'firebase/auth';
 
 interface AppUser {
@@ -125,6 +125,20 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     initAuth();
   }, []);
+
+  // Subscribe to user document changes in Firestore for real-time quotas/balance
+  useEffect(() => {
+    if (!user?.id || !db) return;
+
+    const unsub = onSnapshot(doc(db, 'users', user.id), (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.data();
+        setUser(prev => prev ? { ...prev, ...data, id: prev.id, uid: prev.id } : null);
+      }
+    });
+
+    return () => unsub();
+  }, [user?.id]);
 
   const updateUserRole = async (newRole: 'client' | 'admin' | 'pilot') => {
     if (!user) return;

@@ -158,9 +158,12 @@ export default function Order() {
     // Calculate Price
     let price = SERVICE_PRICES[service] || 0;
 
-    // Check quotas/limits
+    // Check quotas/limits - Combine both sources to avoid missing data if one is empty
     let useQuota = false;
-    const availableLimits = user.limits || user.quotas || {};
+    const availableLimits: any = { 
+      ...(user.quotas || {}), 
+      ...(user.limits || {}) 
+    };
     
     // Check if user has quota for this service
     if (availableLimits[service] && Number(availableLimits[service]) > 0) {
@@ -220,15 +223,16 @@ export default function Order() {
           });
         }
 
-        // 2. Decrement quota/limit if needed and increment usedQuotas
+        // 2. Decrement quota/limit and increment usedQuotas
         if (useQuota) {
           const updateData: any = {};
           
-          if (user.limits) {
+          // Check where the quota actually is and decrement it there
+          if (user.limits && user.limits[service] > 0) {
             const newLimits = { ...user.limits };
             newLimits[service] -= 1;
             updateData.limits = newLimits;
-          } else if (user.quotas) {
+          } else if (user.quotas && user.quotas[service] > 0) {
             const newQuotas = { ...user.quotas };
             newQuotas[service] -= 1;
             updateData.quotas = newQuotas;
