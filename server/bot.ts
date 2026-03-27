@@ -146,6 +146,25 @@ export async function handleSuccessfulPayment(chatId: number, payment: any) {
           
           await firestore.collection('users').update(userId, updateData);
           console.log(`[Payment] User ${userId} updated successfully with payload:`, JSON.stringify(updateData));
+          
+          // FOR CARD PAYMENTS: Record deposit then deduction as requested
+          // 1. Record deposit (replenishment)
+          await firestore.collection('transactions').add({
+            userId,
+            type: 'deposit',
+            amount: amount || (payment.total_amount / 100),
+            description: `Оплата тарифа ${tariffName} (пополнение)`,
+            createdAt: new Date().toISOString()
+          });
+
+          // 2. Record deduction (withdrawal)
+          await firestore.collection('transactions').add({
+            userId,
+            type: 'deposit_deduction',
+            amount: amount || (payment.total_amount / 100),
+            description: `Оплата тарифа ${tariffName} (списание)`,
+            createdAt: new Date().toISOString()
+          });
         } catch (updateErr) {
           console.error(`[Payment] CRITICAL: Error updating user ${userId}:`, updateErr);
           throw updateErr;
@@ -177,6 +196,25 @@ export async function handleSuccessfulPayment(chatId: number, payment: any) {
             scheduledDate: orderData.scheduledDate || '',
             status: 'pending',
             actualCost: amount || (payment.total_amount / 100),
+            createdAt: new Date().toISOString()
+          });
+
+          // FOR CARD PAYMENTS: Record deposit then deduction as requested
+          // 1. Record deposit (replenishment)
+          await firestore.collection('transactions').add({
+            userId,
+            type: 'deposit',
+            amount: amount || (payment.total_amount / 100),
+            description: `Оплата услуги "${orderData.serviceType}" (пополнение)`,
+            createdAt: new Date().toISOString()
+          });
+
+          // 2. Record deduction (withdrawal)
+          await firestore.collection('transactions').add({
+            userId,
+            type: 'deposit_deduction',
+            amount: amount || (payment.total_amount / 100),
+            description: `Оплата услуги "${orderData.serviceType}" (списание)`,
             createdAt: new Date().toISOString()
           });
 
@@ -233,6 +271,25 @@ export async function handleSuccessfulPayment(chatId: number, payment: any) {
           };
 
           await firestore.collection('requests').set(requestId, requestData);
+
+          // FOR CARD PAYMENTS: Record deposit then deduction as requested
+          // 1. Record deposit (replenishment)
+          await firestore.collection('transactions').add({
+            userId,
+            type: 'deposit',
+            amount: amount || (payment.total_amount / 100),
+            description: `Оплата тест-драйва (пополнение)`,
+            createdAt: new Date().toISOString()
+          });
+
+          // 2. Record deduction (withdrawal)
+          await firestore.collection('transactions').add({
+            userId,
+            type: 'deposit_deduction',
+            amount: amount || (payment.total_amount / 100),
+            description: `Оплата тест-драйва (списание)`,
+            createdAt: new Date().toISOString()
+          });
           console.log(`[Payment] Test drive request ${requestId} created for user ${orderData.userId}`);
 
           // 2. Notify admins
@@ -260,15 +317,17 @@ export async function handleSuccessfulPayment(chatId: number, payment: any) {
         }
       }
 
-      // Create transaction record for the external payment
-      console.log(`Creating transaction record for user ${userId}, type: ${type}`);
-      await firestore.collection('transactions').add({
-        userId,
-        type: type === 'deposit' || (!['subscription', 'service_order', 'test_drive'].includes(type)) ? 'deposit' : 'payment',
-        amount: amount || (payment.total_amount / 100),
-        description: type === 'subscription' ? `Оплата тарифа ${tariffName}` : type === 'service_order' ? `Оплата услуги` : type === 'test_drive' ? `Оплата тест-драйва` : 'Пополнение депозита',
-        createdAt: new Date().toISOString()
-      });
+      // Record generic deposit if it was a simple deposit replenishment
+      if (type === 'deposit' || (!['subscription', 'service_order', 'test_drive'].includes(type))) {
+        console.log(`Creating deposit record for user ${userId}`);
+        await firestore.collection('transactions').add({
+          userId,
+          type: 'deposit',
+          amount: amount || (payment.total_amount / 100),
+          description: 'Пополнение депозита',
+          createdAt: new Date().toISOString()
+        });
+      }
 
       bot?.sendMessage(chatId, '✅ Оплата прошла успешно! Ваш профиль обновлен.');
     } else {

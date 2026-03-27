@@ -62,7 +62,7 @@ export default function AdminTransactions() {
 
   const filteredTxs = transactions.filter(tx => {
     const user = users[tx.userId];
-    const searchStr = (user?.firstName || '' + user?.username || '' + tx.description).toLowerCase();
+    const searchStr = ((user?.firstName || '') + (user?.username || '') + tx.description).toLowerCase();
     return searchStr.includes(search.toLowerCase());
   });
 
@@ -125,7 +125,7 @@ export default function AdminTransactions() {
           </button>
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-zinc-950 text-[10px] uppercase tracking-widest text-zinc-500">
@@ -152,7 +152,7 @@ export default function AdminTransactions() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-full bg-zinc-800 flex items-center justify-center text-[10px] font-bold">
+                        <div className="w-6 h-6 rounded-full bg-zinc-800 flex items-center justify-center text-[10px] font-bold border border-zinc-700">
                           {user?.firstName?.charAt(0)}
                         </div>
                         <div>
@@ -177,13 +177,6 @@ export default function AdminTransactions() {
                           </span>
                         </div>
                       )}
-                      {tx.status === 'completed' && tx.type === 'external_invoice' && (
-                        <div className="mt-1">
-                          <span className="inline-block px-2 py-0.5 bg-emerald-500/20 text-emerald-500 text-[10px] uppercase tracking-wider font-bold rounded">
-                            Оплачен
-                          </span>
-                        </div>
-                      )}
                       {tx.receiptUrl && (
                         <a href={tx.receiptUrl} target="_blank" rel="noopener noreferrer" className="text-[10px] text-accent hover:underline mt-1 inline-block">
                           Смотреть квитанцию
@@ -196,13 +189,66 @@ export default function AdminTransactions() {
                   </tr>
                 );
               })}
-              {!loading && filteredTxs.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-zinc-500">Транзакции не найдены</td>
-                </tr>
-              )}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile Card View */}
+        <div className="md:hidden divide-y divide-zinc-800">
+          {loading ? (
+            <div className="p-8 text-center text-zinc-500">Загрузка данных...</div>
+          ) : filteredTxs.length === 0 ? (
+            <div className="p-8 text-center text-zinc-500 uppercase text-xs tracking-widest">Транзакции не найдены</div>
+          ) : filteredTxs.map(tx => {
+            const user = users[tx.userId];
+            const isPositive = tx.type === 'deposit';
+            return (
+              <div key={tx.id} className="p-4 bg-zinc-900 hover:bg-zinc-800/50 transition-colors">
+                <div className="flex justify-between items-start mb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center text-xs font-bold border border-zinc-700">
+                      {user?.firstName?.charAt(0)}
+                    </div>
+                    <div>
+                      <div className="text-sm font-bold text-white">{user?.firstName || '---'}</div>
+                      <div className="text-[10px] text-zinc-500">@{user?.username || '---'}</div>
+                    </div>
+                  </div>
+                  <div className={`text-sm font-bold ${isPositive ? 'text-emerald-500' : 'text-white'}`}>
+                    {isPositive ? '+' : '-'}{tx.amount.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <BynIcon size="0.9em" />
+                  </div>
+                </div>
+                
+                <div className="flex flex-col gap-2">
+                  <div className="text-xs text-zinc-400 line-clamp-2">
+                    {tx.description}
+                  </div>
+                  <div className="flex items-center justify-between mt-1">
+                    <div className="flex items-center gap-2">
+                      <span className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${
+                        isPositive ? 'bg-emerald-500/10 text-emerald-500' : 'bg-zinc-800 text-zinc-400'
+                      }`}>
+                        {tx.type}
+                      </span>
+                      {tx.status === 'pending' && (
+                        <span className="px-1.5 py-0.5 bg-amber-500/10 text-amber-500 text-[9px] uppercase tracking-wider font-bold rounded">
+                          Ожидает
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-[9px] text-zinc-500 uppercase tracking-widest">
+                      {new Date(tx.createdAt).toLocaleDateString()} {new Date(tx.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </div>
+                  </div>
+                  {tx.receiptUrl && (
+                    <a href={tx.receiptUrl} target="_blank" rel="noopener noreferrer" className="text-[10px] text-blue-400 font-bold uppercase tracking-widest mt-2 bg-blue-400/5 py-2 rounded-lg text-center border border-blue-400/20">
+                      Смотреть квитанцию
+                    </a>
+                  )}
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>

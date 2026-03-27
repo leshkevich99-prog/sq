@@ -1,7 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { Check, X, Car, Info, FileText } from 'lucide-react';
-import WebApp from '@twa-dev/sdk';
-import { db, handleFirestoreError, OperationType, collection, onSnapshot, doc, updateDoc, deleteDoc, query, where } from '../../firebase';
+import { 
+  Check, 
+  X, 
+  Car, 
+  User, 
+  Shield, 
+  FileText, 
+  Info,
+  Calendar,
+  AlertTriangle,
+  ExternalLink
+} from 'lucide-react';
+import { db, handleFirestoreError, OperationType, collection, onSnapshot, query, where, updateDoc, doc, deleteDoc, getDoc } from '../../firebase';
+import { WebApp } from '@twa-dev/sdk';
 import toast from 'react-hot-toast';
 
 interface CarData {
@@ -12,58 +23,57 @@ interface CarData {
   year: number;
   plate: string;
   vin?: string;
+  status: 'pending' | 'verified' | 'rejected';
+  createdAt: string;
   techPassportFront?: string;
   techPassportBack?: string;
-  isApproved: boolean;
-  maintenanceSchedule?: string;
-  inspectionDate?: string;
   insuranceDate?: string;
-  createdAt: string;
+  inspectionDate?: string;
+  maintenanceSchedule?: string;
 }
 
 interface UserData {
   id: string;
   firstName: string;
   username: string;
+  isPilot?: boolean;
+  pilotStatus?: 'unverified' | 'verified' | 'rejected';
 }
 
 export default function AdminModeration() {
-  const [activeTab, setActiveTab] = useState<'cars' | 'pilots'>('cars');
   const [cars, setCars] = useState<CarData[]>([]);
   const [unverifiedPilots, setUnverifiedPilots] = useState<UserData[]>([]);
   const [users, setUsers] = useState<Record<string, UserData>>({});
+  const [activeTab, setActiveTab] = useState<'cars' | 'pilots'>('cars');
   const [loading, setLoading] = useState(true);
   const [selectedCar, setSelectedCar] = useState<CarData | null>(null);
 
   useEffect(() => {
-    // Fetch unapproved cars
-    const qCars = query(collection(db, 'cars'), where('isApproved', '==', false));
+    const qCars = query(collection(db, 'cars'), where('status', '==', 'pending'));
     const unsubCars = onSnapshot(qCars, (snapshot) => {
-      const unapprovedCars: CarData[] = [];
+      const cList: CarData[] = [];
       snapshot.forEach(doc => {
-        unapprovedCars.push({ id: doc.id, ...doc.data() } as CarData);
+        cList.push({ id: doc.id, ...doc.data() } as CarData);
       });
-      setCars(unapprovedCars);
+      setCars(cList);
       setLoading(false);
     }, (error) => handleFirestoreError(error, OperationType.LIST, 'cars'));
 
-    // Fetch unverified pilots
-    const qPilots = query(collection(db, 'users'), where('role', '==', 'pilot'), where('isVerified', '==', false));
+    const qPilots = query(collection(db, 'users'), where('pilotStatus', '==', 'unverified'));
     const unsubPilots = onSnapshot(qPilots, (snapshot) => {
-      const unvPilots: UserData[] = [];
+      const pList: UserData[] = [];
       snapshot.forEach(doc => {
-        unvPilots.push({ id: doc.id, ...doc.data() } as UserData);
+        pList.push({ id: doc.id, ...doc.data() } as UserData);
       });
-      setUnverifiedPilots(unvPilots);
-    }, (error) => handleFirestoreError(error, OperationType.LIST, 'users'));
+      setUnverifiedPilots(pList);
+    }, (error) => handleFirestoreError(error, OperationType.LIST, 'users/pilots'));
 
-    // Fetch users for mapping
     const unsubUsers = onSnapshot(collection(db, 'users'), (snapshot) => {
-      const userMap: Record<string, UserData> = {};
+      const uMap: Record<string, UserData> = {};
       snapshot.forEach(doc => {
-        userMap[doc.id] = { id: doc.id, ...doc.data() } as UserData;
+        uMap[doc.id] = { id: doc.id, ...doc.data() } as UserData;
       });
-      setUsers(userMap);
+      setUsers(uMap);
     }, (error) => handleFirestoreError(error, OperationType.LIST, 'users'));
 
     return () => {
@@ -73,50 +83,39 @@ export default function AdminModeration() {
     };
   }, []);
 
-  const handleApprovePilot = async (pilotId: string) => {
-    const toastId = toast.loading('Верификация пилота...');
+  const handleApprove = async (carId: string, updatedData?: Partial<CarData>) => {
+    const toastId = toast.loading('Одобрение автомобиля...');
     try {
-      await updateDoc(doc(db, 'users', pilotId), { isVerified: true });
-      toast.success('Пилот верифицирован', { id: toastId });
+      await updateDoc(doc(db, 'cars', carId), {
+        ...(updatedData || {}),
+        status: 'verified',
+        updatedAt: new Date().toISOString()
+      });
+      if (selectedCar?.id === carId) setSelectedCar(null);
+      toast.success('Автомобиль успешно верифицирован', { id: toastId });
     } catch (error) {
-      handleFirestoreError(error, OperationType.UPDATE, `users/${pilotId}`);
+      handleFirestoreError(error, OperationType.UPDATE, `cars/${carId}`);
       toast.error('Ошибка при верификации', { id: toastId });
     }
   };
 
-  const handleApprove = async (carId: string, updatedData?: Partial<CarData>) => {
-    const toastId = toast.loading('Оформление и одобрение...');
+  const handleApprovePilot = async (userId: string) => {
+    const toastId = toast.loading('Верификация пилота...');
     try {
-      // Create a clean object without 'id' or other meta-fields
-      const { id, ...sanitizedData } = (updatedData || {}) as any;
-      
-      const dataToSave = { 
-        ...sanitizedData,
-        isApproved: true,
-        updatedAt: new Date().toISOString()
-      };
-      
-      // Ensure we don't send 'id' or other prohibited fields
-      delete dataToSave.id;
-      
-      await updateDoc(doc(db, 'cars', carId), dataToSave);
-      if (selectedCar?.id === carId) setSelectedCar(null);
-      toast.success('Автомобиль успешно проверен и одобрен', { id: toastId });
-    } catch (error: any) {
-      console.error('Moderation approval error:', error);
-      handleFirestoreError(error, OperationType.UPDATE, `cars/${carId}`);
-      
-      const errorMsg = error.code === 'permission-denied' 
-        ? 'Ошибка доступа. Возможно, заполнены недопустимые поля.'
-        : `Ошибка: ${error.message || 'не удалось сохранить'}`;
-        
-      toast.error(errorMsg, { id: toastId, duration: 5000 });
+      await updateDoc(doc(db, 'users', userId), {
+        pilotStatus: 'verified',
+        isPilot: true
+      });
+      toast.success('Пилот верифицирован', { id: toastId });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `users/${userId}`);
+      toast.error('Ошибка при верификации', { id: toastId });
     }
   };
 
   const handleReject = async (carId: string) => {
-    const confirmMsg = 'Вы уверены, что хотите отклонить и удалить этот автомобиль?';
-    const proceed = await new Promise<boolean>((resolve) => {
+    const proceed = await new Promise((resolve) => {
+      const confirmMsg = 'Вы уверены, что хотите отклонить и удалить этот автомобиль?';
       try {
         WebApp.showConfirm(confirmMsg, (ok) => resolve(ok));
       } catch (e) {
@@ -138,75 +137,90 @@ export default function AdminModeration() {
   };
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <header className="mb-6 mt-2">
-        <h1 className="text-3xl font-serif font-normal tracking-wide uppercase">Модерация</h1>
-        <p className="text-zinc-400 text-sm mt-1">Проверка автомобилей и пилотов</p>
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
+      <header className="sticky top-0 z-40 bg-black/95 backdrop-blur-md -mx-4 px-4 py-4 mb-6 border-b border-zinc-800">
+        <h1 className="text-xl font-serif font-normal tracking-wide uppercase">Модерация</h1>
+        <p className="text-zinc-500 text-[10px] uppercase tracking-widest mt-0.5">Проверка новых данных</p>
       </header>
 
-      <div className="flex gap-2 mb-6">
+      <div className="flex bg-zinc-900 p-1 rounded-2xl border border-zinc-800 mb-6 mx-1">
         <button 
           onClick={() => setActiveTab('cars')}
-          className={`flex-1 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${activeTab === 'cars' ? 'bg-white text-black' : 'bg-zinc-900 text-zinc-500 border border-zinc-800'}`}
+          className={`flex-1 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all ${activeTab === 'cars' ? 'bg-zinc-800 text-white' : 'text-zinc-500'}`}
         >
           Автомобили ({cars.length})
         </button>
         <button 
           onClick={() => setActiveTab('pilots')}
-          className={`flex-1 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${activeTab === 'pilots' ? 'bg-white text-black' : 'bg-zinc-900 text-zinc-500 border border-zinc-800'}`}
+          className={`flex-1 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all ${activeTab === 'pilots' ? 'bg-zinc-800 text-white' : 'text-zinc-500'}`}
         >
           Пилоты ({unverifiedPilots.length})
         </button>
       </div>
 
       {loading ? (
-        <div className="text-center text-zinc-500 py-8">Загрузка...</div>
+        <div className="text-center text-zinc-500 py-12 flex flex-col items-center gap-4">
+          <div className="w-8 h-8 border-2 border-zinc-800 border-t-white rounded-full animate-spin" />
+          <span className="text-[10px] uppercase tracking-widest">Загрузка...</span>
+        </div>
       ) : activeTab === 'cars' ? (
         cars.length === 0 ? (
-          <div className="text-center text-zinc-500 py-8 bg-zinc-900/50 rounded-2xl border border-zinc-800/50">
-            Нет автомобилей, ожидающих проверки
+          <div className="text-center text-zinc-600 py-12 px-6 bg-zinc-900/30 rounded-3xl border border-dashed border-zinc-800 text-[10px] uppercase tracking-[0.2em] mt-4">
+            Нет новых автомобилей
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-4 px-1">
             {cars.map(car => {
               const owner = users[car.userId];
-              const ownerName = owner ? `${owner.firstName} (@${owner.username})` : 'Неизвестный клиент';
+              const ownerName = owner ? owner.firstName : 'Клиент';
               
               return (
-                <div key={car.id} className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
-                  <div className="p-4 border-b border-zinc-800">
-                    <div className="flex justify-between items-start mb-2">
-                      <span className="text-xs font-medium px-2 py-1 bg-amber-500/20 text-amber-500 rounded uppercase tracking-wider">Ожидает проверки</span>
-                      <span className="text-xs text-zinc-500">{new Date(car.createdAt).toLocaleDateString()}</span>
+                <div key={car.id} className="bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden shadow-xl">
+                  <div className="p-5 border-b border-zinc-800 bg-zinc-950/50">
+                    <div className="flex justify-between items-start mb-3">
+                      <span className="text-[8px] font-bold px-2 py-0.5 bg-amber-500/10 text-amber-500 rounded border border-amber-500/20 uppercase tracking-widest">Новое авто</span>
+                      <span className="text-[9px] text-zinc-500 font-mono uppercase">#{car.id.slice(-6)}</span>
                     </div>
-                    <h3 className="font-bold text-lg mb-1">{car.make} {car.model} ({car.year})</h3>
-                    <p className="text-sm text-zinc-400">Владелец: {ownerName}</p>
+                    <h3 className="font-bold text-lg mb-0.5">{car.make} {car.model}</h3>
+                    <div className="flex items-center gap-2 text-xs text-zinc-400">
+                      <User size={12} className="text-zinc-600" />
+                      <span>{ownerName} (@{owner?.username || '---'})</span>
+                    </div>
                   </div>
                   
-                  <div className="p-4">
-                    <div className="flex items-center gap-2 mb-4 text-sm font-medium">
-                      <Car size={16} className="text-zinc-400" />
-                      <span>Гос. номер: <span className="text-white uppercase">{car.plate}</span></span>
+                  <div className="p-5 space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="bg-black/40 p-3 rounded-2xl border border-zinc-800/50">
+                        <label className="text-[8px] text-zinc-500 uppercase tracking-widest block mb-1">Гос. номер</label>
+                        <div className="text-sm font-mono font-bold uppercase tracking-wider">{car.plate}</div>
+                      </div>
+                      <div className="bg-black/40 p-3 rounded-2xl border border-zinc-800/50">
+                        <label className="text-[8px] text-zinc-500 uppercase tracking-widest block mb-1">Год выпуска</label>
+                        <div className="text-sm font-mono font-bold">{car.year}</div>
+                      </div>
                     </div>
 
                     <div className="grid grid-cols-3 gap-2">
                       <button 
                         onClick={() => setSelectedCar(car)}
-                        className="flex items-center justify-center gap-2 py-3 bg-zinc-800 text-white text-xs font-bold uppercase tracking-wider rounded-xl hover:bg-zinc-700 transition-colors"
+                        className="flex flex-col items-center justify-center gap-1.5 py-4 bg-zinc-800 text-white rounded-2xl active:scale-95 transition-all border border-zinc-700 hover:bg-zinc-700"
                       >
-                        <Info size={16} /> Детали
+                        <Info size={16} />
+                        <span className="text-[8px] font-bold uppercase tracking-widest">Детали</span>
                       </button>
                       <button 
                         onClick={() => handleReject(car.id)}
-                        className="flex items-center justify-center gap-2 py-3 bg-red-500/10 text-red-500 text-xs font-bold uppercase tracking-wider rounded-xl hover:bg-red-500/20 transition-colors"
+                        className="flex flex-col items-center justify-center gap-1.5 py-4 bg-red-500/5 text-red-500 rounded-2xl active:scale-95 transition-all border border-red-500/10 hover:bg-red-500/10"
                       >
-                        <X size={16} /> Отклонить
+                        <X size={16} />
+                        <span className="text-[8px] font-bold uppercase tracking-widest">Сброс</span>
                       </button>
                       <button 
                         onClick={() => handleApprove(car.id)}
-                        className="flex items-center justify-center gap-2 py-3 bg-emerald-500/10 text-emerald-500 text-xs font-bold uppercase tracking-wider rounded-xl hover:bg-emerald-500/20 transition-colors"
+                        className="flex flex-col items-center justify-center gap-1.5 py-4 bg-emerald-500 text-black rounded-2xl active:scale-95 transition-all shadow-lg shadow-emerald-500/10 font-bold"
                       >
-                        <Check size={16} /> Одобрить
+                        <Check size={16} />
+                        <span className="text-[8px] font-bold uppercase tracking-widest">ОК</span>
                       </button>
                     </div>
                   </div>
@@ -217,37 +231,37 @@ export default function AdminModeration() {
         )
       ) : (
         unverifiedPilots.length === 0 ? (
-          <div className="text-center text-zinc-500 py-8 bg-zinc-900/50 rounded-2xl border border-zinc-800/50">
-            Нет пилотов, ожидающих верификации
+          <div className="text-center text-zinc-600 py-12 px-6 bg-zinc-900/30 rounded-3xl border border-dashed border-zinc-800 text-[10px] uppercase tracking-[0.2em] mt-4">
+            Нет новых пилотов
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-4 px-1">
             {unverifiedPilots.map(pilot => (
-              <div key={pilot.id} className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
-                <div className="flex justify-between items-center mb-4">
+              <div key={pilot.id} className="bg-zinc-900 border border-zinc-800 rounded-3xl p-5 shadow-xl">
+                <div className="flex justify-between items-center mb-5">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center font-bold">
+                    <div className="w-12 h-12 rounded-full bg-zinc-800 flex items-center justify-center text-lg font-bold border border-zinc-700">
                       {pilot.firstName[0]}
                     </div>
                     <div>
-                      <h3 className="font-bold">{pilot.firstName}</h3>
-                      <p className="text-xs text-zinc-500">@{pilot.username}</p>
+                      <h3 className="font-bold text-base">{pilot.firstName}</h3>
+                      <p className="text-xs text-zinc-500 lowercase">@{pilot.username}</p>
                     </div>
                   </div>
-                  <span className="text-[10px] font-bold px-2 py-1 bg-amber-500/20 text-amber-500 rounded uppercase tracking-wider">Новый пилот</span>
+                  <span className="text-[8px] font-bold px-2 py-1 bg-blue-500/10 text-blue-500 border border-blue-500/20 rounded uppercase tracking-widest">Кандидат</span>
                 </div>
                 
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-2 gap-3">
                   <button 
-                    className="flex items-center justify-center gap-2 py-3 bg-zinc-800 text-white text-xs font-bold uppercase tracking-wider rounded-xl hover:bg-zinc-700 transition-colors"
+                    className="flex items-center justify-center gap-2 py-4 bg-zinc-800 text-white text-[10px] font-bold uppercase tracking-wider rounded-2xl border border-zinc-700 active:scale-95 transition-all"
                   >
-                    <Info size={16} /> Документы
+                    <FileText size={16} /> Профиль
                   </button>
                   <button 
                     onClick={() => handleApprovePilot(pilot.id)}
-                    className="flex items-center justify-center gap-2 py-3 bg-emerald-500/10 text-emerald-500 text-xs font-bold uppercase tracking-wider rounded-xl hover:bg-emerald-500/20 transition-colors"
+                    className="flex items-center justify-center gap-2 py-4 bg-emerald-500 text-black text-[10px] font-bold uppercase tracking-wider rounded-2xl active:scale-95 transition-all shadow-lg shadow-emerald-500/10"
                   >
-                    <Check size={16} /> Верифицировать
+                    <Check size={16} /> Одобрить
                   </button>
                 </div>
               </div>
@@ -390,6 +404,7 @@ export default function AdminModeration() {
                     const toastId = toast.loading('Сохранение изменений...');
                     try {
                       const { id, ...updateData } = selectedCar;
+                      const { updateDoc, doc } = await import('../../firebase');
                       await updateDoc(doc(db, 'cars', id), {
                         ...updateData,
                         updatedAt: new Date().toISOString()
@@ -400,7 +415,7 @@ export default function AdminModeration() {
                       toast.error('Ошибка сохранения', { id: toastId });
                     }
                   }}
-                  className="flex items-center justify-center gap-2 py-3 bg-zinc-800 text-white text-sm font-bold uppercase tracking-wider rounded-xl hover:bg-zinc-700 transition-colors"
+                  className="flex items-center justify-center gap-2 py-3 bg-zinc-900 text-white text-sm font-bold uppercase tracking-wider rounded-xl hover:bg-zinc-800 transition-colors border border-zinc-800"
                 >
                   <FileText size={18} /> Сохранить
                 </button>

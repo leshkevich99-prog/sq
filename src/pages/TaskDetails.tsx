@@ -123,8 +123,12 @@ export default function TaskDetails() {
         }
         
         // Fetch car data
-        const carSnap = await getDoc(doc(db, 'cars', data.carId));
-        if (carSnap.exists()) setCar(carSnap.data() as CarData);
+        if (data.carId && data.carId !== 'none') {
+          const carSnap = await getDoc(doc(db, 'cars', data.carId));
+          if (carSnap.exists()) setCar(carSnap.data() as CarData);
+        } else {
+          setCar(null);
+        }
       }
       setLoading(false);
     }, (error) => {
