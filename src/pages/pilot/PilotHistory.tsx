@@ -9,7 +9,8 @@ import {
   Car as CarIcon,
   MapPin,
   CheckCircle2,
-  Clock
+  Clock,
+  X
 } from 'lucide-react';
 import { useFirebase } from '../../components/FirebaseProvider';
 import { db, handleFirestoreError, OperationType, collection, query, where, orderBy, onSnapshot, limit, getDoc, doc } from '../../firebase';
@@ -39,38 +40,47 @@ export default function PilotHistory() {
   useEffect(() => {
     if (!user) return;
 
+    // We fetch all requests for this pilot and then filter in memory 
+    // to avoid complex composite indexes and include cancelled tasks.
     const q = query(
       collection(db, 'requests'),
       where('pilotId', '==', user.uid),
-      where('status', '==', 'completed'),
-      limit(100)
+      limit(200)
     );
 
     const unsub = onSnapshot(q, async (snapshot) => {
-      const reqs: RequestData[] = [];
+      const allReqs: RequestData[] = [];
       const carIds = new Set<string>();
       
       snapshot.forEach(doc => {
         const data = doc.data();
-        reqs.push({ id: doc.id, ...data } as RequestData);
-        carIds.add(data.carId);
+        allReqs.push({ id: doc.id, ...data } as RequestData);
+        if (data.carId) carIds.add(data.carId);
       });
 
-      // Sort in memory to avoid 412 error (missing composite index)
-      reqs.sort((a, b) => {
+      // Filter only finished tasks
+      const finishedReqs = allReqs.filter(r => 
+        r.status === 'completed' || r.status === 'cancelled'
+      );
+
+      // Sort in memory (newest first)
+      finishedReqs.sort((a, b) => {
         const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
         const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
         return dateB - dateA;
       });
 
-      // Fetch car details
+      // Bulk fetch car details if they are missing
       const carDetails: Record<string, CarData> = { ...cars };
+      let updated = false;
+
       for (const carId of carIds) {
         if (!carDetails[carId]) {
           try {
             const carDoc = await getDoc(doc(db, 'cars', carId));
             if (carDoc.exists()) {
               carDetails[carId] = carDoc.data() as CarData;
+              updated = true;
             }
           } catch (e) {
             console.error('Error fetching car:', e);
@@ -78,10 +88,13 @@ export default function PilotHistory() {
         }
       }
 
-      setCars(carDetails);
-      setRequests(reqs);
+      if (updated) setCars(carDetails);
+      setRequests(finishedReqs);
       setLoading(false);
-    }, (error) => handleFirestoreError(error, OperationType.LIST, 'requests'));
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'requests');
+      setLoading(false);
+    });
 
     return () => unsub();
   }, [user]);
@@ -97,9 +110,9 @@ export default function PilotHistory() {
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <header className="sticky top-0 z-40 bg-black/95 backdrop-blur-md pt-4 pb-4 -mx-4 px-4 mb-6 border-b border-zinc-900/50">
+      <header className="sticky top-0 z-40 bg-black/95 backdrop-blur-md py-4 px-4 -mx-4 mb-6 border-b border-zinc-900/50 pt-safe">
         <div className="flex items-center gap-4">
-          <button onClick={() => navigate(-1)} className="p-2 bg-zinc-900 rounded-full border border-zinc-800 active:scale-90 transition-transform">
+          <button onClick={() => navigate(-1)} className="p-2.5 bg-zinc-900 rounded-full border border-zinc-800 active:scale-90 transition-transform">
             <ArrowLeft size={20} />
           </button>
           <h1 className="text-xl font-bold uppercase tracking-wider">История поручений</h1>
@@ -153,9 +166,11 @@ export default function PilotHistory() {
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-1 text-emerald-500 bg-emerald-500/10 px-2 py-1 rounded-md">
-                      <CheckCircle2 size={12} />
-                      <span className="text-[10px] font-bold uppercase">Завершен</span>
+                    <div className={`flex items-center gap-1 px-2 py-1 rounded-md ${req.status === 'completed' ? 'text-emerald-500 bg-emerald-500/10' : 'text-red-500 bg-red-500/10'}`}>
+                      {req.status === 'completed' ? <CheckCircle2 size={12} /> : <X size={12} />}
+                      <span className="text-[10px] font-bold uppercase">
+                        {req.status === 'completed' ? 'Завершен' : 'Отменен'}
+                      </span>
                     </div>
                   </div>
 

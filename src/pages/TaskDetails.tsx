@@ -878,6 +878,7 @@ export default function TaskDetails() {
           <input 
             type="file" 
             accept="image/*" 
+            multiple
             className="hidden" 
             ref={fileInputRef}
             onChange={handlePhotoUpload}
