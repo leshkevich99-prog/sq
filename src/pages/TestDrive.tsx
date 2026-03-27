@@ -16,6 +16,7 @@ export default function TestDrive() {
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
   const [address, setAddress] = useState('');
+  const [returnAddress, setReturnAddress] = useState('');
   const [safetyAccepted, setSafetyAccepted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [existingBooking, setExistingBooking] = useState<any>(null);
@@ -55,7 +56,7 @@ export default function TestDrive() {
     e.preventDefault();
     if (!user) return;
 
-    if (!name || !phone || !carModel || !date || !time || !address) {
+    if (!name || !phone || !carModel || !date || !time || !address || !returnAddress) {
       toast.error('Пожалуйста, заполните все поля');
       return;
     }
@@ -99,6 +100,7 @@ export default function TestDrive() {
           date,
           time,
           address,
+          returnAddress,
           price: testDrivePrice,
           createdAt: new Date().toISOString()
         })
@@ -251,7 +253,7 @@ export default function TestDrive() {
         </div>
 
         <div className="space-y-2 w-full">
-          <label className="block text-xs text-zinc-500 uppercase tracking-wider ml-1">Адрес подачи</label>
+          <label className="block text-xs text-zinc-500 uppercase tracking-wider ml-1">Адрес забора (подачи)</label>
           <div className="relative w-full">
             <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
             <input 
@@ -273,6 +275,44 @@ export default function TestDrive() {
                   (position) => {
                     const coords = `${position.coords.latitude.toFixed(4)}, ${position.coords.longitude.toFixed(4)}`;
                     setAddress(`Мое местоположение (${coords})`);
+                    toast.success('Местоположение определено');
+                  },
+                  (error) => {
+                    console.error('Geolocation error:', error);
+                    toast.error('Не удалось определить местоположение');
+                  }
+                );
+              }}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-amber-500 hover:text-white transition-colors"
+            >
+              <div className="text-[10px] font-bold uppercase">GPS</div>
+            </button>
+          </div>
+        </div>
+
+        <div className="space-y-2 w-full">
+          <label className="block text-xs text-zinc-500 uppercase tracking-wider ml-1">Адрес возврата</label>
+          <div className="relative w-full">
+            <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
+            <input 
+              type="text" 
+              placeholder="Куда вернуть автомобиль?" 
+              value={returnAddress}
+              onChange={(e) => setReturnAddress(e.target.value)}
+              className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-4 pl-10 pr-12 text-sm focus:outline-none focus:border-amber-500 text-white" 
+            />
+            <button 
+              type="button"
+              onClick={() => {
+                if (!navigator.geolocation) {
+                  toast.error('Геолокация не поддерживается вашим браузером');
+                  return;
+                }
+                toast.loading('Определение местоположения...', { duration: 2000 });
+                navigator.geolocation.getCurrentPosition(
+                  (position) => {
+                    const coords = `${position.coords.latitude.toFixed(4)}, ${position.coords.longitude.toFixed(4)}`;
+                    setReturnAddress(`Мое местоположение (${coords})`);
                     toast.success('Местоположение определено');
                   },
                   (error) => {

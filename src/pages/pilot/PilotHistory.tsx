@@ -89,9 +89,8 @@ export default function PilotHistory() {
   const filteredRequests = requests.filter(req => {
     const car = cars[req.carId];
     const carName = car ? `${car.make} ${car.model}`.toLowerCase() : '';
-    const address = req.pickupAddress.toLowerCase();
     const search = searchTerm.toLowerCase();
-    return carName.includes(search) || address.includes(search);
+    return carName.includes(search) || req.pickupAddress?.toLowerCase().includes(search) || req.id.toLowerCase().includes(search);
   });
 
   if (loading) return <div className="p-6 text-center text-zinc-500">Загрузка истории...</div>;

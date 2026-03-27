@@ -417,106 +417,68 @@ export default function TaskDetails() {
   };
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !id) return;
-
-    if (!user) {
-      toast.error('Ошибка: вы не авторизованы');
-      return;
-    }
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0 || !id || !user) return;
 
     setUploading(uploadType);
-    const toastId = toast.loading('Подготовка...');
+    const toastId = toast.loading(`Подготовка (${files.length} фото)...`);
 
     try {
       try { WebApp.expand(); } catch (e) {}
 
-      // 1. Compress photo using browser-image-compression
-      toast.loading('Сжатие фото...', { id: toastId });
-      
-      const options = {
-        maxSizeMB: 1,
-        maxWidthOrHeight: 1280,
-        useWebWorker: true,
-        initialQuality: 0.7
-      };
-      
-      const compressedFile = await imageCompression(file, options);
-      
-      // Convert to base64 for the proxy
-      const base64Data = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = reject;
-        reader.readAsDataURL(compressedFile);
-      });
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        toast.loading(`Сжатие и загрузка ${i + 1}/${files.length}...`, { id: toastId });
 
-      // 2. Prepare Storage path
-      const fileName = `requests/${id}/${uploadType}_${Date.now()}.jpg`;
+        // 1. Compress photo
+        const options = {
+          maxSizeMB: 1,
+          maxWidthOrHeight: 1280,
+          useWebWorker: true,
+          initialQuality: 0.7
+        };
+        const compressedFile = await imageCompression(file, options);
+        
+        const base64Data = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(compressedFile);
+        });
 
-      // 3. Upload via our new CORS-bypassing proxy
-      toast.loading('Отправка файла...', { id: toastId });
-      
-      const currentUser = auth.currentUser;
-      if (!currentUser) throw new Error('Пользователь не авторизован в Firebase');
-      
-      const token = await currentUser.getIdToken();
-      const bucket = storage.app.options.storageBucket;
-      
-      if (!bucket) {
-        throw new Error('Storage Bucket не настроен в конфигурации Firebase');
-      }
+        const fileName = `requests/${id}/${uploadType}_${Date.now()}_${i}.jpg`;
+        const token = await auth.currentUser?.getIdToken();
+        const bucket = storage.app.options.storageBucket;
 
-      const response = await fetch('/api/upload-proxy', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          base64Data,
-          fileName,
-          token,
-          bucket
-        })
-      });
+        const response = await fetch('/api/upload-proxy', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ base64Data, fileName, token, bucket })
+        });
 
-      if (!response.ok) {
-        const errData = await response.json().catch(() => ({ error: `Ошибка сервера: ${response.status}` }));
-        if (response.status === 404) {
-          throw new Error('Хранилище не включено (404). Включите Storage в Firebase Console.');
-        }
-        if (response.status === 403) {
-          throw new Error('Доступ к хранилищу запрещен (403). Проверьте правила Storage.');
-        }
-        throw new Error(errData.error || `Ошибка сервера: ${response.status}`);
-      }
+        if (!response.ok) throw new Error(`Ошибка при загрузке фото ${i + 1}`);
 
-      const { url: downloadURL } = await response.json();
-      
-      if (!downloadURL) {
-        throw new Error('Сервер не вернул ссылку на файл');
+        const { url: downloadURL } = await response.json();
+        const field = uploadType === 'before' ? 'photosBefore' : 'photosAfter';
+        const safeUrl = getSafeUrl(downloadURL);
+        
+        // Get fresh request data for concurrent updates if necessary, or use functional update
+        await fetch(`/api/requests/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            [field]: arrayUnion(downloadURL), // Use arrayUnion for safer concurrent updates if backend supports it
+            [`photoMetadata.${safeUrl}`]: {
+              timestamp: new Date().toISOString()
+            }
+          })
+        });
       }
       
-      // 4. Save to Firestore
-      toast.loading('Сохранение...', { id: toastId });
-      const field = uploadType === 'before' ? 'photosBefore' : 'photosAfter';
-      const safeUrl = getSafeUrl(downloadURL);
-      const currentPhotos = (request as any)[field] || [];
-
-      await fetch(`/api/requests/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          [field]: [...currentPhotos, downloadURL],
-          [`photoMetadata.${safeUrl}`]: {
-            timestamp: new Date().toISOString()
-          }
-        })
-      });
-      
-      toast.success('Фото добавлено!', { id: toastId });
+      toast.success('Все фото успешно добавлены!', { id: toastId });
     } catch (error: any) {
       console.error('Detailed Upload Error:', error);
-      const errorMessage = error.message || 'Неизвестная ошибка при загрузке';
-      toast.error(errorMessage, { id: toastId, duration: 6000 });
+      toast.error(error.message || 'Ошибка при загрузке', { id: toastId, duration: 6000 });
     } finally {
       setUploading(null);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -552,7 +514,7 @@ export default function TaskDetails() {
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="sticky top-0 z-50 bg-black/95 backdrop-blur-md pt-4 pb-4 -mx-4 px-4 mb-2 border-b border-zinc-900/50">
+      <div className="sticky top-[56px] z-50 bg-black/95 backdrop-blur-md pt-4 pb-4 -mx-4 px-4 mb-2 border-b border-zinc-900/50">
         <div className="flex items-center gap-4">
           <button onClick={() => navigate(-1)} className="p-2 bg-zinc-900 rounded-full border border-zinc-800 active:scale-90 transition-transform">
             <ArrowLeft size={20} />

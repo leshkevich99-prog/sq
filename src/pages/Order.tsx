@@ -162,7 +162,8 @@ export default function Order() {
     let useQuota = false;
     const availableLimits = user.limits || user.quotas || {};
     
-    if (availableLimits[service] && availableLimits[service] > 0) {
+    // Check if user has quota for this service
+    if (availableLimits[service] && Number(availableLimits[service]) > 0) {
       const confirmMsg = `У вас есть доступная квота на эту услугу (${availableLimits[service]} шт.). Использовать квоту?`;
       useQuota = await new Promise<boolean>((resolve) => {
         try {
@@ -245,7 +246,7 @@ export default function Order() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            userId: user.id,
+            userId: user.uid,
             carId: selectedCarId,
             serviceType: service,
             status: 'pending',
