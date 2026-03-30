@@ -515,9 +515,9 @@ export default function AdminCRM() {
 
       {/* User Details Modal */}
       {userDetailsModalOpen && selectedClient && (
-        <div className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200 overflow-y-auto">
-          <div className="bg-zinc-900 border-t sm:border border-zinc-800 rounded-t-3xl sm:rounded-3xl w-full max-w-2xl p-6 sm:p-8 shadow-2xl max-h-[85vh] sm:max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-start mb-6 sm:mb-8">
+        <div className="fixed inset-0 z-[400] bg-black/80 backdrop-blur-sm flex flex-col justify-end animate-in fade-in duration-200">
+          <div className="w-full max-w-2xl mx-auto bg-zinc-900 rounded-t-3xl sm:rounded-2xl sm:mb-4 animate-in slide-in-from-bottom-full duration-300 max-h-[85vh] flex flex-col relative overflow-hidden">
+            <div className="sticky top-0 z-20 bg-zinc-900/80 backdrop-blur-md p-6 border-b border-zinc-800/50 flex justify-between items-start shrink-0">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-zinc-800 flex items-center justify-center text-xl sm:text-2xl font-bold border border-zinc-700">
                   {selectedClient.firstName[0]}
@@ -532,8 +532,8 @@ export default function AdminCRM() {
               </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
-              <div className="space-y-6">
+            <div className="p-6 space-y-6 sm:space-y-8 overflow-y-auto flex-1">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
                 <section>
                   <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-4">Информация</h3>
                   <div className="space-y-3">
@@ -597,45 +597,45 @@ export default function AdminCRM() {
                 </section>
               </div>
 
-              <div className="space-y-6">
-                <section>
-                  <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-4">Последние транзакции</h3>
-                  <div className="space-y-2">
-                    {transactions
-                      .filter(t => t.userId === selectedClient.id)
-                      .slice(0, 5)
-                      .map(tx => (
-                        <div key={tx.id} className="flex justify-between items-center p-3 bg-black border border-zinc-800 rounded-xl">
-                          <div>
-                            <div className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">{tx.type}</div>
-                            <div className="text-[8px] text-zinc-600">ID: {tx.id.slice(-6)}</div>
-                          </div>
-                          <div className={`text-xs font-bold flex items-center gap-1 ${tx.type === 'deposit' ? 'text-emerald-500' : 'text-white'}`}>
-                            {tx.type === 'deposit' ? '+' : '-'}{tx.amount.toFixed(2)} <BynIcon size="1em" />
-                          </div>
+              <section>
+                <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-4">Последние транзакции</h3>
+                <div className="space-y-2">
+                  {transactions
+                    .filter(t => t.userId === selectedClient.id)
+                    .slice(0, 5)
+                    .map(tx => (
+                      <div key={tx.id} className="flex justify-between items-center p-3 bg-black border border-zinc-800 rounded-xl">
+                        <div>
+                          <div className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">{tx.type}</div>
+                          <div className="text-[8px] text-zinc-600">ID: {tx.id.slice(-6)}</div>
                         </div>
-                      ))}
-                    {transactions.filter(t => t.userId === selectedClient.id).length === 0 && (
-                      <p className="text-zinc-600 text-xs italic">Транзакций нет</p>
-                    )}
-                  </div>
-                </section>
-              </div>
+                        <div className={`text-xs font-bold flex items-center gap-1 ${tx.type === 'deposit' ? 'text-emerald-500' : 'text-white'}`}>
+                          {tx.type === 'deposit' ? '+' : '-'}{tx.amount.toFixed(2)} <BynIcon size="1em" />
+                        </div>
+                      </div>
+                    ))}
+                  {transactions.filter(t => t.userId === selectedClient.id).length === 0 && (
+                    <p className="text-zinc-600 text-xs italic">Транзакций нет</p>
+                  )}
+                </div>
+              </section>
             </div>
 
-            <div className="mt-8 flex gap-3">
-              <button 
-                onClick={() => { setUserDetailsModalOpen(false); openEditUser(selectedClient); }}
-                className="flex-1 py-3 bg-zinc-800 text-white text-xs font-bold uppercase tracking-widest rounded-xl hover:bg-zinc-700 transition-colors"
-              >
-                Редактировать
-              </button>
-              <button 
-                onClick={() => { setUserDetailsModalOpen(false); openBilling(selectedClient); }}
-                className="flex-1 py-3 bg-white text-black text-xs font-bold uppercase tracking-widest rounded-xl hover:bg-zinc-200 transition-colors"
-              >
-                Биллинг
-              </button>
+            <div className="sticky bottom-0 z-20 bg-zinc-900/80 backdrop-blur-md p-6 border-t border-zinc-800/50 shrink-0 pb-[max(env(safe-area-inset-bottom),1.5rem)]">
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => { setUserDetailsModalOpen(false); openEditUser(selectedClient); }}
+                  className="flex-1 py-3 bg-zinc-800 text-white text-xs font-bold uppercase tracking-widest rounded-xl hover:bg-zinc-700 transition-colors"
+                >
+                  Редактировать
+                </button>
+                <button 
+                  onClick={() => { setUserDetailsModalOpen(false); openBilling(selectedClient); }}
+                  className="flex-1 py-3 bg-white text-black text-xs font-bold uppercase tracking-widest rounded-xl hover:bg-zinc-200 transition-colors"
+                >
+                  Биллинг
+                </button>
+              </div>
             </div>
           </div>
         </div>

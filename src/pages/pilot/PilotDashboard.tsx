@@ -454,15 +454,15 @@ export default function PilotDashboard() {
       </div>
       {/* Navigation Modal */}
       {showNavModal && (
-        <div className="fixed inset-0 z-[500] bg-black/80 backdrop-blur-sm flex items-end justify-center animate-in fade-in duration-200">
-          <div className="w-full max-w-md bg-zinc-900 rounded-t-3xl p-6 pb-[max(env(safe-area-inset-bottom),2.5rem)] animate-in slide-in-from-bottom-full duration-300">
-            <div className="flex justify-between items-center mb-6">
+        <div className="fixed inset-0 z-[500] bg-black/80 backdrop-blur-sm flex flex-col justify-end animate-in fade-in duration-200">
+          <div className="w-full max-w-md mx-auto bg-zinc-900 rounded-t-3xl sm:rounded-2xl sm:mb-4 animate-in slide-in-from-bottom-full duration-300 max-h-[85vh] flex flex-col relative overflow-hidden">
+            <div className="sticky top-0 z-20 bg-zinc-900/80 backdrop-blur-md p-6 border-b border-zinc-800/50 flex justify-between items-center shrink-0">
               <h3 className="text-lg font-bold uppercase tracking-widest">Выбрать навигатор</h3>
-              <button onClick={() => setShowNavModal(false)} className="p-2 bg-zinc-800 rounded-full">
+              <button onClick={() => setShowNavModal(false)} className="p-2 bg-zinc-800 hover:bg-zinc-700 hover:text-white rounded-full transition-colors text-zinc-400">
                 <AlertTriangle size={20} className="rotate-180" />
               </button>
             </div>
-            <div className="space-y-3">
+            <div className="p-6 space-y-3 overflow-y-auto flex-1 pb-[max(env(safe-area-inset-bottom),1.5rem)]">
               {getNavLinks(selectedAddress).map((nav) => (
                 <button
                   key={nav.name}

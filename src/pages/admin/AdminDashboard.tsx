@@ -36,6 +36,7 @@ interface UserData {
   role: string;
   telegramId?: string | number;
   isOnShift?: boolean;
+  isPilot?: boolean;
 }
 
 interface CarData {
@@ -89,65 +90,73 @@ export default function AdminDashboard() {
   const [viewMode, setViewMode] = useState<'kanban' | 'list'>('kanban');
   const [activeKanbanTab, setActiveKanbanTab] = useState<'pending' | 'in_progress' | 'completed'>('pending');
 
-  const fetchData = useCallback(async () => {
-    try {
-      const [reqRes, userRes, carRes, sosRes, testRes] = await Promise.all([
-        fetch('/api/admin/requests'),
-        fetch('/api/admin/users'),
-        fetch('/api/cars'), // Need all cars
-        fetch('/api/sos_alerts'),
-        fetch('/api/test_drives')
-      ]);
-
-      if (reqRes.ok) {
-        const data = await reqRes.json();
-        setRequests(data.requests || []);
-      }
-      
-      if (userRes.ok) {
-        const data = await userRes.json();
-        const usrs: Record<string, UserData> = {};
-        const plts: UserData[] = [];
-        (data.users || []).forEach((u: any) => {
-          usrs[u.id] = u;
-          if (u.role === 'pilot' || u.role === 'admin') plts.push(u);
-        });
-        setUsers(usrs);
-        setPilots(plts);
-      }
-
-      if (carRes.ok) {
-        const data = await carRes.json();
-        const crs: Record<string, CarData> = {};
-        (data.cars || []).forEach((c: any) => { crs[c.id] = c; });
-        setCars(crs);
-      }
-
-      if (sosRes.ok) {
-        const data = await sosRes.json();
-        setSosAlerts(data.sos_alerts || []);
-      }
-
-      if (testRes.ok) {
-        const data = await testRes.json();
-        const drives = (data.test_drives || []).sort((a: any, b: any) => 
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        );
-        setTestDrives(drives);
-      }
-
-      setLoading(false);
-    } catch (error) {
-      console.error('Fetch dashboard error:', error);
-      setLoading(false);
-    }
-  }, []);
-
   useEffect(() => {
-    fetchData();
-    const interval = setInterval(fetchData, 10000); // Poll every 10s
-    return () => clearInterval(interval);
-  }, [fetchData]);
+    // Requests
+    const unsubRequests = onSnapshot(collection(db, 'requests'), (snapshot) => {
+      const reqs: RequestData[] = [];
+      snapshot.forEach(doc => reqs.push({ id: doc.id, ...doc.data() } as RequestData));
+      
+      // Sort
+      reqs.sort((a, b) => {
+        const parseDate = (val: any) => {
+          if (!val) return 0;
+          if (typeof val === 'object' && val.seconds) return val.seconds * 1000;
+          if (typeof val.toDate === 'function') return val.toDate().getTime();
+          return new Date(val).getTime() || 0;
+        };
+        return parseDate(b.createdAt) - parseDate(a.createdAt);
+      });
+      
+      setRequests(reqs);
+      setLoading(false);
+    }, (error) => handleFirestoreError(error, OperationType.LIST, 'requests'));
+
+    // Users & Pilots
+    const unsubUsers = onSnapshot(collection(db, 'users'), (snapshot) => {
+      const usrs: Record<string, UserData> = {};
+      const plts: UserData[] = [];
+      snapshot.forEach(doc => {
+        const u = { id: doc.id, ...doc.data() } as UserData;
+        usrs[u.id] = u;
+        if (u.role === 'pilot' || u.role === 'admin' || u.isPilot) plts.push(u);
+      });
+      setUsers(usrs);
+      setPilots(plts);
+    }, (error) => handleFirestoreError(error, OperationType.LIST, 'users'));
+
+    // Cars
+    const unsubCars = onSnapshot(collection(db, 'cars'), (snapshot) => {
+      const crs: Record<string, CarData> = {};
+      snapshot.forEach(doc => {
+        crs[doc.id] = { id: doc.id, ...doc.data() } as CarData;
+      });
+      setCars(crs);
+    }, (error) => handleFirestoreError(error, OperationType.LIST, 'cars'));
+
+    // SOS Alerts
+    const unsubSos = onSnapshot(collection(db, 'sos_alerts'), (snapshot) => {
+      const alerts: SosAlert[] = [];
+      snapshot.forEach(doc => alerts.push({ id: doc.id, ...doc.data() } as SosAlert));
+      setSosAlerts(alerts.filter(a => a.status !== 'resolved'));
+    }, (error) => handleFirestoreError(error, OperationType.LIST, 'sos_alerts'));
+
+    // Test Drives
+    const unsubTestDrives = onSnapshot(collection(db, 'test_drives'), (snapshot) => {
+      const drives: TestDriveData[] = [];
+      snapshot.forEach(doc => drives.push({ id: doc.id, ...doc.data() } as TestDriveData));
+      
+      drives.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      setTestDrives(drives);
+    }, (error) => handleFirestoreError(error, OperationType.LIST, 'test_drives'));
+
+    return () => {
+      unsubRequests();
+      unsubUsers();
+      unsubCars();
+      unsubSos();
+      unsubTestDrives();
+    };
+  }, []);
 
   const handleAssignClick = (requestId: string) => {
     setSelectedRequestId(requestId);
@@ -607,16 +616,16 @@ export default function AdminDashboard() {
       )}
 
       {assignModalOpen && (
-        <div className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-sm flex items-end md:items-center justify-center p-0 md:p-4 animate-in fade-in duration-200">
-          <div className="bg-zinc-900 border-t md:border border-zinc-800 rounded-t-3xl md:rounded-3xl w-full max-w-md shadow-2xl animate-in slide-in-from-bottom-full duration-300 max-h-[85vh] flex flex-col overflow-hidden">
-            <div className="sticky top-0 z-10 bg-zinc-900 p-6 pb-2 border-b border-zinc-800/50 flex justify-between items-center md:rounded-t-3xl">
+        <div className="fixed inset-0 z-[400] bg-black/80 backdrop-blur-sm flex flex-col justify-end animate-in fade-in duration-200">
+          <div className="w-full max-w-md mx-auto bg-zinc-900 rounded-t-3xl sm:rounded-2xl sm:mb-4 animate-in slide-in-from-bottom-full duration-300 max-h-[85vh] flex flex-col relative overflow-hidden">
+            <div className="sticky top-0 z-20 bg-zinc-900/80 backdrop-blur-md p-6 border-b border-zinc-800/50 flex justify-between items-center shrink-0">
               <h2 className="text-xl font-bold uppercase tracking-tighter">Назначить пилота</h2>
               <button onClick={() => setAssignModalOpen(false)} className="text-zinc-500 hover:text-white p-2">
                 <X size={24} />
               </button>
             </div>
             
-            <div className="p-6 pt-4 space-y-2 overflow-y-auto pb-[max(env(safe-area-inset-bottom),1.5rem)]">
+            <div className="p-6 space-y-2 overflow-y-auto flex-1">
               {pilots.length === 0 ? (
                 <p className="text-zinc-400 text-sm text-center py-8">Нет доступных пилотов</p>
               ) : (
@@ -643,6 +652,7 @@ export default function AdminDashboard() {
                 </>
               )}
             </div>
+            <div className="sticky bottom-0 z-20 bg-zinc-900/80 backdrop-blur-md p-4 border-t border-zinc-800/50 shrink-0 pb-[max(env(safe-area-inset-bottom),1rem)]" />
           </div>
         </div>
       )}

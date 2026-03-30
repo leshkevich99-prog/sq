@@ -269,72 +269,76 @@ export default function PilotWallet() {
 
       {/* Payout Modal */}
       {showPayoutModal && (
-        <div className="fixed inset-0 z-[400] bg-black/80 backdrop-blur-sm flex items-end justify-center animate-in fade-in duration-200">
-          <div className="w-full max-w-md bg-zinc-900 rounded-t-3xl p-6 pb-[max(env(safe-area-inset-bottom),2.5rem)] animate-in slide-in-from-bottom-full duration-300">
-            <div className="flex justify-between items-center mb-6">
+        <div className="fixed inset-0 z-[400] bg-black/80 backdrop-blur-sm flex flex-col justify-end animate-in fade-in duration-200">
+          <div className="w-full max-w-md mx-auto bg-zinc-900 rounded-t-3xl sm:rounded-2xl sm:mb-4 animate-in slide-in-from-bottom-full duration-300 max-h-[85vh] flex flex-col relative overflow-hidden">
+            <div className="sticky top-0 z-20 bg-zinc-900/80 backdrop-blur-md p-6 border-b border-zinc-800/50 flex justify-between items-center shrink-0">
               <h3 className="text-lg font-bold uppercase tracking-widest">Вывод средств</h3>
-              <button onClick={() => setShowPayoutModal(false)} className="p-2 bg-zinc-800 rounded-full">
-                <AlertCircle size={20} className="rotate-180" />
+              <button onClick={() => setShowPayoutModal(false)} className="text-zinc-500 hover:text-white p-2">
+                <AlertCircle size={24} className="rotate-180" />
               </button>
             </div>
             
-            <form onSubmit={handleRequestPayout} className="space-y-6">
-              <div>
-                <label className="text-[10px] uppercase font-bold tracking-widest text-zinc-500 mb-2 block">Сумма вывода</label>
-                <div className="relative">
-                  <input 
-                    type="number" 
-                    value={payoutAmount}
-                    onChange={(e) => setPayoutAmount(e.target.value)}
-                    placeholder="0"
-                    className="w-full bg-black border border-zinc-800 rounded-2xl px-4 py-4 text-2xl font-bold focus:outline-none focus:border-amber-500 transition-colors"
+            <form onSubmit={handleRequestPayout} className="flex flex-col flex-1 overflow-hidden">
+              <div className="p-6 space-y-6 overflow-y-auto flex-1 pb-4">
+                <div>
+                  <label className="text-[10px] uppercase font-bold tracking-widest text-zinc-500 mb-2 block">Сумма вывода</label>
+                  <div className="relative">
+                    <input 
+                      type="number" 
+                      value={payoutAmount}
+                      onChange={(e) => setPayoutAmount(e.target.value)}
+                      placeholder="0"
+                      className="w-full bg-black border border-zinc-800 rounded-2xl px-4 py-4 text-2xl font-bold focus:outline-none focus:border-amber-500 transition-colors"
+                    />
+                    <BynIcon className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500" size="1.2em" />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-[10px] uppercase font-bold tracking-widest text-zinc-500 mb-2 block">Способ получения</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button 
+                      type="button"
+                      onClick={() => setPayoutMethod('card')}
+                      className={`py-3 rounded-xl border text-[10px] font-bold uppercase tracking-widest transition-all ${
+                        payoutMethod === 'card' ? 'bg-white text-black border-white' : 'bg-zinc-800 text-zinc-500 border-zinc-700'
+                      }`}
+                    >
+                      <CreditCard size={14} className="mx-auto mb-1" />
+                      Карта
+                    </button>
+                    <button 
+                      type="button"
+                      onClick={() => setPayoutMethod('sbp')}
+                      className={`py-3 rounded-xl border text-[10px] font-bold uppercase tracking-widest transition-all ${
+                        payoutMethod === 'sbp' ? 'bg-white text-black border-white' : 'bg-zinc-800 text-zinc-500 border-zinc-700'
+                      }`}
+                    >
+                      <TrendingUp size={14} className="mx-auto mb-1" />
+                      СБП
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-[10px] uppercase font-bold tracking-widest text-zinc-500 mb-2 block">Реквизиты</label>
+                  <textarea 
+                    value={payoutDetails}
+                    onChange={(e) => setPayoutDetails(e.target.value)}
+                    placeholder="Номер карты или телефона для СБП"
+                    className="w-full bg-black border border-zinc-800 rounded-2xl px-4 py-4 text-sm focus:outline-none focus:border-amber-500 transition-colors h-24 resize-none"
                   />
-                  <BynIcon className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500" size="1.2em" />
                 </div>
               </div>
 
-              <div>
-                <label className="text-[10px] uppercase font-bold tracking-widest text-zinc-500 mb-2 block">Способ получения</label>
-                <div className="grid grid-cols-2 gap-3">
-                  <button 
-                    type="button"
-                    onClick={() => setPayoutMethod('card')}
-                    className={`py-3 rounded-xl border text-[10px] font-bold uppercase tracking-widest transition-all ${
-                      payoutMethod === 'card' ? 'bg-white text-black border-white' : 'bg-zinc-800 text-zinc-500 border-zinc-700'
-                    }`}
-                  >
-                    <CreditCard size={14} className="mx-auto mb-1" />
-                    Карта
-                  </button>
-                  <button 
-                    type="button"
-                    onClick={() => setPayoutMethod('sbp')}
-                    className={`py-3 rounded-xl border text-[10px] font-bold uppercase tracking-widest transition-all ${
-                      payoutMethod === 'sbp' ? 'bg-white text-black border-white' : 'bg-zinc-800 text-zinc-500 border-zinc-700'
-                    }`}
-                  >
-                    <TrendingUp size={14} className="mx-auto mb-1" />
-                    СБП
-                  </button>
-                </div>
+              <div className="sticky bottom-0 z-20 bg-zinc-900/80 backdrop-blur-md p-6 border-t border-zinc-800/50 shrink-0 pb-[max(env(safe-area-inset-bottom),1.5rem)]">
+                <button 
+                  type="submit"
+                  className="w-full py-4 bg-amber-500 text-black rounded-2xl font-bold uppercase tracking-widest text-xs shadow-lg shadow-amber-500/20 active:scale-[0.98] transition-transform"
+                >
+                  Запросить выплату
+                </button>
               </div>
-
-              <div>
-                <label className="text-[10px] uppercase font-bold tracking-widest text-zinc-500 mb-2 block">Реквизиты</label>
-                <textarea 
-                  value={payoutDetails}
-                  onChange={(e) => setPayoutDetails(e.target.value)}
-                  placeholder="Номер карты или телефона для СБП"
-                  className="w-full bg-black border border-zinc-800 rounded-2xl px-4 py-4 text-sm focus:outline-none focus:border-amber-500 transition-colors h-24 resize-none"
-                />
-              </div>
-
-              <button 
-                type="submit"
-                className="w-full py-4 bg-amber-500 text-black rounded-2xl font-bold uppercase tracking-widest text-xs shadow-lg shadow-amber-500/20"
-              >
-                Запросить выплату
-              </button>
             </form>
           </div>
         </div>

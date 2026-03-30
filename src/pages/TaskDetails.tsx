@@ -1064,15 +1064,15 @@ export default function TaskDetails() {
         {/* Expense Modal */}
         {showExpenseModal && (
           <div className="fixed inset-0 z-[400] bg-black/80 backdrop-blur-sm flex flex-col justify-end animate-in fade-in duration-200">
-            <div className="w-full max-w-md mx-auto bg-zinc-900 rounded-t-3xl animate-in slide-in-from-bottom-full duration-300 max-h-[85vh] flex flex-col relative overflow-hidden">
+            <div className="w-full max-w-md mx-auto bg-zinc-900 rounded-t-3xl sm:rounded-2xl sm:mb-4 animate-in slide-in-from-bottom-full duration-300 max-h-[85vh] flex flex-col relative overflow-hidden">
               <div className="sticky top-0 z-20 bg-zinc-900/80 backdrop-blur-md p-6 border-b border-zinc-800/50 flex justify-between items-center shrink-0">
                 <h3 className="text-lg font-bold uppercase tracking-widest">Добавить расход</h3>
-                <button onClick={() => setShowExpenseModal(false)} className="p-2 bg-zinc-800 rounded-full">
-                  <CloseIcon size={20} />
+                <button onClick={() => setShowExpenseModal(false)} className="text-zinc-500 hover:text-white p-2">
+                  <CloseIcon size={24} />
                 </button>
               </div>
               
-              <div className="p-6 space-y-4 overflow-y-auto flex-1">
+              <div className="p-6 space-y-6 overflow-y-auto flex-1 pb-4">
                 <div>
                   <label className="block text-xs text-zinc-500 uppercase tracking-widest mb-2">Тип расхода</label>
                   <select 
@@ -1144,7 +1144,7 @@ export default function TaskDetails() {
                 <button 
                   onClick={handleAddExpense}
                   disabled={expenseUploading}
-                  className="w-full py-4 bg-amber-500 text-black rounded-xl font-bold uppercase tracking-widest text-sm shadow-lg shadow-amber-500/20 disabled:opacity-50"
+                  className="w-full py-4 bg-amber-500 text-black rounded-xl font-bold uppercase tracking-widest text-sm shadow-lg shadow-amber-500/20 disabled:opacity-50 active:scale-[0.98] transition-transform"
                 >
                   {expenseUploading ? <Loader2 size={20} className="animate-spin mx-auto" /> : 'Сохранить расход'}
                 </button>
@@ -1155,15 +1155,15 @@ export default function TaskDetails() {
 
         {/* Navigation Modal */}
         {showNavModal && (
-          <div className="fixed inset-0 z-[400] bg-black/80 backdrop-blur-sm flex items-end justify-center animate-in fade-in duration-200">
-            <div className="w-full max-w-md bg-zinc-900 rounded-t-3xl p-6 pb-[max(env(safe-area-inset-bottom),5rem)] animate-in slide-in-from-bottom-full duration-300">
-              <div className="flex justify-between items-center mb-6">
+          <div className="fixed inset-0 z-[400] bg-black/80 backdrop-blur-sm flex flex-col justify-end animate-in fade-in duration-200">
+            <div className="w-full max-w-md mx-auto bg-zinc-900 rounded-t-3xl sm:rounded-2xl sm:mb-4 animate-in slide-in-from-bottom-full duration-300 max-h-[85vh] flex flex-col relative overflow-hidden">
+              <div className="sticky top-0 z-20 bg-zinc-900/80 backdrop-blur-md p-6 border-b border-zinc-800/50 flex justify-between items-center shrink-0">
                 <h3 className="text-lg font-bold uppercase tracking-widest">Выбрать навигатор</h3>
-                <button onClick={() => setShowNavModal(false)} className="p-2 bg-zinc-800 rounded-full">
-                  <CloseIcon size={20} />
+                <button onClick={() => setShowNavModal(false)} className="text-zinc-500 hover:text-white p-2">
+                  <CloseIcon size={24} />
                 </button>
               </div>
-              <div className="space-y-3">
+              <div className="p-6 space-y-3 overflow-y-auto flex-1 pb-[max(env(safe-area-inset-bottom),1.5rem)]">
                 {getNavLinks(request.pickupAddress || '').map((nav) => (
                   <button
                     key={nav.name}
@@ -1174,7 +1174,7 @@ export default function TaskDetails() {
                       }, 500);
                       setShowNavModal(false);
                     }}
-                    className="w-full py-4 bg-zinc-800 hover:bg-zinc-700 rounded-2xl font-bold text-sm transition-colors flex items-center justify-center gap-3"
+                    className="w-full py-4 bg-zinc-800 hover:bg-zinc-700 rounded-2xl font-bold text-sm transition-colors flex items-center justify-center gap-3 active:scale-[0.98]"
                   >
                     {nav.name}
                   </button>
