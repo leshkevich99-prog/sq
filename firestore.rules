@@ -245,10 +245,22 @@ service cloud.firestore {
       allow create: if isAuthenticated() && isValidRequest(request.resource.data) && (
         isOwner(request.resource.data.userId) || isAdmin()
       );
-      allow update: if isAuthenticated() && isValidRequest(request.resource.data) && (
-        (isOwner(resource.data.userId) && request.resource.data.userId == resource.data.userId) || 
-        isAdmin() || 
-        isPilot()
+      // Admins can update anything
+      // Pilots can update status, pilotId, photos, actualCost fields
+      // Clients can only update comments/description (not status/pilotId)
+      allow update: if isAuthenticated() && (
+        isAdmin() ||
+        (isPilot() && request.resource.data.userId == resource.data.userId && 
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(
+           ['status', 'pilotId', 'photosBefore', 'photosAfter', 'photoProtocol', 'photoMetadata', 
+            'actualCost', 'totalPrice', 'updatedAt', 'in_progress', 'completedAt', 'description']
+         )) ||
+        (isOwner(resource.data.userId) && request.resource.data.userId == resource.data.userId &&
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(
+           ['comment', 'description', 'updatedAt', 'status']
+         ) && 
+         (!('status' in request.resource.data.diff(resource.data).affectedKeys()) || 
+          request.resource.data.status in ['cancelled']))
       );
       allow delete: if isAdmin();
     }

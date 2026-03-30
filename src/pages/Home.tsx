@@ -8,7 +8,7 @@ import { TARIFFS, TariffType } from '../config/tariffs';
 interface ServiceRequest {
   id: string;
   serviceType: string;
-  status: 'pending' | 'accepted' | 'in_progress' | 'completed' | 'cancelled';
+  status: 'pending' | 'accepted' | 'in_progress' | 'review' | 'completed' | 'cancelled';
   carId: string;
   createdAt: string;
   pilotId?: string;
@@ -205,16 +205,21 @@ export default function Home() {
       {activeRequest ? (
         <section className="mb-8">
           <Link to={`/task/${activeRequest.id}`} className="block group">
-            <div className="bg-zinc-900 border border-amber-500/30 rounded-2xl p-5 relative overflow-hidden group-hover:border-amber-500/50 transition-colors">
+            <div className={`bg-zinc-900 rounded-2xl p-5 relative overflow-hidden transition-colors border ${
+              activeRequest.status === 'review' 
+                ? 'border-purple-500/40 group-hover:border-purple-500/60' 
+                : 'border-amber-500/30 group-hover:border-amber-500/50'
+            }`}>
               <div className="flex justify-between items-center mb-4">
               <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></div>
-                <span className="text-xs font-bold uppercase tracking-wider text-amber-500">Активное поручение</span>
+                <div className={`w-2 h-2 rounded-full animate-pulse ${activeRequest.status === 'review' ? 'bg-purple-400' : 'bg-amber-500'}`}></div>
+                <span className={`text-xs font-bold uppercase tracking-wider ${activeRequest.status === 'review' ? 'text-purple-400' : 'text-amber-500'}`}>Активное поручение</span>
               </div>
               <span className="text-xs text-zinc-500">
                 {activeRequest.status === 'pending' ? 'Ожидание пилота' : 
                  activeRequest.status === 'accepted' ? 'Пилот назначен' :
-                 activeRequest.status === 'in_progress' ? 'В процессе' : 'Завершено'}
+                 activeRequest.status === 'in_progress' ? 'В процессе' :
+                 activeRequest.status === 'review' ? '⏳ Ждёт одобрения' : 'Завершено'}
               </span>
             </div>
             
@@ -232,23 +237,26 @@ export default function Home() {
             <div className="relative pt-2">
               <div className="absolute top-4 left-0 w-full h-0.5 bg-zinc-800"></div>
               <div 
-                className="absolute top-4 left-0 h-0.5 bg-amber-500 transition-all duration-1000"
+                className={`absolute top-4 left-0 h-0.5 transition-all duration-1000 ${
+                  activeRequest.status === 'review' ? 'bg-purple-400' : 'bg-amber-500'
+                }`}
                 style={{ 
-                  width: activeRequest.status === 'pending' ? '10%' : 
+                  width: activeRequest.status === 'pending' ? '5%' : 
                          activeRequest.status === 'accepted' ? '33%' : 
-                         activeRequest.status === 'in_progress' ? '66%' : '100%' 
+                         activeRequest.status === 'in_progress' ? '66%' :
+                         activeRequest.status === 'review' ? '90%' : '100%' 
                 }}
               ></div>
               
               <div className="relative flex justify-between">
-                <StatusStep label="Поручение" active={true} />
-                <StatusStep label="В работе" active={activeRequest.status === 'accepted' || activeRequest.status === 'in_progress'} />
-                <StatusStep label="Возврат" active={activeRequest.status === 'completed'} />
+                <StatusStep label="Принято" active={true} color={activeRequest.status === 'review' ? 'purple' : 'amber'} />
+                <StatusStep label="В работе" active={activeRequest.status === 'accepted' || activeRequest.status === 'in_progress' || activeRequest.status === 'review'} color={activeRequest.status === 'review' ? 'purple' : 'amber'} />
+                <StatusStep label="Проверка" active={activeRequest.status === 'review'} color="purple" />
               </div>
             </div>
 
             {/* Pilot Info */}
-            {(activeRequest.status === 'accepted' || activeRequest.status === 'in_progress') && (
+            {(activeRequest.status === 'accepted' || activeRequest.status === 'in_progress' || activeRequest.status === 'review') && (
               <div className="mt-6 pt-4 border-t border-zinc-800 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center border border-zinc-700 overflow-hidden">
@@ -455,11 +463,17 @@ export default function Home() {
   );
 }
 
-function StatusStep({ label, active }: { label: string; active: boolean }) {
+function StatusStep({ label, active, color = 'amber' }: { label: string; active: boolean; color?: 'amber' | 'purple' }) {
+  const dotColor = active 
+    ? color === 'purple' ? 'bg-purple-400' : 'bg-amber-500' 
+    : 'bg-zinc-800';
+  const textColor = active 
+    ? color === 'purple' ? 'text-purple-300' : 'text-zinc-300' 
+    : 'text-zinc-500';
   return (
     <div className="flex flex-col items-center gap-2">
-      <div className={`w-5 h-5 rounded-full border-4 border-zinc-900 z-10 ${active ? 'bg-amber-500' : 'bg-zinc-800'}`}></div>
-      <span className={`text-[10px] uppercase font-medium ${active ? 'text-zinc-300' : 'text-zinc-500'}`}>{label}</span>
+      <div className={`w-5 h-5 rounded-full border-4 border-zinc-900 z-10 ${dotColor}`}></div>
+      <span className={`text-[10px] uppercase font-medium ${textColor}`}>{label}</span>
     </div>
   );
 }
