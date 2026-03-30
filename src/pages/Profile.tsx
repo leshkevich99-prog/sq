@@ -104,7 +104,7 @@ export default function Profile() {
   }
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="animate-in fade-in duration-500">
       <header className="sticky top-[56px] z-30 bg-black/95 backdrop-blur-md py-3 -mx-4 px-4 mb-6 border-b border-zinc-900/50">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">

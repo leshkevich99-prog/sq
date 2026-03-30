@@ -137,7 +137,7 @@ export default function AdminModeration() {
   };
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
+    <div className="animate-in fade-in duration-500 pb-20">
       <header className="sticky top-0 z-40 bg-black/95 backdrop-blur-md -mx-4 px-4 py-4 mb-6 border-b border-zinc-800">
         <h1 className="text-xl font-serif font-normal tracking-wide uppercase">Модерация</h1>
         <p className="text-zinc-500 text-[10px] uppercase tracking-widest mt-0.5">Проверка новых данных</p>

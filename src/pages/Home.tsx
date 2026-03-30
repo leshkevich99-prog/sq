@@ -153,7 +153,7 @@ export default function Home() {
   const hasCars = Object.keys(cars).length > 0;
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="animate-in fade-in duration-500">
       <header className="mb-8 mt-4 relative flex flex-col items-center text-center">
         <h1 className="text-5xl font-serif font-normal tracking-widest uppercase mb-3 text-white">Squadra</h1>
         <p className="text-zinc-400 text-[9px] sm:text-[10px] uppercase tracking-[0.25em] font-medium mb-4">Автомобильный консьерж-сервис</p>

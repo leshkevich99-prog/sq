@@ -241,14 +241,14 @@ export default function AdminDashboard() {
   }
 
   const pendingRequests = requests.filter(r => r.status === 'pending');
-  const inProgressRequests = requests.filter(r => r.status === 'in_progress' || r.status === 'accepted');
+  const inProgressRequests = requests.filter(r => r.status === 'in_progress' || r.status === 'accepted' || r.status === 'review');
   const completedRequests = requests.filter(r => r.status === 'completed');
   
   const totalRevenue = completedRequests.reduce((acc, r) => acc + (r.totalPrice || 0), 0);
   const activePilots = pilots.filter(p => p.isOnShift).length;
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="animate-in fade-in duration-500">
       <header className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-serif font-normal tracking-wide uppercase">Дашборд</h1>
@@ -673,6 +673,7 @@ function StatusBadge({ status }: { status: string }) {
     'pending': 'bg-zinc-800 text-zinc-400',
     'accepted': 'bg-blue-500/10 text-blue-500',
     'in_progress': 'bg-amber-500/10 text-amber-500',
+    'review': 'bg-purple-500/10 text-purple-500',
     'completed': 'bg-emerald-500/10 text-emerald-500',
     'cancelled': 'bg-red-500/10 text-red-500'
   };
@@ -681,6 +682,7 @@ function StatusBadge({ status }: { status: string }) {
     'pending': 'Новый',
     'accepted': 'Принят',
     'in_progress': 'В работе',
+    'review': 'Проверка',
     'completed': 'Завершен',
     'cancelled': 'Отменен'
   };

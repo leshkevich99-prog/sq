@@ -170,7 +170,7 @@ export default function PilotWallet() {
   if (loading) return <div className="p-6 text-center text-zinc-500">Загрузка кошелька...</div>;
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="animate-in fade-in duration-500">
       <header className="sticky top-0 z-40 bg-black/95 backdrop-blur-md pt-4 pb-4 -mx-4 px-4 mb-6 border-b border-zinc-900/50">
         <div className="flex items-center gap-4">
           <button onClick={() => navigate(-1)} className="p-2 bg-zinc-900 rounded-full border border-zinc-800 active:scale-90 transition-transform">

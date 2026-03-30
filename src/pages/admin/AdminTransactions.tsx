@@ -75,7 +75,7 @@ export default function AdminTransactions() {
     .reduce((acc, tx) => acc + tx.amount, 0);
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="animate-in fade-in duration-500">
       <header className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-serif font-normal tracking-wide uppercase">Транзакции</h1>

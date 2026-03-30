@@ -74,7 +74,7 @@ export default function AdminLayout() {
   };
 
   return (
-    <div className="min-h-[100dvh] bg-black text-white font-sans flex flex-col md:flex-row relative w-full max-w-full overflow-x-hidden">
+    <div className="min-h-[100dvh] bg-black text-white font-sans flex flex-col md:flex-row relative w-full max-w-full ">
       {/* Desktop Sidebar */}
       <aside className="hidden md:flex w-64 bg-zinc-950 border-r border-zinc-900 flex-col sticky top-0 h-screen">
         <div className="p-6 border-b border-zinc-900 cursor-pointer select-none" onClick={handleSecretTap}>
@@ -114,8 +114,8 @@ export default function AdminLayout() {
       </aside>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col min-h-[100dvh] relative pb-28 md:pb-0 w-full max-w-full overflow-x-hidden">
-        <main className="flex-1 p-4 md:p-8 max-w-7xl mx-auto w-full overflow-x-hidden">
+      <div className="flex-1 flex flex-col min-h-[100dvh] relative pb-28 md:pb-0 w-full max-w-full ">
+        <main className="flex-1 p-4 md:p-8 max-w-7xl mx-auto w-full ">
           <Outlet />
         </main>
 

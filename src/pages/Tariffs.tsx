@@ -184,7 +184,7 @@ export default function Tariffs() {
   };
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="animate-in fade-in duration-500">
       <header className="mb-6 mt-2">
         <h1 className="text-3xl font-serif font-normal tracking-wide uppercase">Уровни сопровождения</h1>
         <p className="text-zinc-400 text-sm mt-1">Выберите подходящий объем обслуживания</p>

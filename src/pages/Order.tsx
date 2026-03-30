@@ -404,7 +404,7 @@ export default function Order() {
   }
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="animate-in fade-in duration-500">
       {/* Active Orders Section */}
       {activeOrders.length > 0 && (
         <section className="mb-8 space-y-3">
@@ -499,7 +499,9 @@ export default function Order() {
                     <div className="text-xs text-zinc-500 mt-0.5">{s.desc}</div>
                   </div>
                   <div className={`text-sm font-mono font-bold ${service === s.id ? 'text-accent' : 'text-zinc-400'}`}>
-                    {s.price}
+                    {Number(user?.quotas?.[s.id] || user?.limits?.[s.id] || 0) > 0 
+                      ? <span className="text-emerald-500 uppercase tracking-widest text-[10px] bg-emerald-500/10 px-2 py-1 rounded border border-emerald-500/20">Квота: {Number(user?.quotas?.[s.id] || user?.limits?.[s.id])}</span> 
+                      : s.price}
                   </div>
                 </button>
               ))}

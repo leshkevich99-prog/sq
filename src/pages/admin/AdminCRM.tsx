@@ -311,7 +311,7 @@ export default function AdminCRM() {
   });
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="animate-in fade-in duration-500">
       <header className="mb-6 mt-2 flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-serif font-normal tracking-wide uppercase">CRM База</h1>

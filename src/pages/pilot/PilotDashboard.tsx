@@ -258,7 +258,7 @@ export default function PilotDashboard() {
   }
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="animate-in fade-in duration-500">
       <header className="sticky top-0 z-30 bg-black/95 backdrop-blur-md py-4 px-4 -mx-4 mb-6 border-b border-zinc-900/50 flex justify-between items-center pt-safe shadow-xl">
         <div>
           <h1 className="text-lg font-bold uppercase tracking-wider">Кабинет пилота</h1>

@@ -530,7 +530,7 @@ export default function TaskDetails() {
   const currentStepIndex = steps.findIndex(s => s.id === request.status);
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="animate-in fade-in duration-500">
       <header className="sticky top-0 z-30 bg-black/95 backdrop-blur-md py-4 px-4 mb-4 border-b border-zinc-900/50 pt-safe">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-4">
@@ -1051,7 +1051,7 @@ export default function TaskDetails() {
         {/* Expense Modal */}
         {showExpenseModal && (
           <div className="fixed inset-0 z-[400] bg-black/80 backdrop-blur-sm flex items-end justify-center animate-in fade-in duration-200">
-            <div className="w-full max-w-md bg-zinc-900 rounded-t-3xl pb-[max(env(safe-area-inset-bottom),2.5rem)] animate-in slide-in-from-bottom-full duration-300 max-h-[90vh] flex flex-col">
+            <div className="w-full max-w-md bg-zinc-900 rounded-t-3xl pb-[max(env(safe-area-inset-bottom),5rem)] animate-in slide-in-from-bottom-full duration-300 max-h-[90vh] flex flex-col">
               <div className="sticky top-0 z-10 bg-zinc-900 p-6 pb-2 border-b border-zinc-800/50 rounded-t-3xl flex justify-between items-center">
                 <h3 className="text-lg font-bold uppercase tracking-widest">Добавить расход</h3>
                 <button onClick={() => setShowExpenseModal(false)} className="p-2 bg-zinc-800 rounded-full">
@@ -1141,7 +1141,7 @@ export default function TaskDetails() {
         {/* Navigation Modal */}
         {showNavModal && (
           <div className="fixed inset-0 z-[400] bg-black/80 backdrop-blur-sm flex items-end justify-center animate-in fade-in duration-200">
-            <div className="w-full max-w-md bg-zinc-900 rounded-t-3xl p-6 pb-[max(env(safe-area-inset-bottom),2.5rem)] animate-in slide-in-from-bottom-full duration-300">
+            <div className="w-full max-w-md bg-zinc-900 rounded-t-3xl p-6 pb-[max(env(safe-area-inset-bottom),5rem)] animate-in slide-in-from-bottom-full duration-300">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-lg font-bold uppercase tracking-widest">Выбрать навигатор</h3>
                 <button onClick={() => setShowNavModal(false)} className="p-2 bg-zinc-800 rounded-full">
