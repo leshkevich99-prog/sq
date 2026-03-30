@@ -12,7 +12,7 @@ import {
   ExternalLink
 } from 'lucide-react';
 import { db, handleFirestoreError, OperationType, collection, onSnapshot, query, where, updateDoc, doc, deleteDoc, getDoc } from '../../firebase';
-import { WebApp } from '@twa-dev/sdk';
+import WebApp from '@twa-dev/sdk';
 import toast from 'react-hot-toast';
 
 interface CarData {
@@ -271,16 +271,16 @@ export default function AdminModeration() {
       )}
 
       {selectedCar && (
-        <div className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-md p-5 shadow-2xl">
-            <div className="flex justify-between items-center mb-6">
+        <div className="fixed inset-0 z-[400] bg-black/80 backdrop-blur-sm flex flex-col justify-end animate-in fade-in duration-200">
+          <div className="w-full max-w-md mx-auto bg-zinc-900 rounded-t-3xl sm:rounded-2xl sm:mb-4 animate-in slide-in-from-bottom-full duration-300 max-h-[85vh] flex flex-col relative overflow-hidden">
+            <div className="sticky top-0 z-20 bg-zinc-900/80 backdrop-blur-md p-6 border-b border-zinc-800/50 flex justify-between items-center shrink-0">
               <h2 className="text-xl font-bold uppercase tracking-tighter">Детали автомобиля</h2>
-              <button onClick={() => setSelectedCar(null)} className="text-zinc-500 hover:text-white">
+              <button onClick={() => setSelectedCar(null)} className="text-zinc-500 hover:text-white p-2">
                 <X size={24} />
               </button>
             </div>
             
-            <div className="space-y-4 mb-6 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+            <div className="p-6 space-y-4 overflow-y-auto flex-1">
               <div className="bg-black rounded-xl p-4 border border-zinc-800 space-y-4">
                 <div>
                   <label className="text-[10px] text-zinc-500 uppercase tracking-widest mb-1 block">Марка</label>
@@ -389,42 +389,44 @@ export default function AdminModeration() {
               )}
             </div>
 
-            <div className="grid grid-cols-1 gap-3">
-              <button 
-                onClick={() => handleApprove(selectedCar.id, selectedCar)}
-                className="flex items-center justify-center gap-2 py-3 bg-emerald-500 text-black text-sm font-bold uppercase tracking-wider rounded-xl hover:bg-emerald-400 transition-colors shadow-lg shadow-emerald-500/20"
-              >
-                <Check size={18} /> Одобрить и активировать
-              </button>
-              
-              <div className="grid grid-cols-2 gap-3">
+            <div className="sticky bottom-0 z-20 bg-zinc-900/80 backdrop-blur-md p-6 border-t border-zinc-800/50 shrink-0 pb-[max(env(safe-area-inset-bottom),1.5rem)]">
+              <div className="grid grid-cols-1 gap-3">
                 <button 
-                  onClick={async () => {
-                    if (!selectedCar) return;
-                    const toastId = toast.loading('Сохранение изменений...');
-                    try {
-                      const { id, ...updateData } = selectedCar;
-                      const { updateDoc, doc } = await import('../../firebase');
-                      await updateDoc(doc(db, 'cars', id), {
-                        ...updateData,
-                        updatedAt: new Date().toISOString()
-                      });
-                      toast.success('Изменения сохранены', { id: toastId });
-                    } catch (error: any) {
-                      console.error('Save error:', error);
-                      toast.error('Ошибка сохранения', { id: toastId });
-                    }
-                  }}
-                  className="flex items-center justify-center gap-2 py-3 bg-zinc-900 text-white text-sm font-bold uppercase tracking-wider rounded-xl hover:bg-zinc-800 transition-colors border border-zinc-800"
+                  onClick={() => handleApprove(selectedCar.id, selectedCar)}
+                  className="flex items-center justify-center gap-2 py-3 bg-emerald-500 text-black text-xs font-bold uppercase tracking-wider rounded-xl hover:bg-emerald-400 transition-colors shadow-lg shadow-emerald-500/20"
                 >
-                  <FileText size={18} /> Сохранить
+                  <Check size={16} /> Одобрить
                 </button>
-                <button 
-                  onClick={() => handleReject(selectedCar.id)}
-                  className="flex items-center justify-center gap-2 py-3 bg-red-500/10 text-red-500 text-sm font-bold uppercase tracking-wider rounded-xl hover:bg-red-500/20 transition-colors"
-                >
-                  <X size={18} /> Отклонить
-                </button>
+                
+                <div className="grid grid-cols-2 gap-3">
+                  <button 
+                    onClick={async () => {
+                      if (!selectedCar) return;
+                      const toastId = toast.loading('Сохранение изменений...');
+                      try {
+                        const { id, ...updateData } = selectedCar;
+                        const { updateDoc, doc } = await import('../../firebase');
+                        await updateDoc(doc(db, 'cars', id), {
+                          ...updateData,
+                          updatedAt: new Date().toISOString()
+                        });
+                        toast.success('Изменения сохранены', { id: toastId });
+                      } catch (error: any) {
+                        console.error('Save error:', error);
+                        toast.error('Ошибка сохранения', { id: toastId });
+                      }
+                    }}
+                    className="flex items-center justify-center gap-2 py-3 bg-zinc-900 text-white text-[10px] font-bold uppercase tracking-wider rounded-xl hover:bg-zinc-800 transition-colors border border-zinc-800"
+                  >
+                    <FileText size={16} /> Сохранить
+                  </button>
+                  <button 
+                    onClick={() => handleReject(selectedCar.id)}
+                    className="flex items-center justify-center gap-2 py-3 bg-red-500/10 text-red-500 text-[10px] font-bold uppercase tracking-wider rounded-xl hover:bg-red-500/20 transition-colors"
+                  >
+                    <X size={16} /> Отклонить
+                  </button>
+                </div>
               </div>
             </div>
           </div>

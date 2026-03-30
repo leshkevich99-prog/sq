@@ -37,6 +37,10 @@ body {
   -webkit-overflow-scrolling: touch;
 }
 
+#root:has(.fixed.inset-0) {
+  overflow-y: hidden !important;
+}
+
 @supports (padding-bottom: env(safe-area-inset-bottom)) {
   .pb-safe {
     padding-bottom: max(env(safe-area-inset-bottom), 1rem) !important;

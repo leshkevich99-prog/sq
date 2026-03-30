@@ -270,20 +270,20 @@ export default function Finances() {
 
       {/* Top Up Modal */}
       {topUpModalOpen && (
-        <div className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-md p-5 shadow-2xl">
-            <div className="flex justify-between items-center mb-6">
+        <div className="fixed inset-0 z-[400] bg-black/80 backdrop-blur-sm flex flex-col justify-end animate-in fade-in duration-200">
+          <div className="w-full max-w-md mx-auto bg-zinc-900 rounded-t-3xl sm:rounded-2xl sm:mb-4 animate-in slide-in-from-bottom-full duration-300 max-h-[85vh] flex flex-col relative overflow-hidden">
+            <div className="sticky top-0 z-20 bg-zinc-900/80 backdrop-blur-md p-6 border-b border-zinc-800/50 flex justify-between items-center shrink-0">
               <h2 className="text-xl font-bold uppercase tracking-tighter">Пополнение депозита</h2>
-              <button onClick={() => setTopUpModalOpen(false)} className="text-zinc-500 hover:text-white">
+              <button onClick={() => setTopUpModalOpen(false)} className="text-zinc-500 hover:text-white p-2">
                 <X size={24} />
               </button>
             </div>
             
-            <p className="text-sm text-zinc-400 mb-6">
-              Введите сумму, на которую вы хотите пополнить ваш депозит. В реальном приложении здесь будет интеграция с платежным шлюзом.
-            </p>
+            <div className="p-6 space-y-4 overflow-y-auto flex-1">
+              <p className="text-sm text-zinc-400 mb-2">
+                Введите сумму, на которую вы хотите пополнить ваш депозит. Заявка будет обработана в ближайшее время.
+              </p>
 
-            <div className="space-y-4">
               <div>
                 <div className="flex justify-between items-center mb-2">
                   <label className="block text-xs font-bold uppercase tracking-wider text-zinc-500">Сумма (<BynIcon size="0.8em" className="inline-block" />)</label>
@@ -312,11 +312,13 @@ export default function Finances() {
                   />
                 </div>
               </div>
+            </div>
 
+            <div className="sticky bottom-0 z-20 bg-zinc-900/80 backdrop-blur-md p-6 border-t border-zinc-800/50 shrink-0 pb-[max(env(safe-area-inset-bottom),1.5rem)]">
               <button 
                 onClick={handleTopUp}
                 disabled={topUpLoading || !topUpAmount || Number(topUpAmount) <= 0}
-                className="w-full py-3 mt-2 bg-white text-black text-sm font-bold uppercase tracking-wider rounded-xl disabled:opacity-50 hover:bg-zinc-200 transition-colors"
+                className="w-full py-3 bg-white text-black text-sm font-bold uppercase tracking-wider rounded-xl disabled:opacity-50 hover:bg-zinc-200 transition-colors"
               >
                 {topUpLoading ? 'Обработка...' : 'Оплатить'}
               </button>

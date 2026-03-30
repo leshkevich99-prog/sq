@@ -643,15 +643,15 @@ export default function AdminCRM() {
 
       {/* Manual Billing Modal */}
       {billingModalOpen && selectedClient && (
-        <div className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
-          <div className="bg-zinc-900 border-t sm:border border-zinc-800 rounded-t-3xl sm:rounded-2xl w-full max-w-md shadow-2xl max-h-[85vh] flex flex-col overflow-hidden">
-            <div className="sticky top-0 z-10 bg-zinc-900 p-6 pb-2 border-b border-zinc-800/50 flex justify-between items-center">
+        <div className="fixed inset-0 z-[400] bg-black/80 backdrop-blur-sm flex flex-col justify-end animate-in fade-in duration-200">
+          <div className="w-full max-w-md mx-auto bg-zinc-900 rounded-t-3xl sm:rounded-2xl sm:mb-4 animate-in slide-in-from-bottom-full duration-300 max-h-[85vh] flex flex-col relative overflow-hidden">
+            <div className="sticky top-0 z-20 bg-zinc-900/80 backdrop-blur-md p-6 border-b border-zinc-800/50 flex justify-between items-center shrink-0">
               <h2 className="text-xl font-bold uppercase tracking-tighter">Ручной биллинг</h2>
               <button onClick={() => setBillingModalOpen(false)} className="text-zinc-500 hover:text-white p-2">
                 <X size={24} />
               </button>
             </div>
-            <div className="p-6 pt-4 space-y-4 overflow-y-auto pb-[max(env(safe-area-inset-bottom),1.5rem)]">
+            <div className="p-6 pt-4 space-y-4 overflow-y-auto flex-1">
               <p className="text-sm text-zinc-400 mb-2">Клиент: <span className="text-white font-medium">{selectedClient.firstName} (@{selectedClient.username})</span></p>
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-zinc-500 mb-2">Тип операции</label>
@@ -699,11 +699,13 @@ export default function AdminCRM() {
                   className="w-full bg-black border border-zinc-800 rounded-xl p-2 text-sm text-zinc-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-zinc-800 file:text-white hover:file:bg-zinc-700"
                 />
               </div>
-
+            </div>
+            
+            <div className="sticky bottom-0 z-20 bg-zinc-900/80 backdrop-blur-md p-6 border-t border-zinc-800/50 shrink-0 pb-[max(env(safe-area-inset-bottom),1.5rem)]">
               <button 
                 onClick={handleBillingSubmit}
                 disabled={billingSubmitting || !billingAmount || !billingDescription}
-                className="w-full py-3 mt-2 bg-white text-black text-sm font-bold uppercase tracking-wider rounded-xl disabled:opacity-50 hover:bg-zinc-200 transition-colors"
+                className="w-full py-3 bg-white text-black text-sm font-bold uppercase tracking-wider rounded-xl disabled:opacity-50 hover:bg-zinc-200 transition-colors"
               >
                 {billingSubmitting ? 'Обработка...' : 'Провести операцию'}
               </button>
@@ -714,15 +716,15 @@ export default function AdminCRM() {
 
       {/* Edit User Modal */}
       {editUserModalOpen && selectedClient && (
-        <div className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200 overflow-y-auto">
-          <div className="bg-zinc-900 border-t sm:border border-zinc-800 rounded-t-3xl sm:rounded-2xl w-full max-w-md shadow-2xl max-h-[85vh] flex flex-col overflow-hidden">
-            <div className="sticky top-0 z-10 bg-zinc-900 p-6 pb-2 border-b border-zinc-800/50 flex justify-between items-center">
+        <div className="fixed inset-0 z-[400] bg-black/80 backdrop-blur-sm flex flex-col justify-end animate-in fade-in duration-200">
+          <div className="w-full max-w-md mx-auto bg-zinc-900 rounded-t-3xl sm:rounded-2xl sm:mb-4 animate-in slide-in-from-bottom-full duration-300 max-h-[85vh] flex flex-col relative overflow-hidden">
+            <div className="sticky top-0 z-20 bg-zinc-900/80 backdrop-blur-md p-6 border-b border-zinc-800/50 flex justify-between items-center shrink-0">
               <h2 className="text-xl font-bold uppercase tracking-tighter">Настройки клиента</h2>
               <button onClick={() => setEditUserModalOpen(false)} className="text-zinc-500 hover:text-white p-2">
                 <X size={24} />
               </button>
             </div>
-            <div className="p-6 pt-4 space-y-4 overflow-y-auto pb-[max(env(safe-area-inset-bottom),1.5rem)]">
+            <div className="p-6 pt-4 space-y-4 overflow-y-auto flex-1">
               <p className="text-sm text-zinc-400 mb-2">Клиент: <span className="text-white font-medium">{selectedClient.firstName} (@{selectedClient.username})</span></p>
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-zinc-500 mb-2">Имя / Фамилия</label>
@@ -818,8 +820,10 @@ export default function AdminCRM() {
                   />
                 </div>
               </div>
+            </div>
 
-              <div className="flex gap-2 mt-4">
+            <div className="sticky bottom-0 z-20 bg-zinc-900/80 backdrop-blur-md p-6 border-t border-zinc-800/50 shrink-0 pb-[max(env(safe-area-inset-bottom),1.5rem)]">
+              <div className="flex gap-2">
                 <button 
                   onClick={async () => {
                     if (!selectedClient) return;
@@ -834,14 +838,14 @@ export default function AdminCRM() {
                       toast.error('Ошибка при сбросе квот');
                     }
                   }}
-                  className="flex-1 py-3 bg-zinc-800 text-white text-sm font-bold uppercase tracking-wider rounded-xl hover:bg-zinc-700 transition-colors"
+                  className="flex-1 py-3 bg-zinc-800 text-white text-[10px] sm:text-xs font-bold uppercase tracking-wider rounded-xl hover:bg-zinc-700 transition-colors"
                 >
                   Сбросить использование
                 </button>
                 <button 
                   onClick={handleEditUserSubmit}
                   disabled={editSubmitting}
-                  className="flex-[2] py-3 bg-white text-black text-sm font-bold uppercase tracking-wider rounded-xl disabled:opacity-50 hover:bg-zinc-200 transition-colors"
+                  className="flex-[1.5] py-3 bg-white text-black text-[10px] sm:text-xs font-bold uppercase tracking-wider rounded-xl disabled:opacity-50 hover:bg-zinc-200 transition-colors"
                 >
                   {editSubmitting ? 'Сохранение...' : 'Сохранить изменения'}
                 </button>
@@ -853,16 +857,16 @@ export default function AdminCRM() {
 
       {/* Edit Car Modal */}
       {editCarModalOpen && selectedCar && (
-        <div className="fixed inset-0 z-[210] bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
-          <div className="bg-zinc-900 border-t sm:border border-zinc-800 rounded-t-3xl sm:rounded-2xl w-full max-w-sm p-6 shadow-2xl max-h-[85vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-6">
+        <div className="fixed inset-0 z-[400] bg-black/80 backdrop-blur-sm flex flex-col justify-end animate-in fade-in duration-200">
+          <div className="w-full max-w-sm mx-auto bg-zinc-900 rounded-t-3xl sm:rounded-2xl sm:mb-4 animate-in slide-in-from-bottom-full duration-300 max-h-[85vh] flex flex-col relative overflow-hidden">
+            <div className="sticky top-0 z-20 bg-zinc-900/80 backdrop-blur-md p-6 border-b border-zinc-800/50 flex justify-between items-center shrink-0">
               <h2 className="text-xl font-bold uppercase tracking-tighter">Редактировать авто</h2>
-              <button onClick={() => setEditCarModalOpen(false)} className="text-zinc-500 hover:text-white">
+              <button onClick={() => setEditCarModalOpen(false)} className="text-zinc-500 hover:text-white p-2">
                 <X size={24} />
               </button>
             </div>
             
-            <div className="space-y-4">
+            <div className="p-6 space-y-4 overflow-y-auto flex-1">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-zinc-500 mb-2">Марка</label>
@@ -958,10 +962,13 @@ export default function AdminCRM() {
                   />
                 </div>
               </div>
+            </div>
+            
+            <div className="sticky bottom-0 z-20 bg-zinc-900/80 backdrop-blur-md p-6 border-t border-zinc-800/50 shrink-0 pb-[max(env(safe-area-inset-bottom),1.5rem)]">
               <button 
                 onClick={handleEditCarSubmit}
                 disabled={editCarSubmitting || !editCarMake || !editCarModel}
-                className="w-full py-3 mt-2 bg-white text-black text-sm font-bold uppercase tracking-wider rounded-xl disabled:opacity-50 hover:bg-zinc-200 transition-colors"
+                className="w-full py-3 bg-white text-black text-sm font-bold uppercase tracking-wider rounded-xl disabled:opacity-50 hover:bg-zinc-200 transition-colors"
               >
                 {editCarSubmitting ? 'Сохранение...' : 'Сохранить'}
               </button>

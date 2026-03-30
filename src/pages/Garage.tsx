@@ -266,86 +266,89 @@ function AddCarModal({ onClose, userId }: { onClose: () => void, userId?: string
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 flex items-start justify-center p-1.5 overflow-y-auto">
-      <div className="bg-zinc-900 rounded-2xl w-full max-w-[calc(100vw-0.75rem)] sm:max-w-md border border-zinc-800 overflow-hidden my-2 mx-auto box-border">
-        <div className="flex justify-between items-center p-2.5 border-b border-zinc-800">
-          <h2 className="text-sm font-medium">Добавить автомобиль</h2>
-          <button onClick={onClose} className="p-1 text-zinc-400 hover:text-white shrink-0"><X size={16} /></button>
+    <div className="fixed inset-0 z-[400] bg-black/80 backdrop-blur-sm flex flex-col justify-end animate-in fade-in duration-200">
+      <div className="w-full max-w-md mx-auto bg-zinc-900 rounded-t-3xl sm:rounded-2xl sm:mb-4 animate-in slide-in-from-bottom-full duration-300 max-h-[85vh] flex flex-col relative overflow-hidden">
+        <div className="sticky top-0 z-20 bg-zinc-900/80 backdrop-blur-md p-4 border-b border-zinc-800 flex justify-between items-center shrink-0">
+          <h2 className="text-sm font-bold uppercase tracking-widest">Добавить автомобиль</h2>
+          <button type="button" onClick={onClose} className="p-2 bg-zinc-800 rounded-full hover:text-white shrink-0"><X size={16} /></button>
         </div>
-        <form onSubmit={handleSubmit} className="p-2.5 space-y-3">
-          <div>
-            <label className="block text-[9px] text-zinc-500 mb-0.5 uppercase tracking-wider">Марка</label>
-            <input required value={make} onChange={e => setMake(e.target.value)} className="w-full min-w-0 bg-black border border-zinc-800 rounded-lg px-2 py-1.5 text-xs text-white focus:border-accent outline-none box-border appearance-none" placeholder="Например: BMW" />
-          </div>
-          <div>
-            <label className="block text-[9px] text-zinc-500 mb-0.5 uppercase tracking-wider">Модель</label>
-            <input required value={model} onChange={e => setModel(e.target.value)} className="w-full min-w-0 bg-black border border-zinc-800 rounded-lg px-2 py-1.5 text-xs text-white focus:border-accent outline-none box-border appearance-none" placeholder="Например: X5" />
-          </div>
-          <div className="grid grid-cols-2 gap-2">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
+          <div className="p-4 space-y-4 overflow-y-auto flex-1">
             <div>
-              <label className="block text-[9px] text-zinc-500 mb-0.5 uppercase tracking-wider">Год</label>
-              <input required type="number" value={year} onChange={e => setYear(e.target.value)} className="w-full min-w-0 bg-black border border-zinc-800 rounded-lg px-2 py-1.5 text-xs text-white focus:border-accent outline-none box-border appearance-none" placeholder="2020" />
+              <label className="block text-[9px] text-zinc-500 mb-0.5 uppercase tracking-wider">Марка</label>
+              <input required value={make} onChange={e => setMake(e.target.value)} className="w-full min-w-0 bg-black border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:border-accent outline-none box-border appearance-none" placeholder="Например: BMW" />
             </div>
             <div>
-              <label className="block text-[9px] text-zinc-500 mb-0.5 uppercase tracking-wider">Номер</label>
-              <input required value={plate} onChange={e => setPlate(e.target.value.toUpperCase())} className="w-full min-w-0 bg-black border border-zinc-800 rounded-lg px-2 py-1.5 text-xs text-white focus:border-accent outline-none box-border appearance-none font-mono" placeholder="0001 MI-7" />
+              <label className="block text-[9px] text-zinc-500 mb-0.5 uppercase tracking-wider">Модель</label>
+              <input required value={model} onChange={e => setModel(e.target.value)} className="w-full min-w-0 bg-black border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:border-accent outline-none box-border appearance-none" placeholder="Например: X5" />
             </div>
-          </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[9px] text-zinc-500 mb-0.5 uppercase tracking-wider">Год</label>
+                <input required type="number" value={year} onChange={e => setYear(e.target.value)} className="w-full min-w-0 bg-black border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:border-accent outline-none box-border appearance-none" placeholder="2020" />
+              </div>
+              <div>
+                <label className="block text-[9px] text-zinc-500 mb-0.5 uppercase tracking-wider">Номер</label>
+                <input required value={plate} onChange={e => setPlate(e.target.value.toUpperCase())} className="w-full min-w-0 bg-black border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:border-accent outline-none box-border appearance-none font-mono" placeholder="0001 MI-7" />
+              </div>
+            </div>
 
-          <div>
-            <label className="block text-[9px] text-zinc-500 mb-0.5 uppercase tracking-wider">VIN-номер (по желанию)</label>
-            <input value={vin} onChange={e => setVin(e.target.value)} className="w-full min-w-0 bg-black border border-zinc-800 rounded-lg px-2 py-1.5 text-xs text-white focus:border-accent outline-none box-border appearance-none" placeholder="WBA..." />
+            <div>
+              <label className="block text-[9px] text-zinc-500 mb-0.5 uppercase tracking-wider">VIN-номер (по желанию)</label>
+              <input value={vin} onChange={e => setVin(e.target.value)} className="w-full min-w-0 bg-black border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:border-accent outline-none box-border appearance-none" placeholder="WBA..." />
+            </div>
+            
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[9px] text-zinc-500 mb-1 uppercase tracking-wider">Техпаспорт (Лицо)</label>
+                <button 
+                  type="button" 
+                  onClick={() => document.getElementById('tp-front-input')?.click()}
+                  className={`w-full py-3 rounded-lg border border-dashed flex flex-col items-center justify-center gap-1 text-[10px] uppercase tracking-widest ${techPassportFront ? 'border-emerald-500 text-emerald-500 bg-emerald-500/10' : 'border-zinc-800 text-zinc-500 hover:border-zinc-600 bg-black/50'}`}
+                >
+                  <Camera size={18} />
+                  {techPassportFront ? 'Готово' : 'Загрузить'}
+                </button>
+                <input id="tp-front-input" type="file" accept="image/*" className="hidden" onChange={e => setTechPassportFront(e.target.files?.[0] || null)} />
+              </div>
+              <div>
+                <label className="block text-[9px] text-zinc-500 mb-1 uppercase tracking-wider">Техпаспорт (Оборот)</label>
+                <button 
+                  type="button" 
+                  onClick={() => document.getElementById('tp-back-input')?.click()}
+                  className={`w-full py-3 rounded-lg border border-dashed flex flex-col items-center justify-center gap-1 text-[10px] uppercase tracking-widest ${techPassportBack ? 'border-emerald-500 text-emerald-500 bg-emerald-500/10' : 'border-zinc-800 text-zinc-500 hover:border-zinc-600 bg-black/50'}`}
+                >
+                  <Camera size={18} />
+                  {techPassportBack ? 'Готово' : 'Загрузить'}
+                </button>
+                <input id="tp-back-input" type="file" accept="image/*" className="hidden" onChange={e => setTechPassportBack(e.target.files?.[0] || null)} />
+              </div>
+            </div>
+            
+            <div className="pt-2">
+              <h3 className="text-[9px] font-bold uppercase tracking-wider text-zinc-400 mb-2">Сервисная книжка (опционально)</h3>
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-[9px] text-zinc-500 mb-0.5 uppercase tracking-wider flex justify-between">Следующее ТО</label>
+                  <input type="date" value={maintenanceSchedule} onChange={e => setMaintenanceSchedule(e.target.value)} className="w-full min-w-0 bg-black border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:border-accent outline-none box-border appearance-none [color-scheme:dark]" />
+                </div>
+                <div>
+                  <label className="block text-[9px] text-zinc-500 mb-0.5 uppercase tracking-wider flex justify-between">Техосмотр до</label>
+                  <input type="date" value={inspectionDate} onChange={e => setInspectionDate(e.target.value)} className="w-full min-w-0 bg-black border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:border-accent outline-none box-border appearance-none [color-scheme:dark]" />
+                </div>
+                <div>
+                  <label className="block text-[9px] text-zinc-500 mb-0.5 uppercase tracking-wider flex justify-between">Страховка до</label>
+                  <input type="date" value={insuranceDate} onChange={e => setInsuranceDate(e.target.value)} className="w-full min-w-0 bg-black border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:border-accent outline-none box-border appearance-none [color-scheme:dark]" />
+                </div>
+              </div>
+            </div>
           </div>
           
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className="block text-[9px] text-zinc-500 mb-0.5 uppercase tracking-wider">Техпаспорт (Лицо)</label>
-              <button 
-                type="button" 
-                onClick={() => document.getElementById('tp-front-input')?.click()}
-                className={`w-full py-2 rounded-lg border border-dashed flex items-center justify-center gap-2 text-[10px] ${techPassportFront ? 'border-emerald-500 text-emerald-500 bg-emerald-500/10' : 'border-zinc-800 text-zinc-500 hover:border-zinc-600'}`}
-              >
-                <Camera size={14} />
-                {techPassportFront ? 'Готово' : 'Загрузить'}
-              </button>
-              <input id="tp-front-input" type="file" accept="image/*" className="hidden" onChange={e => setTechPassportFront(e.target.files?.[0] || null)} />
-            </div>
-            <div>
-              <label className="block text-[9px] text-zinc-500 mb-0.5 uppercase tracking-wider">Техпаспорт (Оборот)</label>
-              <button 
-                type="button" 
-                onClick={() => document.getElementById('tp-back-input')?.click()}
-                className={`w-full py-2 rounded-lg border border-dashed flex items-center justify-center gap-2 text-[10px] ${techPassportBack ? 'border-emerald-500 text-emerald-500 bg-emerald-500/10' : 'border-zinc-800 text-zinc-500 hover:border-zinc-600'}`}
-              >
-                <Camera size={14} />
-                {techPassportBack ? 'Готово' : 'Загрузить'}
-              </button>
-              <input id="tp-back-input" type="file" accept="image/*" className="hidden" onChange={e => setTechPassportBack(e.target.files?.[0] || null)} />
-            </div>
+          <div className="sticky bottom-0 z-20 bg-zinc-900/80 backdrop-blur-md p-4 border-t border-zinc-800/50 shrink-0 pb-[max(env(safe-area-inset-bottom),1rem)]">
+            <button disabled={submitting} type="submit" className="w-full bg-accent text-white rounded-xl py-4 text-sm font-bold uppercase tracking-widest disabled:opacity-50">
+              {submitting ? 'Сохранение...' : 'Отправить на модерацию'}
+            </button>
           </div>
-          
-          <div className="pt-2 border-t border-zinc-800">
-            <h3 className="text-[9px] font-bold uppercase tracking-wider text-zinc-400 mb-1.5">Сервисная книжка (опционально)</h3>
-            <div className="space-y-1.5">
-              <div>
-                <label className="block text-[9px] text-zinc-500 mb-0.5 uppercase tracking-wider">Следующее ТО</label>
-                <input type="date" value={maintenanceSchedule} onChange={e => setMaintenanceSchedule(e.target.value)} className="w-full min-w-0 bg-black border border-zinc-800 rounded-lg px-2 py-1.5 text-xs text-white focus:border-accent outline-none box-border appearance-none" />
-              </div>
-              <div>
-                <label className="block text-[9px] text-zinc-500 mb-0.5 uppercase tracking-wider">Техосмотр до</label>
-                <input type="date" value={inspectionDate} onChange={e => setInspectionDate(e.target.value)} className="w-full min-w-0 bg-black border border-zinc-800 rounded-lg px-2 py-1.5 text-xs text-white focus:border-accent outline-none box-border appearance-none" />
-              </div>
-              <div>
-                <label className="block text-[9px] text-zinc-500 mb-0.5 uppercase tracking-wider">Страховка до</label>
-                <input type="date" value={insuranceDate} onChange={e => setInsuranceDate(e.target.value)} className="w-full min-w-0 bg-black border border-zinc-800 rounded-lg px-2 py-1.5 text-xs text-white focus:border-accent outline-none box-border appearance-none" />
-              </div>
-            </div>
-          </div>
-
-          <button disabled={submitting} type="submit" className="w-full bg-accent text-white rounded-xl py-2 text-sm font-medium mt-2 disabled:opacity-50">
-            {submitting ? 'Сохранение...' : 'Отправить на модерацию'}
-          </button>
-          <div className="pb-8 sm:pb-0" />
         </form>
       </div>
     </div>
@@ -490,76 +493,76 @@ function CarDetailsModal({ car, onClose }: { car: Car, onClose: () => void }) {
   const isPilotOrAdmin = user?.role === 'pilot' || user?.role === 'admin';
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 flex items-start justify-center p-1.5 overflow-y-auto">
-      <div className="bg-zinc-900 rounded-2xl w-full max-w-[calc(100vw-0.75rem)] sm:max-w-md border border-zinc-800 overflow-hidden my-2 mx-auto box-border">
-        <div className="flex justify-between items-center p-2.5 border-b border-zinc-800">
-          <h2 className="text-sm font-medium truncate pr-2">{car.make} {car.model}</h2>
-          <button onClick={onClose} className="p-1 text-zinc-400 hover:text-white shrink-0"><X size={16} /></button>
+    <div className="fixed inset-0 z-[400] bg-black/80 backdrop-blur-sm flex flex-col justify-end animate-in fade-in duration-200">
+      <div className="w-full max-w-md mx-auto bg-zinc-900 rounded-t-3xl sm:rounded-2xl sm:mb-4 animate-in slide-in-from-bottom-full duration-300 max-h-[85vh] flex flex-col relative overflow-hidden">
+        <div className="sticky top-0 z-20 bg-zinc-900/80 backdrop-blur-md p-4 border-b border-zinc-800 flex justify-between items-center shrink-0">
+          <h2 className="text-sm font-bold uppercase tracking-widest truncate">{car.make} {car.model}</h2>
+          <button onClick={onClose} className="p-2 bg-zinc-800 rounded-full hover:text-white shrink-0"><X size={16} /></button>
         </div>
         
-        <div className="p-2.5 space-y-3.5">
-          <div className="grid grid-cols-2 gap-2">
-            <div className="bg-black rounded-xl p-1.5 border border-zinc-800 min-w-0">
-              <div className="text-[8px] text-zinc-500 mb-0.5 uppercase tracking-wider truncate">Год выпуска</div>
-              <div className="font-mono text-xs truncate">{car.year}</div>
+        <div className="p-4 space-y-4 overflow-y-auto flex-1">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="bg-black rounded-xl p-2.5 border border-zinc-800 min-w-0">
+              <div className="text-[9px] text-zinc-500 mb-1 uppercase tracking-wider truncate">Год выпуска</div>
+              <div className="font-mono text-sm truncate">{car.year}</div>
             </div>
-            <div className="bg-black rounded-xl p-1.5 border border-zinc-800 min-w-0">
-              <div className="text-[8px] text-zinc-500 mb-0.5 uppercase tracking-wider truncate">Гос. номер</div>
-              <div className="font-mono text-xs truncate">{car.plate}</div>
+            <div className="bg-black rounded-xl p-2.5 border border-zinc-800 min-w-0">
+              <div className="text-[9px] text-zinc-500 mb-1 uppercase tracking-wider truncate">Гос. номер</div>
+              <div className="font-mono text-sm truncate">{car.plate}</div>
             </div>
           </div>
 
           <div>
-            <h3 className="text-[9px] font-bold uppercase tracking-wider text-zinc-400 mb-1.5 flex items-center gap-1.5">
-              <FileText size={10} /> Сервисная книжка
+            <h3 className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-2 flex items-center gap-1.5">
+              <FileText size={12} /> Сервисная книжка
             </h3>
-            <div className="space-y-1.5">
+            <div className="space-y-3">
               <div className="w-full">
                 <label className="block text-[9px] text-zinc-500 mb-0.5 uppercase tracking-wider flex flex-wrap justify-between items-center gap-x-1">
                   <span>Следующее ТО</span>
                   {maintenanceSchedule && (
-                    <span className={`text-[8px] ${getDateStatus(maintenanceSchedule)}`}>
+                    <span className={`text-[9px] ${getDateStatus(maintenanceSchedule)}`}>
                       {new Date(maintenanceSchedule) < new Date() ? 'Просрочено' : 'Запланировано'}
                     </span>
                   )}
                 </label>
-                <input type="date" value={maintenanceSchedule} onChange={e => setMaintenanceSchedule(e.target.value)} className={`w-full min-w-0 bg-black border rounded-lg px-2 py-1.5 text-xs text-white focus:border-accent outline-none box-border appearance-none [color-scheme:dark] ${maintenanceSchedule ? (new Date(maintenanceSchedule) < new Date() ? 'border-red-500/50' : 'border-zinc-800') : 'border-zinc-800'}`} />
+                <input type="date" value={maintenanceSchedule} onChange={e => setMaintenanceSchedule(e.target.value)} className={`w-full min-w-0 bg-black border rounded-lg px-3 py-2 text-xs text-white focus:border-accent outline-none box-border appearance-none [color-scheme:dark] ${maintenanceSchedule ? (new Date(maintenanceSchedule) < new Date() ? 'border-red-500/50' : 'border-zinc-800') : 'border-zinc-800'}`} />
               </div>
               <div className="w-full">
                 <label className="block text-[9px] text-zinc-500 mb-0.5 uppercase tracking-wider flex flex-wrap justify-between items-center gap-x-1">
                   <span>Техосмотр до</span>
                   {inspectionDate && (
-                    <span className={`text-[8px] ${getDateStatus(inspectionDate)}`}>
+                    <span className={`text-[9px] ${getDateStatus(inspectionDate)}`}>
                       {new Date(inspectionDate) < new Date() ? 'Просрочено' : 'Действителен'}
                     </span>
                   )}
                 </label>
-                <input type="date" value={inspectionDate} onChange={e => setInspectionDate(e.target.value)} className={`w-full min-w-0 bg-black border rounded-lg px-2 py-1.5 text-xs text-white focus:border-accent outline-none box-border appearance-none [color-scheme:dark] ${inspectionDate ? (new Date(inspectionDate) < new Date() ? 'border-red-500/50' : 'border-zinc-800') : 'border-zinc-800'}`} />
+                <input type="date" value={inspectionDate} onChange={e => setInspectionDate(e.target.value)} className={`w-full min-w-0 bg-black border rounded-lg px-3 py-2 text-xs text-white focus:border-accent outline-none box-border appearance-none [color-scheme:dark] ${inspectionDate ? (new Date(inspectionDate) < new Date() ? 'border-red-500/50' : 'border-zinc-800') : 'border-zinc-800'}`} />
               </div>
               <div className="w-full">
                 <label className="block text-[9px] text-zinc-500 mb-0.5 uppercase tracking-wider flex flex-wrap justify-between items-center gap-x-1">
                   <span>Страховка до</span>
                   {insuranceDate && (
-                    <span className={`text-[8px] ${getDateStatus(insuranceDate)}`}>
+                    <span className={`text-[9px] ${getDateStatus(insuranceDate)}`}>
                       {new Date(insuranceDate) < new Date() ? 'Просрочена' : 'Действительна'}
                     </span>
                   )}
                 </label>
-                <input type="date" value={insuranceDate} onChange={e => setInsuranceDate(e.target.value)} className={`w-full min-w-0 bg-black border rounded-lg px-2 py-1.5 text-xs text-white focus:border-accent outline-none box-border appearance-none [color-scheme:dark] ${insuranceDate ? (new Date(insuranceDate) < new Date() ? 'border-red-500/50' : 'border-zinc-800') : 'border-zinc-800'}`} />
+                <input type="date" value={insuranceDate} onChange={e => setInsuranceDate(e.target.value)} className={`w-full min-w-0 bg-black border rounded-lg px-3 py-2 text-xs text-white focus:border-accent outline-none box-border appearance-none [color-scheme:dark] ${insuranceDate ? (new Date(insuranceDate) < new Date() ? 'border-red-500/50' : 'border-zinc-800') : 'border-zinc-800'}`} />
               </div>
             </div>
           </div>
 
           {/* Recommendations / Malfunctions Section */}
           <div>
-            <div className="flex justify-between items-center mb-2">
-              <h3 className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-2">
+            <div className="flex justify-between items-center mb-2 mt-4">
+              <h3 className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 flex items-center gap-2">
                 <Wrench size={12} /> Рекомендации СТО
               </h3>
               {isPilotOrAdmin && (
                 <button 
                   onClick={() => setShowAddRec(!showAddRec)}
-                  className="text-accent text-[9px] font-bold uppercase tracking-widest hover:underline"
+                  className="text-accent text-[9px] font-bold uppercase tracking-widest hover:underline bg-accent/10 px-2 py-1 rounded"
                 >
                   {showAddRec ? 'Отмена' : 'Добавить'}
                 </button>
@@ -567,32 +570,32 @@ function CarDetailsModal({ car, onClose }: { car: Car, onClose: () => void }) {
             </div>
 
             {showAddRec && (
-              <div className="bg-zinc-800/50 rounded-xl p-3 border border-zinc-700 mb-3 space-y-2 animate-in fade-in slide-in-from-top-2">
+              <div className="bg-zinc-800/50 rounded-xl p-3 border border-zinc-700 mb-3 space-y-3 animate-in fade-in slide-in-from-top-2">
                 <textarea 
                   value={recText}
                   onChange={e => setRecText(e.target.value)}
                   placeholder="Опишите неисправность..."
-                  className="w-full bg-black border border-zinc-700 rounded-xl p-2 text-xs text-white focus:border-accent outline-none resize-none"
+                  className="w-full bg-black border border-zinc-700 rounded-xl p-3 text-xs text-white focus:border-accent outline-none resize-none"
                   rows={2}
                 />
                 
-                <div className="flex flex-wrap gap-1.5">
+                <div className="flex flex-wrap gap-2">
                   {recPhotos.map((file, i) => (
-                    <div key={i} className="relative w-12 h-12 rounded-lg overflow-hidden border border-zinc-700">
+                    <div key={i} className="relative w-14 h-14 rounded-xl overflow-hidden border border-zinc-700">
                       <img src={URL.createObjectURL(file)} className="w-full h-full object-cover" alt="" />
                       <button 
                         onClick={() => setRecPhotos(recPhotos.filter((_, idx) => idx !== i))}
-                        className="absolute top-0 right-0 p-0.5 bg-black/50 text-white"
+                        className="absolute top-0 right-0 p-1 bg-black/50 text-white rounded-bl-lg"
                       >
-                        <X size={10} />
+                        <X size={12} />
                       </button>
                     </div>
                   ))}
                   <button 
                     onClick={() => fileInputRef.current?.click()}
-                    className="w-12 h-12 rounded-lg border border-dashed border-zinc-700 flex items-center justify-center text-zinc-500 hover:text-white transition-colors"
+                    className="w-14 h-14 rounded-xl border border-dashed border-zinc-700 flex items-center justify-center text-zinc-500 hover:text-white transition-colors bg-black/50"
                   >
-                    <Camera size={16} />
+                    <Camera size={18} />
                   </button>
                   <input 
                     type="file" 
@@ -607,29 +610,29 @@ function CarDetailsModal({ car, onClose }: { car: Car, onClose: () => void }) {
                 <button 
                   disabled={recUploading || !recText.trim()}
                   onClick={handleAddRecommendation}
-                  className="w-full bg-accent text-white rounded-xl py-1.5 text-xs font-bold uppercase tracking-widest disabled:opacity-50"
+                  className="w-full bg-accent text-white rounded-xl py-2.5 text-xs font-bold uppercase tracking-widest disabled:opacity-50 mt-1"
                 >
-                  {recUploading ? <Loader2 size={14} className="animate-spin mx-auto" /> : 'Сохранить'}
+                  {recUploading ? <Loader2 size={16} className="animate-spin mx-auto" /> : 'Сохранить'}
                 </button>
               </div>
             )}
             
-            <div className="space-y-2">
+            <div className="space-y-3">
               {recommendations.map((rec) => (
-                <div key={rec.id} className={`bg-black border rounded-xl p-2.5 ${rec.status === 'resolved' ? 'border-zinc-800 opacity-60' : 'border-amber-500/30'}`}>
-                  <div className="flex justify-between items-start gap-2 mb-1.5">
-                    <p className={`text-xs ${rec.status === 'resolved' ? 'text-zinc-500 line-through' : 'text-zinc-200'}`}>
+                <div key={rec.id} className={`bg-black border rounded-xl p-3 ${rec.status === 'resolved' ? 'border-zinc-800 opacity-60' : 'border-amber-500/30'}`}>
+                  <div className="flex justify-between items-start gap-2 mb-2">
+                    <p className={`text-sm ${rec.status === 'resolved' ? 'text-zinc-500 line-through' : 'text-zinc-200'}`}>
                       {rec.text}
                     </p>
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1 shrink-0">
                       {isPilotOrAdmin && (
                         <>
                           <button 
                             onClick={() => toggleRecStatus(rec)}
-                            className={`p-1 rounded-full ${rec.status === 'resolved' ? 'text-zinc-500' : 'text-emerald-500 hover:bg-emerald-500/10'}`}
+                            className={`p-1.5 rounded-full ${rec.status === 'resolved' ? 'text-zinc-500' : 'text-emerald-500 bg-emerald-500/10'}`}
                             title={rec.status === 'resolved' ? 'Возобновить' : 'Отметить как решенное'}
                           >
-                            {rec.status === 'resolved' ? <History size={14} /> : <CheckCircle size={14} />}
+                            {rec.status === 'resolved' ? <History size={16} /> : <CheckCircle size={16} />}
                           </button>
                           <button 
                             onClick={async () => {
@@ -642,9 +645,9 @@ function CarDetailsModal({ car, onClose }: { car: Car, onClose: () => void }) {
                                 }
                               }
                             }}
-                            className="p-1 text-zinc-600 hover:text-red-500 transition-colors"
+                            className="p-1.5 text-zinc-600 hover:text-red-500 transition-colors"
                           >
-                            <Trash2 size={12} />
+                            <Trash2 size={14} />
                           </button>
                         </>
                       )}
@@ -652,41 +655,41 @@ function CarDetailsModal({ car, onClose }: { car: Car, onClose: () => void }) {
                   </div>
                   
                   {rec.photos && rec.photos.length > 0 && (
-                    <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
+                    <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
                       {rec.photos.map((url, i) => (
-                        <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="shrink-0 w-10 h-10 rounded-lg overflow-hidden border border-zinc-800">
+                        <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="shrink-0 w-14 h-14 rounded-xl overflow-hidden border border-zinc-800">
                           <img src={url} className="w-full h-full object-cover" alt="" />
                         </a>
                       ))}
                     </div>
                   )}
                   
-                  <div className="flex justify-between items-center mt-1.5">
-                    <span className="text-[9px] text-zinc-600 uppercase tracking-widest">
+                  <div className="flex justify-between items-center mt-1 pt-2 border-t border-zinc-900">
+                    <span className="text-[10px] text-zinc-600 uppercase tracking-widest font-mono">
                       {new Date(rec.createdAt).toLocaleDateString()}
                     </span>
                     {rec.status === 'resolved' && (
-                      <span className="text-[9px] text-emerald-500 font-bold uppercase tracking-widest">
-                        Устранено {rec.resolvedAt && new Date(rec.resolvedAt).toLocaleDateString()}
+                      <span className="text-[10px] text-emerald-500 font-bold uppercase tracking-widest flex items-center gap-1">
+                        <CheckCircle size={10} /> Устранено {rec.resolvedAt && new Date(rec.resolvedAt).toLocaleDateString()}
                       </span>
                     )}
                   </div>
                 </div>
               ))}
               {recommendations.length === 0 && (
-                <p className="text-[10px] text-zinc-500 italic text-center py-2">Рекомендаций пока нет</p>
+                <p className="text-xs text-zinc-500 italic text-center py-4 bg-black/50 rounded-xl border border-zinc-800 border-dashed">Рекомендаций пока нет</p>
               )}
             </div>
           </div>
-
-          <div className="pt-3 border-t border-zinc-800 flex gap-2">
-            <button onClick={handleDelete} className="p-2.5 bg-red-500/10 text-red-500 rounded-xl hover:bg-red-500/20 transition-colors">
-              <Trash2 size={18} />
-            </button>
-            <button disabled={submitting} onClick={handleSave} className="flex-1 bg-white text-black rounded-xl py-2.5 text-sm font-medium disabled:opacity-50">
-              {submitting ? 'Сохранение...' : 'Сохранить изменения'}
-            </button>
-          </div>
+        </div>
+        
+        <div className="sticky bottom-0 z-20 bg-zinc-900/80 backdrop-blur-md p-4 border-t border-zinc-800/50 shrink-0 pb-[max(env(safe-area-inset-bottom),1rem)] flex gap-2">
+          <button onClick={handleDelete} className="p-4 bg-red-500/10 text-red-500 rounded-xl hover:bg-red-500/20 transition-colors shrink-0">
+            <Trash2 size={20} />
+          </button>
+          <button disabled={submitting} onClick={handleSave} className="flex-1 bg-white text-black rounded-xl py-4 text-sm font-bold uppercase tracking-widest disabled:opacity-50">
+            {submitting ? 'Сохранение...' : 'Сохранить изменения'}
+          </button>
         </div>
       </div>
     </div>
