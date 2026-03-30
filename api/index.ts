@@ -336,12 +336,8 @@ async function startServer() {
     res.json({ requests: requests.map((r: any) => ({ ...r, photos: typeof r.photos === 'string' ? JSON.parse(r.photos || '[]') : (r.photos || []) })) });
   });
 
-  app.post('/api/requests', authenticateToken, async (req: AuthRequest, res) => {
-    const id = uuidv4();
-    const data = req.body;
-    const request = await firestore.collection('requests').set(id, { ...data, userId: req.user?.id });
-    res.json({ request: { ...request, photos: typeof request.photos === 'string' ? JSON.parse(request.photos || '[]') : (request.photos || []) } });
-  });
+
+
 
   // Unified File Upload Handler for /api/upload and /api/upload-proxy
   const handleUpload = async (req: any, res: any) => {
