@@ -244,8 +244,12 @@ export default function Order() {
         
         // Notify admins (moved to helper or inline if needed, but the server also can do this)
         // For now keep frontend notification if notifyAdmins exists
-        if (typeof notifyAdmins === 'function') {
-          await notifyAdmins(newRequest.id, service, useQuota, balanceDeduction, 0);
+        try {
+          if (typeof notifyAdmins === 'function') {
+            await notifyAdmins(newRequest.id, service, useQuota, balanceDeduction, 0);
+          }
+        } catch (adminNotifyErr) {
+          console.warn("Could not notify admins via frontend (likely permission related)", adminNotifyErr);
         }
 
         toast.success('Поручение успешно отправлено!', { id: toastId });

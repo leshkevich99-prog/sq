@@ -108,29 +108,40 @@ export default function TaskDetails() {
     if (!id) return;
 
     const unsub = onSnapshot(doc(db, 'requests', id), async (docSnap) => {
-      if (docSnap.exists()) {
-        const data = { id: docSnap.id, ...docSnap.data() } as RequestData;
-        setRequest(data);
-        
-        // Fetch client data
-        const clientSnap = await getDoc(doc(db, 'users', data.userId));
-        if (clientSnap.exists()) setClient(clientSnap.data() as UserData);
-        
-        // Fetch pilot data if assigned
-        if (data.pilotId) {
-          const pilotSnap = await getDoc(doc(db, 'users', data.pilotId));
-          if (pilotSnap.exists()) setPilot(pilotSnap.data() as UserData);
+      try {
+        if (docSnap.exists()) {
+          const data = { id: docSnap.id, ...docSnap.data() } as RequestData;
+          setRequest(data);
+          
+          try {
+            // Fetch client data
+            const clientSnap = await getDoc(doc(db, 'users', data.userId));
+            if (clientSnap.exists()) setClient(clientSnap.data() as UserData);
+          } catch(e) {}
+          
+          try {
+            // Fetch pilot data if assigned
+            if (data.pilotId) {
+              const pilotSnap = await getDoc(doc(db, 'users', data.pilotId));
+              if (pilotSnap.exists()) setPilot(pilotSnap.data() as UserData);
+            }
+          } catch(e) {}
+          
+          try {
+            // Fetch car data
+            if (data.carId && data.carId !== 'none') {
+              const carSnap = await getDoc(doc(db, 'cars', data.carId));
+              if (carSnap.exists()) setCar(carSnap.data() as CarData);
+            } else {
+              setCar(null);
+            }
+          } catch(e) {}
         }
-        
-        // Fetch car data
-        if (data.carId && data.carId !== 'none') {
-          const carSnap = await getDoc(doc(db, 'cars', data.carId));
-          if (carSnap.exists()) setCar(carSnap.data() as CarData);
-        } else {
-          setCar(null);
-        }
+      } catch (err) {
+        console.error('Data fetch error:', err);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     }, (error) => {
       console.error('TaskDetails Snapshot Error:', error);
       handleFirestoreError(error, OperationType.GET, `requests/${id}`);
@@ -145,6 +156,8 @@ export default function TaskDetails() {
         exps.push({ id: doc.id, ...doc.data() });
       });
       setExpenses(exps);
+    }, (error) => {
+      console.warn('Transactions not readable or error:', error);
     });
 
     return () => {
@@ -533,11 +546,11 @@ export default function TaskDetails() {
     <div className="animate-in fade-in duration-500">
       <header className="sticky top-0 z-30 bg-black/95 backdrop-blur-md py-4 px-4 mb-4 border-b border-zinc-900/50 pt-safe">
         <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <button onClick={() => navigate(-1)} className="p-2.5 bg-zinc-900 rounded-full border border-zinc-800 active:scale-90 transition-transform">
+          <div className="flex items-center gap-3">
+            <button onClick={() => navigate(-1)} className="p-2 bg-zinc-900 rounded-full border border-zinc-800 active:scale-90 transition-transform shrink-0">
               <ArrowLeft size={20} />
             </button>
-            <h1 className="text-lg font-bold uppercase tracking-wider">Детали поручения</h1>
+            <h1 className="text-base sm:text-lg font-bold uppercase tracking-wide whitespace-nowrap overflow-hidden text-ellipsis">Детали поручения</h1>
           </div>
           
           {(user?.role === 'client' || user?.role === 'pilot' || user?.role === 'admin') && 
