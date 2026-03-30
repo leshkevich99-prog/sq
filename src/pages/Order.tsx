@@ -222,6 +222,7 @@ export default function Order() {
             userId: user.uid,
             carId: selectedCarId,
             serviceType: service,
+            status: 'pending',
             pickupAddress,
             deliveryAddress: service === 'logistics' ? deliveryAddress : '',
             orderDate,
