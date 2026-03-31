@@ -236,9 +236,9 @@ export default function Home() {
             </p>
 
             <div className="relative pt-2">
-              <div className="absolute top-4 left-0 w-full h-0.5 bg-zinc-800"></div>
+              <div className="absolute top-3 left-0 w-full h-0.5 bg-zinc-800"></div>
               <div 
-                className={`absolute top-4 left-0 h-0.5 transition-all duration-1000 ${
+                className={`absolute top-3 left-0 h-0.5 transition-all duration-1000 ${
                   activeRequest.status === 'review' ? 'bg-purple-400' : 'bg-amber-500'
                 }`}
                 style={{ 
@@ -476,9 +476,9 @@ function StatusStep({ label, active, color = 'amber' }: { label: string; active:
     ? color === 'purple' ? 'text-purple-300' : 'text-zinc-300' 
     : 'text-zinc-500';
   return (
-    <div className="flex flex-col items-center gap-2">
-      <div className={`w-5 h-5 rounded-full border-4 border-zinc-900 z-10 ${dotColor}`}></div>
-      <span className={`text-[10px] uppercase font-medium ${textColor}`}>{label}</span>
+    <div className="flex flex-col items-center gap-1.5">
+      <div className={`w-3.5 h-3.5 rounded-full border-[3px] border-zinc-900 z-10 ${dotColor}`}></div>
+      <span className={`text-[7px] sm:text-[8px] uppercase font-bold tracking-tighter ${textColor}`}>{label}</span>
     </div>
   );
 }

@@ -569,12 +569,12 @@ export default function TaskDetails() {
       </header>
 
       {/* Status Timeline */}
-      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 mb-6 mt-2">
+      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 sm:p-6 mb-6 mt-2 overflow-hidden">
         <div className="flex justify-between relative">
           {/* Line */}
-          <div className="absolute top-4 left-0 right-0 h-0.5 bg-zinc-800 -z-0" />
+          <div className="absolute top-3 left-0 right-0 h-0.5 bg-zinc-800 -z-0" />
           <div 
-            className="absolute top-4 left-0 h-0.5 bg-amber-500 transition-all duration-500 -z-0" 
+            className="absolute top-3 left-0 h-0.5 bg-amber-500 transition-all duration-500 -z-0" 
             style={{ width: `${(currentStepIndex / (steps.length - 1)) * 100}%` }}
           />
           
@@ -584,12 +584,12 @@ export default function TaskDetails() {
             
             return (
               <div key={step.id} className="flex flex-col items-center relative z-10">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-colors ${
-                  isActive ? 'bg-amber-500 border-amber-500 text-black' : 'bg-zinc-900 border-zinc-800 text-zinc-600'
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center border-2 transition-colors ${
+                  isActive ? 'bg-amber-500 border-amber-500 text-black' : 'bg-black border-zinc-800 text-zinc-600'
                 }`}>
-                  {isActive ? <CheckCircle2 size={16} /> : <Circle size={16} />}
+                  {isActive ? <CheckCircle2 size={12} /> : <Circle size={12} />}
                 </div>
-                <span className={`text-[10px] mt-2 uppercase font-bold tracking-tighter text-center w-16 ${
+                <span className={`text-[7px] sm:text-[9px] mt-1.5 uppercase font-bold tracking-tighter text-center w-max max-w-[45px] leading-none ${
                   isActive ? 'text-white' : 'text-zinc-600'
                 }`}>
                   {step.label}
