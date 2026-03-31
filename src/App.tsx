@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import WebApp from '@twa-dev/sdk';
 import { FirebaseProvider, useFirebase } from './components/FirebaseProvider';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -41,7 +41,24 @@ import DebugSwitcher from './components/DebugSwitcher';
 
 function AppRoutes() {
   const { user, loading } = useFirebase();
+  const navigate = useNavigate();
   const [showDebug, setShowDebug] = React.useState(false);
+
+  // Handle Telegram Deep Linking (start_param)
+  useEffect(() => {
+    if (!loading && user) {
+      const startParam = WebApp.initDataUnsafe?.start_param;
+      if (startParam) {
+        if (startParam.startsWith('task_chat_')) {
+          const taskId = startParam.replace('task_chat_', '');
+          navigate(`/task/${taskId}/chat`);
+        } else if (startParam.startsWith('task_')) {
+          const taskId = startParam.replace('task_', '');
+          navigate(`/task/${taskId}`);
+        }
+      }
+    }
+  }, [loading, user, navigate]);
 
   if (loading) {
     return <div className="flex items-center justify-center min-h-screen bg-black text-white">Загрузка...</div>;
