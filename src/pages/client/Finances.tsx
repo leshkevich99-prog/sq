@@ -5,6 +5,7 @@ import WebApp from '@twa-dev/sdk';
 import { useFirebase } from '../../components/FirebaseProvider';
 import { db, handleFirestoreError, OperationType, collection, query, where, onSnapshot, addDoc } from '../../firebase';
 import toast from 'react-hot-toast';
+import { useKeyboard } from '../../hooks/useKeyboard';
 
 interface Transaction {
   id: string;
@@ -20,6 +21,7 @@ import { TARIFFS } from '../../config/tariffs';
 
 export default function Finances() {
   const { user } = useFirebase();
+  const isKeyboardVisible = useKeyboard();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [topUpModalOpen, setTopUpModalOpen] = useState(false);
@@ -314,7 +316,7 @@ export default function Finances() {
               </div>
             </div>
 
-            <div className="sticky bottom-0 z-20 bg-zinc-900/80 backdrop-blur-md p-6 border-t border-zinc-800/50 shrink-0 pb-[max(env(safe-area-inset-bottom),1.5rem)]">
+            <div className={`sticky bottom-0 z-20 bg-zinc-900/80 backdrop-blur-md p-6 border-t border-zinc-800/50 shrink-0 pb-[max(env(safe-area-inset-bottom),1.5rem)] ${isKeyboardVisible ? 'hidden' : 'block'}`}>
               <button 
                 onClick={handleTopUp}
                 disabled={topUpLoading || !topUpAmount || Number(topUpAmount) <= 0}

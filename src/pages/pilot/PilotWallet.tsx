@@ -15,6 +15,7 @@ import {
 import { BynIcon } from '../../components/BynIcon';
 import { useFirebase } from '../../components/FirebaseProvider';
 import { db, handleFirestoreError, OperationType, collection, query, where, orderBy, onSnapshot, addDoc, limit } from '../../firebase';
+import { useKeyboard } from '../../hooks/useKeyboard';
 import { 
   BarChart, 
   Bar, 
@@ -49,6 +50,7 @@ interface PayoutRequest {
 export default function PilotWallet() {
   const navigate = useNavigate();
   const { user } = useFirebase();
+  const isKeyboardVisible = useKeyboard();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [payouts, setPayouts] = useState<PayoutRequest[]>([]);
   const [loading, setLoading] = useState(true);
@@ -331,7 +333,7 @@ export default function PilotWallet() {
                 </div>
               </div>
 
-              <div className="sticky bottom-0 z-20 bg-zinc-900/80 backdrop-blur-md p-6 border-t border-zinc-800/50 shrink-0 pb-[max(env(safe-area-inset-bottom),1.5rem)]">
+              <div className={`sticky bottom-0 z-20 bg-zinc-900/80 backdrop-blur-md p-6 border-t border-zinc-800/50 shrink-0 pb-[max(env(safe-area-inset-bottom),1.5rem)] ${isKeyboardVisible ? 'hidden' : 'block'}`}>
                 <button 
                   type="submit"
                   className="w-full py-4 bg-amber-500 text-black rounded-2xl font-bold uppercase tracking-widest text-xs shadow-lg shadow-amber-500/20 active:scale-[0.98] transition-transform"

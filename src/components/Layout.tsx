@@ -3,49 +3,11 @@ import { Outlet, NavLink } from 'react-router-dom';
 import { Home, Car, Shield, PlusCircle, Wallet } from 'lucide-react';
 import { useFirebase } from './FirebaseProvider';
 import Header from './Header';
+import { useKeyboard } from '../hooks/useKeyboard';
 
 export default function Layout() {
   const { user } = useFirebase();
-  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
-
-  useEffect(() => {
-    const handleViewportChange = () => {
-      const viewport = window.visualViewport;
-      if (!viewport) return;
-      
-      // If the viewport height is significantly smaller than the window height, 
-      // it's likely the keyboard is visible.
-      const isKeyboardOpen = viewport.height < window.innerHeight * 0.85;
-      setIsKeyboardVisible(isKeyboardOpen);
-    };
-
-    const handleFocus = (e: FocusEvent) => {
-      const target = e.target as HTMLElement;
-      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
-        setIsKeyboardVisible(true);
-      }
-    };
-
-    const handleBlur = () => {
-      // Small delay to check if focus moved to another input
-      setTimeout(() => {
-        if (document.activeElement?.tagName !== 'INPUT' && 
-            document.activeElement?.tagName !== 'TEXTAREA') {
-          setIsKeyboardVisible(false);
-        }
-      }, 100);
-    };
-
-    window.visualViewport?.addEventListener('resize', handleViewportChange);
-    window.addEventListener('focusin', handleFocus);
-    window.addEventListener('focusout', handleBlur);
-
-    return () => {
-      window.visualViewport?.removeEventListener('resize', handleViewportChange);
-      window.removeEventListener('focusin', handleFocus);
-      window.removeEventListener('focusout', handleBlur);
-    };
-  }, []);
+  const isKeyboardVisible = useKeyboard();
 
   return (
     <div className="min-h-[100dvh] bg-black text-white pb-28 font-sans selection:bg-zinc-800 relative flex flex-col w-full max-w-full ">

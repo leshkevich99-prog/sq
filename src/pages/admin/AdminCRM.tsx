@@ -3,6 +3,7 @@ import { Search, Car, CreditCard, ShieldAlert, X, DollarSign, Edit2, LayoutGrid,
 import { BynIcon } from '../../components/BynIcon';
 import { db, handleFirestoreError, OperationType, collection, onSnapshot, addDoc, doc, updateDoc, deleteField } from '../../firebase';
 import toast from 'react-hot-toast';
+import { useKeyboard } from '../../hooks/useKeyboard';
 
 interface UserData {
   id: string;
@@ -94,43 +95,7 @@ export default function AdminCRM() {
   const [viewMode, setViewMode] = useState<'list' | 'kanban'>('kanban');
   const [selectedRole, setSelectedRole] = useState<'all' | 'admin' | 'pilot' | 'client'>('all');
   const [selectedTariff, setSelectedTariff] = useState('all');
-  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
-
-  useEffect(() => {
-    const handleViewportChange = () => {
-      const viewport = window.visualViewport;
-      if (!viewport) return;
-      
-      const isKeyboardOpen = viewport.height < window.innerHeight * 0.85;
-      setIsKeyboardVisible(isKeyboardOpen);
-    };
-
-    const handleFocus = (e: FocusEvent) => {
-      const target = e.target as HTMLElement;
-      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
-        setIsKeyboardVisible(true);
-      }
-    };
-
-    const handleBlur = () => {
-      setTimeout(() => {
-        if (document.activeElement?.tagName !== 'INPUT' && 
-            document.activeElement?.tagName !== 'TEXTAREA') {
-          setIsKeyboardVisible(false);
-        }
-      }, 100);
-    };
-
-    window.visualViewport?.addEventListener('resize', handleViewportChange);
-    window.addEventListener('focusin', handleFocus);
-    window.addEventListener('focusout', handleBlur);
-
-    return () => {
-      window.visualViewport?.removeEventListener('resize', handleViewportChange);
-      window.removeEventListener('focusin', handleFocus);
-      window.removeEventListener('focusout', handleBlur);
-    };
-  }, []);
+  const isKeyboardVisible = useKeyboard();
 
   const fetchData = React.useCallback(async () => {
     try {

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { db, handleFirestoreError, OperationType, createNotification, collection, onSnapshot, doc, updateDoc, query, where, getDoc, orderBy, limit } from '../../firebase';
 import { Link } from 'react-router-dom';
 import { BynIcon } from '../../components/BynIcon';
+import { useKeyboard } from '../../hooks/useKeyboard';
 import { 
   X, 
   ChevronRight, 
@@ -77,6 +78,7 @@ const SERVICE_LABELS: Record<string, string> = {
 };
 
 export default function AdminDashboard() {
+  const isKeyboardVisible = useKeyboard();
   const [requests, setRequests] = useState<RequestData[]>([]);
   const [users, setUsers] = useState<Record<string, UserData>>({});
   const [cars, setCars] = useState<Record<string, CarData>>({});
@@ -652,7 +654,7 @@ export default function AdminDashboard() {
                 </>
               )}
             </div>
-            <div className="sticky bottom-0 z-20 bg-zinc-900/80 backdrop-blur-md p-4 border-t border-zinc-800/50 shrink-0 pb-[max(env(safe-area-inset-bottom),1rem)]" />
+            <div className={`sticky bottom-0 z-20 bg-zinc-900/80 backdrop-blur-md p-4 border-t border-zinc-800/50 shrink-0 pb-[max(env(safe-area-inset-bottom),1rem)] ${isKeyboardVisible ? 'hidden' : 'block'}`} />
           </div>
         </div>
       )}

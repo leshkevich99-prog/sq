@@ -15,11 +15,12 @@ import {
 } from 'lucide-react';
 import { useFirebase } from '../../components/FirebaseProvider';
 import DebugSwitcher from '../../components/DebugSwitcher';
+import { useKeyboard } from '../../hooks/useKeyboard';
 
 export default function AdminLayout() {
   const { user, logout } = useFirebase();
   const navigate = useNavigate();
-  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+  const isKeyboardVisible = useKeyboard();
   const [tapCount, setTapCount] = useState(0);
   const [showDebug, setShowDebug] = useState(false);
 
@@ -31,42 +32,6 @@ export default function AdminLayout() {
       setTapCount(0);
     }
   };
-
-  useEffect(() => {
-    const handleViewportChange = () => {
-      const viewport = window.visualViewport;
-      if (!viewport) return;
-      
-      const isKeyboardOpen = viewport.height < window.innerHeight * 0.85;
-      setIsKeyboardVisible(isKeyboardOpen);
-    };
-
-    const handleFocus = (e: FocusEvent) => {
-      const target = e.target as HTMLElement;
-      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
-        setIsKeyboardVisible(true);
-      }
-    };
-
-    const handleBlur = () => {
-      setTimeout(() => {
-        if (document.activeElement?.tagName !== 'INPUT' && 
-            document.activeElement?.tagName !== 'TEXTAREA') {
-          setIsKeyboardVisible(false);
-        }
-      }, 100);
-    };
-
-    window.visualViewport?.addEventListener('resize', handleViewportChange);
-    window.addEventListener('focusin', handleFocus);
-    window.addEventListener('focusout', handleBlur);
-
-    return () => {
-      window.visualViewport?.removeEventListener('resize', handleViewportChange);
-      window.removeEventListener('focusin', handleFocus);
-      window.removeEventListener('focusout', handleBlur);
-    };
-  }, []);
 
   const handleLogout = async () => {
     await logout();

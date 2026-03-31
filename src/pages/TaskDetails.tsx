@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import WebApp from '@twa-dev/sdk';
 import { db, storage, auth, handleFirestoreError, OperationType, createNotification, doc, onSnapshot, updateDoc, getDoc, arrayUnion, query, collection, where, getDocs, addDoc, ref, uploadBytesResumable, uploadBytes, uploadString, getDownloadURL } from '../firebase';
 import { useFirebase } from '../components/FirebaseProvider';
+import { useKeyboard } from '../hooks/useKeyboard';
 import imageCompression from 'browser-image-compression';
 import toast from 'react-hot-toast';
 import { BynIcon } from '../components/BynIcon';
@@ -79,6 +80,7 @@ export default function TaskDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useFirebase();
+  const isKeyboardVisible = useKeyboard();
   const getSafeUrl = (url: string) => url.replace(/[.#$[\]/]/g, '_');
   const [request, setRequest] = useState<RequestData | null>(null);
   const [client, setClient] = useState<UserData | null>(null);
@@ -1140,7 +1142,7 @@ export default function TaskDetails() {
                 </div>
               </div>
 
-              <div className="sticky bottom-0 z-20 bg-zinc-900/80 backdrop-blur-md p-6 border-t border-zinc-800/50 shrink-0 pb-[max(env(safe-area-inset-bottom),1.5rem)]">
+              <div className={`sticky bottom-0 z-20 bg-zinc-900/80 backdrop-blur-md p-6 border-t border-zinc-800/50 shrink-0 pb-[max(env(safe-area-inset-bottom),1.5rem)] ${isKeyboardVisible ? 'hidden' : 'block'}`}>
                 <button 
                   onClick={handleAddExpense}
                   disabled={expenseUploading}

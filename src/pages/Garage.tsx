@@ -4,6 +4,7 @@ import { useFirebase } from '../components/FirebaseProvider';
 import { db, handleFirestoreError, OperationType, collection, query, where, onSnapshot, addDoc, updateDoc, deleteDoc, doc, orderBy, storage, ref, uploadBytes, getDownloadURL } from '../firebase';
 import imageCompression from 'browser-image-compression';
 import toast from 'react-hot-toast';
+import { useKeyboard } from '../hooks/useKeyboard';
 
 interface Car {
   id: string;
@@ -49,6 +50,7 @@ const getDateStatus = (dateStr?: string) => {
 
 export default function Garage() {
   const { user } = useFirebase();
+  const isKeyboardVisible = useKeyboard();
   const [cars, setCars] = useState<Car[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -179,6 +181,7 @@ export default function Garage() {
 }
 
 function AddCarModal({ onClose, userId }: { onClose: () => void, userId?: string }) {
+  const isKeyboardVisible = useKeyboard();
   const [make, setMake] = useState('');
   const [model, setModel] = useState('');
   const [year, setYear] = useState('');
@@ -344,7 +347,7 @@ function AddCarModal({ onClose, userId }: { onClose: () => void, userId?: string
             </div>
           </div>
           
-          <div className="sticky bottom-0 z-20 bg-zinc-900/80 backdrop-blur-md p-4 border-t border-zinc-800/50 shrink-0 pb-[max(env(safe-area-inset-bottom),1rem)]">
+          <div className={`sticky bottom-0 z-20 bg-zinc-900/80 backdrop-blur-md p-4 border-t border-zinc-800/50 shrink-0 pb-[max(env(safe-area-inset-bottom),1rem)] ${isKeyboardVisible ? 'hidden' : 'block'}`}>
             <button disabled={submitting} type="submit" className="w-full bg-accent text-white rounded-xl py-4 text-sm font-bold uppercase tracking-widest disabled:opacity-50">
               {submitting ? 'Сохранение...' : 'Отправить на модерацию'}
             </button>
@@ -357,6 +360,7 @@ function AddCarModal({ onClose, userId }: { onClose: () => void, userId?: string
 
 function CarDetailsModal({ car, onClose }: { car: Car, onClose: () => void }) {
   const { user } = useFirebase();
+  const isKeyboardVisible = useKeyboard();
   const [maintenanceSchedule, setMaintenanceSchedule] = useState(car.maintenanceSchedule || '');
   const [inspectionDate, setInspectionDate] = useState(car.inspectionDate || '');
   const [insuranceDate, setInsuranceDate] = useState(car.insuranceDate || '');
@@ -683,7 +687,7 @@ function CarDetailsModal({ car, onClose }: { car: Car, onClose: () => void }) {
           </div>
         </div>
         
-        <div className="sticky bottom-0 z-20 bg-zinc-900/80 backdrop-blur-md p-4 border-t border-zinc-800/50 shrink-0 pb-[max(env(safe-area-inset-bottom),1rem)] flex gap-2">
+        <div className={`sticky bottom-0 z-20 bg-zinc-900/80 backdrop-blur-md p-4 border-t border-zinc-800/50 shrink-0 pb-[max(env(safe-area-inset-bottom),1rem)] flex gap-2 ${isKeyboardVisible ? 'hidden' : 'flex'}`}>
           <button onClick={handleDelete} className="p-4 bg-red-500/10 text-red-500 rounded-xl hover:bg-red-500/20 transition-colors shrink-0">
             <Trash2 size={20} />
           </button>

@@ -14,6 +14,7 @@ import {
 import { db, handleFirestoreError, OperationType, collection, onSnapshot, query, where, updateDoc, doc, deleteDoc, getDoc } from '../../firebase';
 import WebApp from '@twa-dev/sdk';
 import toast from 'react-hot-toast';
+import { useKeyboard } from '../../hooks/useKeyboard';
 
 interface CarData {
   id: string;
@@ -41,6 +42,7 @@ interface UserData {
 }
 
 export default function AdminModeration() {
+  const isKeyboardVisible = useKeyboard();
   const [cars, setCars] = useState<CarData[]>([]);
   const [unverifiedPilots, setUnverifiedPilots] = useState<UserData[]>([]);
   const [users, setUsers] = useState<Record<string, UserData>>({});
@@ -389,7 +391,7 @@ export default function AdminModeration() {
               )}
             </div>
 
-            <div className="sticky bottom-0 z-20 bg-zinc-900/80 backdrop-blur-md p-6 border-t border-zinc-800/50 shrink-0 pb-[max(env(safe-area-inset-bottom),1.5rem)]">
+            <div className={`sticky bottom-0 z-20 bg-zinc-900/80 backdrop-blur-md p-6 border-t border-zinc-800/50 shrink-0 pb-[max(env(safe-area-inset-bottom),1.5rem)] ${isKeyboardVisible ? 'hidden' : 'block'}`}>
               <div className="grid grid-cols-1 gap-3">
                 <button 
                   onClick={() => handleApprove(selectedCar.id, selectedCar)}
