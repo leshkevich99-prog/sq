@@ -24,7 +24,7 @@ interface RequestData {
   userId: string;
   carId: string;
   serviceType: string;
-  status: string;
+  status: 'pending' | 'accepted' | 'driving' | 'in_progress' | 'review' | 'completed' | 'cancelled';
   pilotId?: string;
   createdAt: string;
   pickupAddress?: string;
@@ -78,7 +78,7 @@ export default function PilotDashboard() {
     const qActive = query(
       collection(db, 'requests'), 
       where('pilotId', '==', user.uid), 
-      where('status', 'in', ['accepted', 'in_progress', 'review'])
+      where('status', 'in', ['accepted', 'driving', 'in_progress', 'review'])
     );
     
     const unsubActive = onSnapshot(qActive, (snapshot) => {
@@ -262,10 +262,11 @@ export default function PilotDashboard() {
                   <div className="flex justify-between items-start mb-4">
                     <span className={`text-[10px] font-bold px-2 py-1 rounded uppercase tracking-widest ${
                       isAccepted ? 'bg-amber-500/20 text-amber-500' : 
-                      isReview ? 'bg-blue-500/20 text-blue-500' : 
+                      req.status === 'driving' ? 'bg-blue-500/20 text-blue-500' :
+                      isReview ? 'bg-purple-500/20 text-purple-500' : 
                       'bg-emerald-500/20 text-emerald-500'
                     }`}>
-                      {isAccepted ? 'Назначен' : isReview ? 'На проверке' : 'В работе'}
+                      {isAccepted ? 'Назначен' : req.status === 'driving' ? 'В пути' : isReview ? 'На проверке' : 'В работе'}
                     </span>
                     <span className="text-[10px] text-zinc-500 font-mono">{new Date(req.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                   </div>
@@ -311,7 +312,22 @@ export default function PilotDashboard() {
                         onClick={() => navigate(`/task/${req.id}`)}
                         className="flex-1 py-3 bg-amber-500 text-black text-xs font-bold uppercase tracking-widest rounded-xl active:scale-[0.98] transition-transform"
                       >
-                        Начать выполнение
+                        Выехать к авто
+                      </button>
+                      <button 
+                        onClick={() => navigate(`/task/${req.id}/chat`)}
+                        className="w-12 h-12 bg-zinc-800 border border-zinc-700 rounded-xl flex items-center justify-center text-zinc-400 active:scale-[0.98] transition-all"
+                      >
+                        <MessageSquare size={18} />
+                      </button>
+                    </div>
+                  ) : req.status === 'driving' ? (
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={() => navigate(`/task/${req.id}`)}
+                        className="flex-1 py-3 bg-white text-black text-xs font-bold uppercase tracking-widest rounded-xl active:scale-[0.98] transition-transform"
+                      >
+                        Принять авто (на месте)
                       </button>
                       <button 
                         onClick={() => navigate(`/task/${req.id}/chat`)}

@@ -31,7 +31,7 @@ interface RequestData {
   userId: string;
   carId: string;
   serviceType: string;
-  status: 'pending' | 'accepted' | 'in_progress' | 'review' | 'completed' | 'cancelled';
+  status: 'pending' | 'accepted' | 'driving' | 'in_progress' | 'review' | 'completed' | 'cancelled';
   pilotId?: string;
   createdAt: string;
   pickupAddress?: string;
@@ -197,6 +197,7 @@ export default function TaskDetails() {
       // Notify client
       const statusLabels: Record<string, string> = {
         'accepted': 'принята пилотом',
+        'driving': 'пилот выехал к автомобилю',
         'in_progress': 'взята в работу',
         'review': 'ожидает проверки администратором',
         'completed': 'успешно завершена',
@@ -208,7 +209,9 @@ export default function TaskDetails() {
         const serviceName = SERVICE_LABELS[request.serviceType] || request.serviceType;
         let body = `Ваше поручение на услугу "${serviceName}" ${statusLabels[newStatus]}.`;
         
-        if (newStatus === 'in_progress') {
+        if (newStatus === 'driving') {
+          body = `Пилот назначен и выехал к вашему автомобилю.`;
+        } else if (newStatus === 'in_progress') {
           body = `Ваш автомобиль принят в работу. Фото-протокол приемки доступен для просмотра в деталях поручения.`;
         } else if (newStatus === 'completed') {
           body = `Работа завершена! Фото-отчет и детали доступны в приложении. Спасибо, что выбрали нас!`;
@@ -531,8 +534,9 @@ export default function TaskDetails() {
   if (!request) return <div className="p-6 text-center text-zinc-500">Задача не найдена</div>;
 
   const steps = [
-    { id: 'pending', label: 'Поручение создано', icon: Circle },
-    { id: 'accepted', label: 'Пилот назначен', icon: Circle },
+    { id: 'pending', label: 'Заявка', icon: Circle },
+    { id: 'accepted', label: 'Назначен', icon: Circle },
+    { id: 'driving', label: 'В пути', icon: Clock },
     { id: 'in_progress', label: 'В работе', icon: Clock },
     { id: 'review', label: 'Проверка', icon: Clock },
     { id: 'completed', label: 'Завершено', icon: CheckCircle2 },
@@ -552,7 +556,7 @@ export default function TaskDetails() {
           </div>
           
           {(user?.role === 'client' || user?.role === 'pilot' || user?.role === 'admin') && 
-           (request.status === 'accepted' || request.status === 'in_progress' || request.status === 'review') && (
+           (request.status === 'accepted' || request.status === 'driving' || request.status === 'in_progress' || request.status === 'review') && (
             <button 
               onClick={() => navigate(`/task/${id}/chat`)}
               className="p-2.5 bg-accent/10 text-accent rounded-full border border-accent/20 active:scale-90 transition-transform relative"
@@ -732,7 +736,7 @@ export default function TaskDetails() {
               </div>
               
               {(!request.photosBefore || request.photosBefore.length === 0) ? (
-                user?.role === 'pilot' && (request.status === 'accepted' || request.status === 'in_progress') ? (
+                user?.role === 'pilot' && (request.status === 'accepted' || request.status === 'driving' || request.status === 'in_progress') ? (
                   <button 
                     onClick={() => {
                       setUploadType('before');
@@ -771,7 +775,7 @@ export default function TaskDetails() {
                           Повреждение
                         </div>
                       )}
-                      {user?.role === 'pilot' && (request.status === 'accepted' || request.status === 'in_progress') && (
+                      {user?.role === 'pilot' && (request.status === 'accepted' || request.status === 'driving' || request.status === 'in_progress') && (
                         <button 
                           onClick={(e) => {
                             e.stopPropagation();
@@ -787,7 +791,7 @@ export default function TaskDetails() {
                       </div>
                     </div>
                   ))}
-                  {user?.role === 'pilot' && (request.status === 'accepted' || request.status === 'in_progress') && (request.photosBefore?.length || 0) < 10 && (
+                  {user?.role === 'pilot' && (request.status === 'accepted' || request.status === 'driving' || request.status === 'in_progress') && (request.photosBefore?.length || 0) < 10 && (
                     <button 
                       onClick={() => {
                         setUploadType('before');
@@ -904,7 +908,7 @@ export default function TaskDetails() {
             onClick={() => setSelectedPhoto(null)}
           >
             <div className="flex justify-end p-4 gap-2">
-              {user?.role === 'pilot' && (request.status === 'accepted' || request.status === 'in_progress') && (request.photosBefore?.includes(selectedPhoto) || request.photosAfter?.includes(selectedPhoto)) && (
+              {user?.role === 'pilot' && (request.status === 'accepted' || request.status === 'driving' || request.status === 'in_progress') && (request.photosBefore?.includes(selectedPhoto) || request.photosAfter?.includes(selectedPhoto)) && (
                 <button 
                   onClick={(e) => {
                     e.stopPropagation();
@@ -965,10 +969,40 @@ export default function TaskDetails() {
             {request.status === 'accepted' && (
               <>
                 <button 
+                  onClick={() => updateStatus('driving')}
+                  className="w-full py-4 bg-amber-500 text-black rounded-xl font-bold uppercase tracking-widest text-sm shadow-lg shadow-amber-500/20"
+                >
+                  Выехать к авто
+                </button>
+                <button 
+                  onClick={() => navigate(`/task/${id}/chat`)}
+                  className="w-full flex items-center justify-center gap-2 py-4 bg-zinc-900 border border-zinc-800 rounded-xl font-bold uppercase tracking-widest text-xs"
+                >
+                  <MessageSquare size={16} /> Чат с клиентом
+                </button>
+              </>
+            )}
+
+            {request.status === 'driving' && (
+              <>
+                <button 
                   onClick={() => updateStatus('in_progress')}
                   className="w-full py-4 bg-white text-black rounded-xl font-bold uppercase tracking-widest text-sm shadow-lg shadow-white/10"
                 >
-                  Начать выполнение
+                  Принять авто
+                </button>
+                <button 
+                  onClick={async () => {
+                    const confirmMsg = 'Вернуться на этап "Пилот назначен"?';
+                    const proceed = await new Promise<boolean>(r => {
+                      try { WebApp.showConfirm(confirmMsg, (ok) => r(ok)); }
+                      catch(e) { r(window.confirm(confirmMsg)); }
+                    });
+                    if (proceed) updateStatus('accepted');
+                  }}
+                  className="w-full py-3 bg-zinc-900 text-zinc-500 border border-zinc-800 rounded-xl font-bold uppercase tracking-widest text-[10px]"
+                >
+                  Вернуться на этап назначения
                 </button>
                 <button 
                   onClick={() => navigate(`/task/${id}/chat`)}

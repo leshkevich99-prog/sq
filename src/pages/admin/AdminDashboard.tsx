@@ -684,6 +684,7 @@ function StatusBadge({ status }: { status: string }) {
   const styles: Record<string, string> = {
     'pending': 'bg-zinc-800 text-zinc-400',
     'accepted': 'bg-blue-500/10 text-blue-500',
+    'driving': 'bg-cyan-500/10 text-cyan-500',
     'in_progress': 'bg-amber-500/10 text-amber-500',
     'review': 'bg-purple-500/10 text-purple-500',
     'completed': 'bg-emerald-500/10 text-emerald-500',
@@ -693,6 +694,7 @@ function StatusBadge({ status }: { status: string }) {
   const labels: Record<string, string> = {
     'pending': 'Новый',
     'accepted': 'Принят',
+    'driving': 'В пути',
     'in_progress': 'В работе',
     'review': 'Проверка',
     'completed': 'Завершен',

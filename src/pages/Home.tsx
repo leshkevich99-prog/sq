@@ -8,7 +8,7 @@ import { TARIFFS, TariffType } from '../config/tariffs';
 interface ServiceRequest {
   id: string;
   serviceType: string;
-  status: 'pending' | 'accepted' | 'in_progress' | 'review' | 'completed' | 'cancelled';
+  status: 'pending' | 'accepted' | 'driving' | 'in_progress' | 'review' | 'completed' | 'cancelled';
   carId: string;
   createdAt: string;
   pilotId?: string;
@@ -218,6 +218,7 @@ export default function Home() {
               <span className="text-xs text-zinc-500">
                 {activeRequest.status === 'pending' ? 'Ожидание пилота' : 
                  activeRequest.status === 'accepted' ? 'Пилот назначен' :
+                 activeRequest.status === 'driving' ? 'Пилот в пути' :
                  activeRequest.status === 'in_progress' ? 'В процессе' :
                  activeRequest.status === 'review' ? '⏳ Ждёт одобрения' : 'Завершено'}
               </span>
@@ -242,21 +243,23 @@ export default function Home() {
                 }`}
                 style={{ 
                   width: activeRequest.status === 'pending' ? '5%' : 
-                         activeRequest.status === 'accepted' ? '33%' : 
-                         activeRequest.status === 'in_progress' ? '66%' :
+                         activeRequest.status === 'accepted' ? '25%' : 
+                         activeRequest.status === 'driving' ? '50%' : 
+                         activeRequest.status === 'in_progress' ? '75%' :
                          activeRequest.status === 'review' ? '90%' : '100%' 
                 }}
               ></div>
               
               <div className="relative flex justify-between">
-                <StatusStep label="Принято" active={true} color={activeRequest.status === 'review' ? 'purple' : 'amber'} />
-                <StatusStep label="В работе" active={activeRequest.status === 'accepted' || activeRequest.status === 'in_progress' || activeRequest.status === 'review'} color={activeRequest.status === 'review' ? 'purple' : 'amber'} />
+                <StatusStep label="Назначен" active={activeRequest.status !== 'pending'} color={activeRequest.status === 'review' ? 'purple' : 'amber'} />
+                <StatusStep label="В пути" active={activeRequest.status === 'driving' || activeRequest.status === 'in_progress' || activeRequest.status === 'review'} color={activeRequest.status === 'review' ? 'purple' : 'amber'} />
+                <StatusStep label="В работе" active={activeRequest.status === 'in_progress' || activeRequest.status === 'review'} color={activeRequest.status === 'review' ? 'purple' : 'amber'} />
                 <StatusStep label="Проверка" active={activeRequest.status === 'review'} color="purple" />
               </div>
             </div>
 
             {/* Pilot Info */}
-            {(activeRequest.status === 'accepted' || activeRequest.status === 'in_progress' || activeRequest.status === 'review') && (
+            {(activeRequest.status === 'accepted' || activeRequest.status === 'driving' || activeRequest.status === 'in_progress' || activeRequest.status === 'review') && (
               <div className="mt-6 pt-4 border-t border-zinc-800 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center border border-zinc-700 overflow-hidden">
@@ -347,12 +350,14 @@ export default function Home() {
                     <div className="inline-block px-2 py-1 bg-emerald-500/20 text-emerald-500 text-[10px] rounded-md mb-3 uppercase tracking-wider font-bold">
                       {activeRequest?.status === 'pending' ? 'Заявка принята' : 
                        activeRequest?.status === 'accepted' ? 'Пилот назначен' :
-                       activeRequest?.status === 'in_progress' ? 'Пилот в пути' : 'Вы записаны'}
+                       activeRequest?.status === 'driving' ? 'Пилот в пути' :
+                       activeRequest?.status === 'in_progress' ? 'Пилот на месте' : 'Вы записаны'}
                     </div>
                     <h2 className="text-2xl font-bold mb-1 uppercase tracking-tighter">TEST DRIVE</h2>
                     <p className="text-zinc-400 text-sm mb-4">
                       {activeRequest?.status === 'pending' ? 'Ожидайте звонка для подтверждения деталей' : 
                        activeRequest?.status === 'accepted' ? 'Ваш пилот скоро свяжется с вами' :
+                       activeRequest?.status === 'driving' ? 'Пилот уже в пути к вам' :
                        activeRequest?.status === 'in_progress' ? 'Тест-драйв уже начался!' : 
                        'Ожидайте подтверждения или звонка пилота'}
                     </p>
