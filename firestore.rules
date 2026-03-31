@@ -146,9 +146,11 @@ service cloud.firestore {
     }
 
     function isValidMessage(data) {
-      return hasOnlyAllowedFields(['requestId', 'senderId', 'text', 'createdAt', 'updatedAt']) &&
+      return hasOnlyAllowedFields(['requestId', 'senderId', 'senderName', 'text', 'type', 'createdAt', 'updatedAt']) &&
              data.requestId is string &&
              data.senderId is string &&
+             (!('senderName' in data) || data.senderName is string) &&
+             (!('type' in data) || data.type in ['public', 'internal']) &&
              data.text is string && data.text.size() > 0 && data.text.size() < 2000 &&
              data.createdAt is string;
     }
