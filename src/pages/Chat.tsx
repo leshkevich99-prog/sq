@@ -19,6 +19,7 @@ interface RequestData {
   userId: string;
   pilotId?: string;
   serviceType: string;
+  status: 'pending' | 'accepted' | 'driving' | 'in_progress' | 'review' | 'completed' | 'cancelled';
 }
 
 export default function Chat() {
@@ -133,7 +134,7 @@ export default function Chat() {
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 telegramId: recipientData.telegramId,
-                message: `💬 ${notificationTitle}\n\n${notificationBody}\n\n🔗 Открыть чат: https://t.me/squadra_concierge_bot/app?startapp=task_chat_${id}`
+                message: `💬 ${notificationTitle}\n\n${notificationBody}\n\n🔗 Открыть чат: https://t.me/squadraby_bot/app?startapp=task_chat_${id}`
               })
             });
           } catch (e) {}
@@ -278,37 +279,51 @@ export default function Chat() {
 
       {/* Input Area */}
       <div className="fixed bottom-0 left-0 right-0 bg-zinc-950 border-t border-zinc-900 p-4 pb-safe">
-        {user?.role === 'pilot' && (
-          <div className="flex gap-2 overflow-x-auto pb-3 mb-1 no-scrollbar">
-            {quickResponses.map((text) => (
-              <button
-                key={text}
-                onClick={() => sendQuickResponse(text)}
-                className="whitespace-nowrap px-3 py-1.5 bg-zinc-900 border border-zinc-800 rounded-full text-[10px] font-bold uppercase tracking-widest text-zinc-400 active:bg-amber-500 active:text-black transition-colors"
+        {request?.status !== 'completed' && request?.status !== 'cancelled' ? (
+          <>
+            {user?.role === 'pilot' && (
+              <div className="flex gap-2 overflow-x-auto pb-3 mb-1 no-scrollbar">
+                {quickResponses.map((text) => (
+                  <button
+                    key={text}
+                    onClick={() => sendQuickResponse(text)}
+                    className="whitespace-nowrap px-3 py-1.5 bg-zinc-900 border border-zinc-800 rounded-full text-[10px] font-bold uppercase tracking-widest text-zinc-400 active:bg-amber-500 active:text-black transition-colors"
+                  >
+                    {text}
+                  </button>
+                ))}
+              </div>
+            )}
+            <form onSubmit={handleSendMessage} className="flex items-center gap-2">
+              <input
+                type="text"
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                placeholder={
+                  activeTab === 'internal' 
+                    ? "Внутреннее сообщение..." 
+                    : (user?.role === 'client' ? "Сообщение пилоту..." : "Сообщение в чат...")
+                }
+                className={`flex-1 bg-zinc-900 border border-zinc-800 rounded-full px-4 py-3 text-sm focus:outline-none ${
+                  activeTab === 'internal' ? 'focus:border-purple-500' : 'focus:border-amber-500'
+                } transition-colors`}
+              />
+              <button 
+                type="submit"
+                disabled={!newMessage.trim()}
+                className={`w-12 h-12 ${activeTab === 'internal' ? 'bg-purple-600' : 'bg-amber-500'} text-black rounded-full flex items-center justify-center disabled:opacity-50 disabled:bg-zinc-800 disabled:text-zinc-500 transition-colors`}
               >
-                {text}
+                <Send size={20} className="ml-1" />
               </button>
-            ))}
+            </form>
+          </>
+        ) : (
+          <div className="py-2 text-center">
+            <span className="text-[10px] uppercase tracking-widest text-zinc-600 font-bold">
+              Это архивное поручение. Чат доступен только для чтения.
+            </span>
           </div>
         )}
-        <form onSubmit={handleSendMessage} className="flex items-center gap-2">
-          <input
-            type="text"
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            placeholder={activeTab === 'internal' ? "Внутреннее сообщение..." : "Сообщение клиенту..."}
-            className={`flex-1 bg-zinc-900 border border-zinc-800 rounded-full px-4 py-3 text-sm focus:outline-none ${
-              activeTab === 'internal' ? 'focus:border-purple-500' : 'focus:border-amber-500'
-            } transition-colors`}
-          />
-          <button 
-            type="submit"
-            disabled={!newMessage.trim()}
-            className={`w-12 h-12 ${activeTab === 'internal' ? 'bg-purple-600' : 'bg-amber-500'} text-black rounded-full flex items-center justify-center disabled:opacity-50 disabled:bg-zinc-800 disabled:text-zinc-500 transition-colors`}
-          >
-            <Send size={20} className="ml-1" />
-          </button>
-        </form>
       </div>
     </div>
   );

@@ -556,13 +556,12 @@ export default function TaskDetails() {
           </div>
           
           {(user?.role === 'client' || user?.role === 'pilot' || user?.role === 'admin') && 
-           (request.status === 'accepted' || request.status === 'driving' || request.status === 'in_progress' || request.status === 'review') && (
+           (request.status !== 'pending') && (
             <button 
               onClick={() => navigate(`/task/${id}/chat`)}
               className="p-2.5 bg-accent/10 text-accent rounded-full border border-accent/20 active:scale-90 transition-transform relative"
             >
               <MessageSquare size={20} />
-              <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-black animate-pulse" />
             </button>
           )}
         </div>

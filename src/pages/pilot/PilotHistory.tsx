@@ -10,6 +10,7 @@ import {
   MapPin,
   CheckCircle2,
   Clock,
+  MessageSquare,
   X
 } from 'lucide-react';
 import { useFirebase } from '../../components/FirebaseProvider';
@@ -180,11 +181,23 @@ export default function PilotHistory() {
                   </div>
 
                   <div className="flex items-center justify-between pt-4 border-t border-zinc-800">
-                    <div className="flex items-center gap-2 text-zinc-500">
-                      <Clock size={14} />
-                      <span className="text-[10px] uppercase font-bold tracking-widest">
-                        {new Date(req.createdAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' })}
-                      </span>
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2 text-zinc-500">
+                        <Clock size={14} />
+                        <span className="text-[10px] uppercase font-bold tracking-widest">
+                          {new Date(req.createdAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        </span>
+                      </div>
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/task/${req.id}/chat`);
+                        }}
+                        className="p-2 bg-zinc-800 text-zinc-400 rounded-lg border border-zinc-700 active:scale-90 transition-transform flex items-center gap-1.5"
+                      >
+                        <MessageSquare size={14} />
+                        <span className="text-[10px] font-bold uppercase">Чат</span>
+                      </button>
                     </div>
                     <ChevronRight size={16} className="text-zinc-700" />
                   </div>
