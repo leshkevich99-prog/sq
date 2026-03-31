@@ -445,13 +445,13 @@ async function startServer() {
   // Send direct Telegram notification
   app.post('/api/notifications/send', authenticateToken, async (req, res) => {
     try {
-      const { telegramId, message } = req.body;
+      const { telegramId, message, options } = req.body;
       if (!telegramId || !message) {
         return res.status(400).json({ error: 'Missing telegramId or message' });
       }
       
       console.log(`[NOTIFY] Sending Telegram message to ${telegramId}`);
-      const success = await sendNotification(telegramId.toString(), message);
+      const success = await sendNotification(telegramId.toString(), message, options || {});
       
       if (success) {
         res.json({ success: true });

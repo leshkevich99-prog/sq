@@ -215,7 +215,7 @@ service cloud.firestore {
     // ===============================================================
 
     match /users/{userId} {
-      allow read: if isOwner(userId) || isAdmin() || isPilot() || (isAuthenticated() && request.auth.token.email == "leshkevich.99@gmail.com");
+      allow read: if isAuthenticated();
       // Allow user to create their own profile. Only admins can create admin/pilot profiles, unless the user is ttaammmo.
       allow create: if isAuthenticated() && isOwner(userId) && isValidUser(request.resource.data) && (
         request.resource.data.role == 'client' || 

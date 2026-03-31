@@ -406,15 +406,18 @@ export async function createInvoiceLink(title: string, description: string, payl
   }
 }
 
-// Helper to send notifications to users
-export async function sendNotification(telegramId: number | string, message: string) {
+// Helper to send notifications to users with HTML support and optional markup
+export async function sendNotification(telegramId: number | string, message: string, options: any = {}) {
   if (!bot) {
     console.warn('Cannot send notification: Bot is not initialized');
     return false;
   }
   
   try {
-    await bot.sendMessage(telegramId, message);
+    await bot.sendMessage(telegramId, message, {
+      parse_mode: 'HTML',
+      ...options
+    });
     return true;
   } catch (error) {
     console.error(`Failed to send notification to ${telegramId}:`, error);

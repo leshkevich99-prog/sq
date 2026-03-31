@@ -104,7 +104,12 @@ export default function Home() {
         getDoc(doc(db, 'users', active.pilotId)).then(pilotSnap => {
           if (pilotSnap.exists()) {
             setPilot(pilotSnap.data());
+          } else {
+            setPilot({ firstName: 'Пилот назначен' });
           }
+        }).catch((err) => {
+          console.error("Error fetching pilot:", err);
+          setPilot({ firstName: 'Пилот назначен' });
         });
       } else {
         setPilot(null);

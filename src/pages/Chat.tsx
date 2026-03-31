@@ -109,11 +109,14 @@ export default function Chat() {
 
       const senderName = user.firstName || user.username || 'Пользователь';
       const notificationTitle = type === 'internal' ? `Внутренний чат (#${id.slice(-4)})` : `Чат по задаче (#${id.slice(-4)})`;
+      
+      // Plain text for in-app or logs, HTML for Telegram
       const notificationBody = `${senderName}: ${text}`;
+      const telegramMessage = `💬 <b>${notificationTitle}</b>\n\n<b>${senderName}</b>: ${text}`;
       const link = `/task/${id}/chat`;
 
       await Promise.all(recipients.map(async (recipientId) => {
-        // 1. In-app notification
+        // 1. In-app notification (remains plain text)
         await addDoc(collection(db, 'notifications'), {
           userId: recipientId,
           title: notificationTitle,
@@ -124,7 +127,7 @@ export default function Chat() {
           createdAt: new Date().toISOString()
         });
 
-        // 2. Telegram notification
+        // 2. Telegram notification (New pretty version)
         const recipientSnap = await getDoc(doc(db, 'users', recipientId));
         const recipientData = recipientSnap.data();
         if (recipientData?.telegramId) {
@@ -134,7 +137,17 @@ export default function Chat() {
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 telegramId: recipientData.telegramId,
-                message: `💬 ${notificationTitle}\n\n${notificationBody}\n\n🔗 Открыть чат: https://t.me/squadraby_bot/app?startapp=task_chat_${id}`
+                message: telegramMessage,
+                options: {
+                  reply_markup: {
+                    inline_keyboard: [
+                      [{ 
+                        text: '💬 Открыть чат', 
+                        url: `https://t.me/squadraby_bot/app?startapp=task_chat_${id}` 
+                      }]
+                    ]
+                  }
+                }
               })
             });
           } catch (e) {}
