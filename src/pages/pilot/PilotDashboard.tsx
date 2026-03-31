@@ -57,7 +57,6 @@ export default function PilotDashboard() {
   const navigate = useNavigate();
   const { user } = useFirebase();
   const [requests, setRequests] = useState<RequestData[]>([]);
-  const [availableRequests, setAvailableRequests] = useState<RequestData[]>([]);
   const [users, setUsers] = useState<Record<string, UserData>>({});
   const [cars, setCars] = useState<Record<string, CarData>>({});
   const [loading, setLoading] = useState(true);
@@ -91,33 +90,6 @@ export default function PilotDashboard() {
       setLoading(false);
     });
 
-    // Available requests (Exchange) - only if on shift
-    const qAvailable = query(
-      collection(db, 'requests'),
-      where('status', '==', 'pending'),
-      limit(50)
-    );
-
-    const unsubAvailable = onSnapshot(qAvailable, (snapshot) => {
-      const reqs: RequestData[] = [];
-      snapshot.forEach(doc => reqs.push({ id: doc.id, ...doc.data() } as RequestData));
-      
-      // Sort in memory to avoid 412 error (missing composite index)
-      reqs.sort((a, b) => {
-        const parseDate = (val: any) => {
-          if (!val) return 0;
-          if (typeof val === 'object' && val.seconds) return val.seconds * 1000;
-          if (typeof val.toDate === 'function') return val.toDate().getTime();
-          return new Date(val).getTime() || 0;
-        };
-        return parseDate(b.createdAt) - parseDate(a.createdAt);
-      });
-      
-      setAvailableRequests(reqs.slice(0, 20));
-    }, (error) => {
-      handleFirestoreError(error, OperationType.LIST, 'requests');
-      setLoading(false);
-    });
 
     const unsubUsers = onSnapshot(collection(db, 'users'), (snapshot) => {
       const usrs: Record<string, UserData> = {};
@@ -145,7 +117,6 @@ export default function PilotDashboard() {
     return () => {
       unsubUser();
       unsubActive();
-      unsubAvailable();
       unsubUsers();
       unsubCars();
     };
@@ -175,21 +146,6 @@ export default function PilotDashboard() {
     }
   };
 
-  const handleAcceptRequest = async (requestId: string) => {
-    if (!user) return;
-    
-    // Removed limit: pilots can now take multiple tasks
-
-    try {
-      await updateDoc(doc(db, 'requests', requestId), {
-        pilotId: user.uid,
-        status: 'accepted'
-      });
-      toast.success('Поручение принято');
-    } catch (error) {
-      toast.error('Ошибка при принятии поручения');
-    }
-  };
 
   const openNavigation = (address: string) => {
     if (!address) return;
@@ -201,8 +157,7 @@ export default function PilotDashboard() {
     const encodedAddress = encodeURIComponent(address);
     return [
       { name: 'Яндекс Карты', url: `yandexmaps://maps.yandex.ru/?text=${encodedAddress}`, fallback: `https://yandex.ru/maps/?text=${encodedAddress}` },
-      { name: 'Google Maps', url: `comgooglemaps://?q=${encodedAddress}`, fallback: `https://www.google.com/maps/search/?api=1&query=${encodedAddress}` },
-      { name: 'Apple Maps', url: `maps://?q=${encodedAddress}`, fallback: `https://maps.apple.com/?q=${encodedAddress}` }
+      { name: 'Google Maps', url: `comgooglemaps://?q=${encodedAddress}`, fallback: `https://www.google.com/maps/search/?api=1&query=${encodedAddress}` }
     ];
   };
 
@@ -384,74 +339,7 @@ export default function PilotDashboard() {
         )}
       </div>
 
-      {/* Available Tasks (Exchange) */}
-      <div>
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-zinc-500">Биржа поручений</h2>
-          <button className="p-2 text-zinc-500">
-            <Filter size={16} />
-          </button>
-        </div>
 
-        {!isOnShift ? (
-          <div className="text-center py-12 bg-zinc-900/30 border border-zinc-800 rounded-2xl">
-            <Power size={32} className="mx-auto mb-4 text-zinc-700" />
-            <p className="text-zinc-500 text-xs uppercase tracking-widest mb-4">Выйдите на смену,<br/>чтобы видеть поручения</p>
-            <button 
-              onClick={toggleShift}
-              className="px-6 py-2 bg-zinc-800 text-white text-[10px] font-bold uppercase tracking-widest rounded-full"
-            >
-              Выйти на смену
-            </button>
-          </div>
-        ) : availableRequests.length === 0 ? (
-          <div className="text-center py-12 bg-zinc-900/30 border border-zinc-800 rounded-2xl">
-            <p className="text-zinc-600 text-xs uppercase tracking-widest">Нет доступных поручений</p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {availableRequests.map(req => {
-              const car = cars[req.carId];
-              
-              return (
-                <div key={req.id} className="bg-zinc-900/80 border border-zinc-800 rounded-2xl p-4 flex items-center justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-[10px] font-bold text-amber-500 uppercase tracking-tighter">
-                        {req.serviceType === 'logistics' ? 'Логистика' : 
-                         req.serviceType === 'valet' ? 'Валет' : 
-                         req.serviceType === 'parking' ? 'Паркинг' : 
-                         req.serviceType === 'bureaucracy' ? 'Бюрократия' : 
-                         req.serviceType === 'wash' ? 'Мойка' : 'Сервис'}
-                      </span>
-                      <span className="text-[10px] text-zinc-600">•</span>
-                      <span className="text-[10px] text-zinc-500 font-mono">
-                        {new Date(req.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </span>
-                    </div>
-                    <div className="text-sm font-bold text-white mb-1">
-                      {car ? `${car.make} ${car.model}` : 'Автомобиль'}
-                    </div>
-                    <div className="flex items-center gap-1 text-zinc-500">
-                      <MapPin size={10} />
-                      <span className="text-[10px] uppercase tracking-tight">Центр • 2.4 км</span>
-                    </div>
-                  </div>
-                  
-                  <div className="text-right ml-4">
-                    <button 
-                      onClick={() => handleAcceptRequest(req.id)}
-                      className="px-4 py-2 bg-accent text-white text-[10px] font-bold uppercase tracking-widest rounded-lg active:scale-95 transition-transform"
-                    >
-                      Взять
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
       {/* Navigation Modal */}
       {showNavModal && (
         <div className="fixed inset-0 z-[500] bg-black/80 backdrop-blur-sm flex flex-col justify-end animate-in fade-in duration-200">

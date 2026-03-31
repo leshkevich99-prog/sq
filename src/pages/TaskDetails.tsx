@@ -191,9 +191,6 @@ export default function TaskDetails() {
     try {
       const docRef = doc(db, 'requests', id);
       const updateData: any = { status: newStatus };
-      if (newStatus === 'accepted' && user?.id) {
-        updateData.pilotId = user.id;
-      }
       
       await updateDoc(docRef, updateData);
       
@@ -526,8 +523,7 @@ export default function TaskDetails() {
     const encodedAddress = encodeURIComponent(address);
     return [
       { name: 'Яндекс Карты', url: `yandexmaps://maps.yandex.ru/?text=${encodedAddress}`, fallback: `https://yandex.ru/maps/?text=${encodedAddress}` },
-      { name: 'Google Maps', url: `comgooglemaps://?q=${encodedAddress}`, fallback: `https://www.google.com/maps/search/?api=1&query=${encodedAddress}` },
-      { name: 'Apple Maps', url: `maps://?q=${encodedAddress}`, fallback: `https://maps.apple.com/?q=${encodedAddress}` }
+      { name: 'Google Maps', url: `comgooglemaps://?q=${encodedAddress}`, fallback: `https://www.google.com/maps/search/?api=1&query=${encodedAddress}` }
     ];
   };
 
