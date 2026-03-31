@@ -94,6 +94,43 @@ export default function AdminCRM() {
   const [viewMode, setViewMode] = useState<'list' | 'kanban'>('kanban');
   const [selectedRole, setSelectedRole] = useState<'all' | 'admin' | 'pilot' | 'client'>('all');
   const [selectedTariff, setSelectedTariff] = useState('all');
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    const handleViewportChange = () => {
+      const viewport = window.visualViewport;
+      if (!viewport) return;
+      
+      const isKeyboardOpen = viewport.height < window.innerHeight * 0.85;
+      setIsKeyboardVisible(isKeyboardOpen);
+    };
+
+    const handleFocus = (e: FocusEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
+        setIsKeyboardVisible(true);
+      }
+    };
+
+    const handleBlur = () => {
+      setTimeout(() => {
+        if (document.activeElement?.tagName !== 'INPUT' && 
+            document.activeElement?.tagName !== 'TEXTAREA') {
+          setIsKeyboardVisible(false);
+        }
+      }, 100);
+    };
+
+    window.visualViewport?.addEventListener('resize', handleViewportChange);
+    window.addEventListener('focusin', handleFocus);
+    window.addEventListener('focusout', handleBlur);
+
+    return () => {
+      window.visualViewport?.removeEventListener('resize', handleViewportChange);
+      window.removeEventListener('focusin', handleFocus);
+      window.removeEventListener('focusout', handleBlur);
+    };
+  }, []);
 
   const fetchData = React.useCallback(async () => {
     try {
@@ -621,7 +658,7 @@ export default function AdminCRM() {
               </section>
             </div>
 
-            <div className="sticky bottom-0 z-20 bg-zinc-900/80 backdrop-blur-md p-6 border-t border-zinc-800/50 shrink-0 pb-[max(env(safe-area-inset-bottom),1.5rem)]">
+            <div className={`sticky bottom-0 z-20 bg-zinc-900/80 backdrop-blur-md p-6 border-t border-zinc-800/50 shrink-0 pb-[max(env(safe-area-inset-bottom),1.5rem)] ${isKeyboardVisible ? 'hidden' : 'block'}`}>
               <div className="flex gap-3">
                 <button 
                   onClick={() => { setUserDetailsModalOpen(false); openEditUser(selectedClient); }}
@@ -701,7 +738,7 @@ export default function AdminCRM() {
               </div>
             </div>
             
-            <div className="sticky bottom-0 z-20 bg-zinc-900/80 backdrop-blur-md p-6 border-t border-zinc-800/50 shrink-0 pb-[max(env(safe-area-inset-bottom),1.5rem)]">
+            <div className={`sticky bottom-0 z-20 bg-zinc-900/80 backdrop-blur-md p-6 border-t border-zinc-800/50 shrink-0 pb-[max(env(safe-area-inset-bottom),1.5rem)] ${isKeyboardVisible ? 'hidden' : 'block'}`}>
               <button 
                 onClick={handleBillingSubmit}
                 disabled={billingSubmitting || !billingAmount || !billingDescription}
@@ -822,7 +859,7 @@ export default function AdminCRM() {
               </div>
             </div>
 
-            <div className="sticky bottom-0 z-20 bg-zinc-900/80 backdrop-blur-md p-6 border-t border-zinc-800/50 shrink-0 pb-[max(env(safe-area-inset-bottom),1.5rem)]">
+            <div className={`sticky bottom-0 z-20 bg-zinc-900/80 backdrop-blur-md p-6 border-t border-zinc-800/50 shrink-0 pb-[max(env(safe-area-inset-bottom),1.5rem)] ${isKeyboardVisible ? 'hidden' : 'block'}`}>
               <div className="flex gap-2">
                 <button 
                   onClick={async () => {
@@ -964,7 +1001,7 @@ export default function AdminCRM() {
               </div>
             </div>
             
-            <div className="sticky bottom-0 z-20 bg-zinc-900/80 backdrop-blur-md p-6 border-t border-zinc-800/50 shrink-0 pb-[max(env(safe-area-inset-bottom),1.5rem)]">
+            <div className={`sticky bottom-0 z-20 bg-zinc-900/80 backdrop-blur-md p-6 border-t border-zinc-800/50 shrink-0 pb-[max(env(safe-area-inset-bottom),1.5rem)] ${isKeyboardVisible ? 'hidden' : 'block'}`}>
               <button 
                 onClick={handleEditCarSubmit}
                 disabled={editCarSubmitting || !editCarMake || !editCarModel}
