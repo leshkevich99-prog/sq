@@ -25,6 +25,7 @@ interface FirebaseContextType {
   loading: boolean;
   authError: string | null;
   updateUserRole: (newRole: 'client' | 'admin' | 'pilot') => Promise<void>;
+  refreshAuth: () => Promise<boolean>;
   logout: () => Promise<void>;
 }
 
@@ -33,6 +34,7 @@ const FirebaseContext = createContext<FirebaseContextType>({
   loading: true,
   authError: null,
   updateUserRole: async () => {},
+  refreshAuth: async () => false,
   logout: async () => {}
 });
 
@@ -124,6 +126,15 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     };
 
     initAuth();
+
+    // Re-check auth when app becomes visible (mobile background resume)
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        fetchMe();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
   }, []);
 
   // Subscribe to user document changes in Firestore for real-time quotas/balance
@@ -168,7 +179,7 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   return (
-    <FirebaseContext.Provider value={{ user, loading, authError, updateUserRole, logout }}>
+    <FirebaseContext.Provider value={{ user, loading, authError, updateUserRole, refreshAuth: fetchMe, logout }}>
       {children}
     </FirebaseContext.Provider>
   );

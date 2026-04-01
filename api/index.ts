@@ -50,9 +50,22 @@ async function startServer() {
         
         // 2. Telegram notification
         if (admin.telegramId) {
-          const appUrl = process.env.SQUADRA_URL || '';
-          const message = `<b>${title}</b>\n\n${body}${path ? `\n\n<a href="${appUrl}${path}">Открыть в приложении</a>` : ''}`;
-          await sendNotification(admin.telegramId.toString(), message, { parse_mode: 'HTML' });
+          const message = `<b>${title}</b>\n\n${body}`;
+          const options: any = { parse_mode: 'HTML' };
+          
+          if (path && path.includes('/task/')) {
+            const taskId = path.split('/').pop();
+            // Deep link directly to the task in the Mini App
+            const webAppUrl = `https://t.me/squadraby_bot/app?startapp=task_${taskId}`;
+            
+            options.reply_markup = {
+              inline_keyboard: [
+                [{ text: '📂 Открыть поручение', url: webAppUrl }]
+              ]
+            };
+          }
+          
+          await sendNotification(admin.telegramId.toString(), message, options);
         }
       }
     } catch (e) {

@@ -82,7 +82,7 @@ const SERVICE_LABELS: Record<string, string> = {
 export default function TaskDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user } = useFirebase();
+  const { user, refreshAuth } = useFirebase();
   const isKeyboardVisible = useKeyboard();
   const getSafeUrl = (url: string) => url.replace(/[.#$[\]/]/g, '_');
   const [request, setRequest] = useState<RequestData | null>(null);
@@ -434,7 +434,16 @@ export default function TaskDetails() {
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    if (files.length === 0 || !id || !user || !request) return;
+    if (files.length === 0 || !id || !request) return;
+    
+    // Check user auth explicitly to avoid background data loss
+    if (!auth.currentUser) {
+      const loggedIn = await refreshAuth();
+      if (!loggedIn) {
+        toast.error('Сессия завершена. Перезайдите в приложение.');
+        return;
+      }
+    }
 
     setUploading(uploadType);
     const toastId = toast.loading(`Подготовка (${files.length} фото)...`);
@@ -442,18 +451,16 @@ export default function TaskDetails() {
     try {
       try { WebApp.expand(); } catch (e) {}
 
-      const newUrls: string[] = [];
       const field = uploadType === 'before' ? 'photosBefore' : 'photosAfter';
       const currentUser = auth.currentUser;
       if (!currentUser) throw new Error('Пользователь не авторизован');
       
       const token = await currentUser.getIdToken();
       const bucket = storage.app.options.storageBucket;
+      if (!bucket) throw new Error('Ошибка конфигурации хранилища');
 
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        toast.loading(`Сжатие и загрузка ${i + 1}/${files.length}...`, { id: toastId });
-
+      // Upload photos in parallel
+      const uploadPromises = files.map(async (file, i) => {
         // 1. Compress photo
         const options = {
           maxSizeMB: 1,
@@ -478,11 +485,16 @@ export default function TaskDetails() {
           body: JSON.stringify({ base64Data, fileName, token, bucket })
         });
 
-        if (!response.ok) throw new Error(`Ошибка при загрузке фото ${i + 1}`);
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error || `Ошибка при загрузке фото ${i + 1}`);
+        }
 
         const { url: downloadURL } = await response.json();
-        newUrls.push(downloadURL);
-      }
+        return downloadURL;
+      });
+
+      const newUrls = await Promise.all(uploadPromises);
       
       // Calculate final arrays and metadata
       const currentPhotos = Array.isArray((request as any)[field]) ? (request as any)[field] : [];
@@ -511,10 +523,10 @@ export default function TaskDetails() {
         throw new Error('Ошибка при обновлении задачи в базе данных');
       }
       
-      toast.success('Все фото успешно добавлены!', { id: toastId });
+      toast.success(`Успешно загружено фото: ${newUrls.length}`, { id: toastId });
     } catch (error: any) {
-      console.error('Detailed Upload Error:', error);
-      toast.error(error.message || 'Ошибка при загрузке', { id: toastId, duration: 6000 });
+      console.error('Parallel Upload Error:', error);
+      toast.error(error.message || 'Ошибка при загрузке', { id: toastId });
     } finally {
       setUploading(null);
       if (fileInputRef.current) fileInputRef.current.value = '';

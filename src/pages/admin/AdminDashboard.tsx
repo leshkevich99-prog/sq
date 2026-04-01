@@ -3,6 +3,7 @@ import { db, handleFirestoreError, OperationType, createNotification, collection
 import { Link } from 'react-router-dom';
 import { BynIcon } from '../../components/BynIcon';
 import { useKeyboard } from '../../hooks/useKeyboard';
+import toast from 'react-hot-toast';
 import { 
   X, 
   ChevronRight, 
@@ -90,9 +91,10 @@ export default function AdminDashboard() {
   
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null);
+  const [selectedPilotForAssign, setSelectedPilotForAssign] = useState<UserData | null>(null);
   const [assignComment, setAssignComment] = useState('');
   const [viewMode, setViewMode] = useState<'kanban' | 'list'>('kanban');
-  const [activeKanbanTab, setActiveKanbanTab] = useState<'pending' | 'in_progress' | 'completed'>('pending');
+  const [activeKanbanTab, setActiveKanbanTab] = useState<'pending' | 'active' | 'review' | 'completed'>('pending');
 
   useEffect(() => {
     // Requests
@@ -164,18 +166,26 @@ export default function AdminDashboard() {
 
   const handleAssignClick = (requestId: string) => {
     setSelectedRequestId(requestId);
+    setSelectedPilotForAssign(null);
+    setAssignComment('');
     setAssignModalOpen(true);
   };
 
-  const handleAssignPilot = async (pilotId: string) => {
-    if (!selectedRequestId) return;
+  const handleAssignPilot = (pilot: UserData) => {
+    setSelectedPilotForAssign(pilot);
+  };
+
+  const handleConfirmAssign = async () => {
+    if (!selectedRequestId || !selectedPilotForAssign) return;
+    const pilotId = selectedPilotForAssign.id;
+    const toastId = toast.loading('Назначение пилота...');
+    
     try {
       const reqRef = doc(db, 'requests', selectedRequestId);
       const reqSnap = await getDoc(reqRef);
       if (!reqSnap.exists()) return;
       
       const reqData = reqSnap.data() as RequestData;
-      const pilot = pilots.find(p => p.id === pilotId);
       const requestNumber = reqData.requestNumber || selectedRequestId.slice(-4);
 
       await updateDoc(reqRef, {
@@ -187,7 +197,7 @@ export default function AdminDashboard() {
       if (assignComment.trim()) {
         await addDoc(collection(db, 'messages'), {
           requestId: selectedRequestId,
-          senderId: 'system', // or admin's ID if available
+          senderId: 'system',
           senderName: 'Администратор',
           text: assignComment.trim(),
           type: 'internal',
@@ -199,7 +209,7 @@ export default function AdminDashboard() {
       await createNotification(
         reqData.userId,
         'Пилот назначен',
-        `Ваш пилот ${pilot?.firstName || ''} уже в пути.`,
+        `Ваш пилот ${selectedPilotForAssign.firstName || ''} уже в пути.`,
         'success',
         `/task/${selectedRequestId}`
       );
@@ -215,7 +225,7 @@ export default function AdminDashboard() {
       );
 
       // 4. Notify pilot (Telegram)
-      if (pilot?.telegramId) {
+      if (selectedPilotForAssign.telegramId) {
         const tgMessage = `🚀 <b>Вам назначено новое поручение #${requestNumber}</b>\n\n` +
                           `<b>Услуга:</b> ${serviceName}\n` +
                           `<b>Адрес:</b> ${reqData.pickupAddress || 'не указан'}\n` +
@@ -226,7 +236,7 @@ export default function AdminDashboard() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            telegramId: pilot.telegramId,
+            telegramId: selectedPilotForAssign.telegramId,
             message: tgMessage,
             options: {
               reply_markup: {
@@ -239,11 +249,14 @@ export default function AdminDashboard() {
         });
       }
 
+      toast.success('Пилот успешно назначен', { id: toastId });
       setAssignModalOpen(false);
       setSelectedRequestId(null);
+      setSelectedPilotForAssign(null);
       setAssignComment('');
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, `requests/${selectedRequestId}`);
+      toast.error('Ошибка при назначении', { id: toastId });
     }
   };
 
@@ -289,7 +302,8 @@ export default function AdminDashboard() {
   }
 
   const pendingRequests = requests.filter(r => r.status === 'pending');
-  const inProgressRequests = requests.filter(r => r.status === 'in_progress' || r.status === 'accepted' || r.status === 'review');
+  const inProgressRequests = requests.filter(r => r.status === 'accepted' || r.status === 'driving' || r.status === 'in_progress');
+  const reviewRequests = requests.filter(r => r.status === 'review');
   const completedRequests = requests.filter(r => r.status === 'completed');
   
   const totalRevenue = completedRequests.reduce((acc, r) => acc + (r.totalPrice || 0), 0);
@@ -462,22 +476,28 @@ export default function AdminDashboard() {
       {viewMode === 'kanban' ? (
         <div className="space-y-6">
           {/* Mobile Kanban Tabs */}
-          <div className="flex md:hidden bg-zinc-900 p-1 rounded-xl border border-zinc-800 mb-4">
+          <div className="flex md:hidden bg-zinc-900 p-1 rounded-xl border border-zinc-800 mb-4 overflow-x-auto no-scrollbar">
             <button 
               onClick={() => setActiveKanbanTab('pending')}
-              className={`flex-1 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${activeKanbanTab === 'pending' ? 'bg-zinc-800 text-white' : 'text-zinc-500'}`}
+              className={`flex-1 min-w-[70px] py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${activeKanbanTab === 'pending' ? 'bg-zinc-800 text-white' : 'text-zinc-500'}`}
             >
               Новые ({pendingRequests.length})
             </button>
             <button 
-              onClick={() => setActiveKanbanTab('in_progress')}
-              className={`flex-1 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${activeKanbanTab === 'in_progress' ? 'bg-amber-500/20 text-amber-500' : 'text-zinc-500'}`}
+              onClick={() => setActiveKanbanTab('active')}
+              className={`flex-1 min-w-[75px] py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${activeKanbanTab === 'active' ? 'bg-amber-500/20 text-amber-500' : 'text-zinc-500'}`}
             >
-              В работе ({inProgressRequests.length})
+              Актив ({inProgressRequests.length})
+            </button>
+            <button 
+              onClick={() => setActiveKanbanTab('review')}
+              className={`flex-1 min-w-[75px] py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${activeKanbanTab === 'review' ? 'bg-purple-500/20 text-purple-500' : 'text-zinc-500'}`}
+            >
+              Проверка ({reviewRequests.length})
             </button>
             <button 
               onClick={() => setActiveKanbanTab('completed')}
-              className={`flex-1 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${activeKanbanTab === 'completed' ? 'bg-emerald-500/20 text-emerald-500' : 'text-zinc-500'}`}
+              className={`flex-1 min-w-[75px] py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${activeKanbanTab === 'completed' ? 'bg-emerald-500/20 text-emerald-500' : 'text-zinc-500'}`}
             >
               Готово ({completedRequests.length})
             </button>
@@ -508,8 +528,8 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            {/* Column 2: In Progress */}
-            <div className={`${activeKanbanTab === 'in_progress' ? 'block' : 'hidden md:block'} min-w-full md:min-w-[320px] md:max-w-[350px] md:snap-center`}>
+            {/* Column 2: Active */}
+            <div className={`${activeKanbanTab === 'active' ? 'block' : 'hidden md:block'} min-w-full md:min-w-[300px] md:max-w-[320px] md:snap-center`}>
               <div className="hidden md:flex items-center justify-between mb-4 px-2">
                 <h2 className="font-bold text-xs uppercase tracking-[0.2em] text-amber-500">В работе</h2>
                 <span className="bg-amber-500/20 text-amber-500 text-[10px] font-bold px-2 py-0.5 rounded-full">{inProgressRequests.length}</span>
@@ -531,8 +551,31 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            {/* Column 3: Completed */}
-            <div className={`${activeKanbanTab === 'completed' ? 'block' : 'hidden md:block'} min-w-full md:min-w-[320px] md:max-w-[350px] md:snap-center`}>
+            {/* Column 3: Review */}
+            <div className={`${activeKanbanTab === 'review' ? 'block' : 'hidden md:block'} min-w-full md:min-w-[300px] md:max-w-[320px] md:snap-center`}>
+              <div className="hidden md:flex items-center justify-between mb-4 px-2">
+                <h2 className="font-bold text-xs uppercase tracking-[0.2em] text-purple-500">Проверка</h2>
+                <span className="bg-purple-500/20 text-purple-500 text-[10px] font-bold px-2 py-0.5 rounded-full">{reviewRequests.length}</span>
+              </div>
+              <div className="space-y-3">
+                {reviewRequests.length === 0 ? (
+                  <div className="text-center py-12 bg-zinc-900/30 rounded-3xl border border-dashed border-zinc-800 text-zinc-600 text-xs uppercase tracking-widest">Нет на проверке</div>
+                ) : (
+                  reviewRequests.map(req => (
+                    <TaskCard 
+                      key={req.id}
+                      req={req}
+                      user={users[req.userId]}
+                      car={cars[req.carId]}
+                      pilot={users[req.pilotId || '']}
+                    />
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* Column 4: Completed */}
+            <div className={`${activeKanbanTab === 'completed' ? 'block' : 'hidden md:block'} min-w-full md:min-w-[300px] md:max-w-[320px] md:snap-center`}>
               <div className="hidden md:flex items-center justify-between mb-4 px-2">
                 <h2 className="font-bold text-xs uppercase tracking-[0.2em] text-emerald-500">Завершенные</h2>
                 <span className="bg-emerald-500/20 text-emerald-500 text-[10px] font-bold px-2 py-0.5 rounded-full">{completedRequests.length}</span>
@@ -658,48 +701,91 @@ export default function AdminDashboard() {
         <div className="fixed inset-0 z-[400] bg-black/80 backdrop-blur-sm flex flex-col justify-end animate-in fade-in duration-200">
           <div className="w-full max-w-md mx-auto bg-zinc-900 rounded-t-3xl sm:rounded-2xl sm:mb-4 animate-in slide-in-from-bottom-full duration-300 max-h-[85vh] flex flex-col relative overflow-hidden">
             <div className="sticky top-0 z-20 bg-zinc-900/80 backdrop-blur-md p-6 border-b border-zinc-800/50 flex justify-between items-center shrink-0">
-              <h2 className="text-xl font-bold uppercase tracking-tighter">Назначить пилота</h2>
-              <button onClick={() => setAssignModalOpen(false)} className="text-zinc-500 hover:text-white p-2">
-                <X size={24} />
+              <h2 className="text-xl font-bold uppercase tracking-tighter">
+                {selectedPilotForAssign ? 'Подтверждение' : 'Назначить пилота'}
+              </h2>
+              <button 
+                onClick={() => {
+                  if (selectedPilotForAssign) setSelectedPilotForAssign(null);
+                  else setAssignModalOpen(false);
+                }} 
+                className="text-zinc-500 hover:text-white p-2"
+              >
+                {selectedPilotForAssign ? <X size={24} /> : <X size={24} />}
               </button>
             </div>
             
-            <div className="p-6 pb-0">
-              <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-2 px-1">Комментарий для пилота</div>
-              <textarea
-                value={assignComment}
-                onChange={(e) => setAssignComment(e.target.value)}
-                placeholder="Напишите важное уточнение для пилота..."
-                className="w-full bg-black border border-zinc-800 rounded-2xl p-4 text-sm focus:outline-none focus:border-white transition-colors min-h-[100px] resize-none"
-              />
-            </div>
-
-            <div className="p-6 space-y-2 overflow-y-auto flex-1">
-              <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-2 px-1">Выберите сотрудника</div>
-              {pilots.length === 0 ? (
-                <p className="text-zinc-400 text-sm text-center py-8">Нет доступных пилотов</p>
+            <div className="flex-1 overflow-y-auto">
+              {!selectedPilotForAssign ? (
+                /* Step 1: Select Pilot */
+                <div className="p-6 space-y-4">
+                  <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-2 px-1">Выберите сотрудника</div>
+                  {pilots.length === 0 ? (
+                    <p className="text-zinc-400 text-sm text-center py-8">Нет доступных пилотов</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {pilots.map(pilot => (
+                        <button
+                          key={pilot.id}
+                          onClick={() => handleAssignPilot(pilot)}
+                          className="w-full flex items-center justify-between p-4 bg-black border border-zinc-800 rounded-2xl hover:border-white transition-colors text-left group active:scale-[0.98]"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className={`w-2 h-2 rounded-full ${pilot.isOnShift ? 'bg-emerald-500' : 'bg-zinc-700'}`} />
+                            <div>
+                              <div className="font-bold group-hover:text-white transition-colors">{pilot.firstName}</div>
+                              <div className="text-[10px] text-zinc-500 uppercase tracking-widest">@{pilot.username}</div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {pilot.isOnShift && <span className="text-[8px] font-bold uppercase tracking-widest text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded">На смене</span>}
+                            <ChevronRight size={16} className="text-zinc-700 group-hover:text-white transition-colors" />
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               ) : (
-                <>
-                {pilots.map(pilot => (
-                  <button
-                    key={pilot.id}
-                    onClick={() => handleAssignPilot(pilot.id)}
-                    className="w-full flex items-center justify-between p-4 bg-black border border-zinc-800 rounded-2xl hover:border-white transition-colors text-left group active:scale-[0.98]"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className={`w-2 h-2 rounded-full ${pilot.isOnShift ? 'bg-emerald-500' : 'bg-zinc-700'}`} />
-                      <div>
-                        <div className="font-bold group-hover:text-white transition-colors">{pilot.firstName}</div>
-                        <div className="text-[10px] text-zinc-500 uppercase tracking-widest">@{pilot.username}</div>
-                      </div>
+                /* Step 2: Confirm and Comment */
+                <div className="p-6 space-y-6 animate-in slide-in-from-right-4 duration-200">
+                  <div className="bg-black/40 border border-zinc-800 rounded-2xl p-4 flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-full bg-zinc-800 flex items-center justify-center text-lg font-bold border border-zinc-700">
+                      {selectedPilotForAssign.firstName?.charAt(0)}
                     </div>
-                    <div className="flex items-center gap-2">
-                      {pilot.isOnShift && <span className="text-[8px] font-bold uppercase tracking-widest text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded">На смене</span>}
-                      <ChevronRight size={16} className="text-zinc-700 group-hover:text-white transition-colors" />
+                    <div>
+                      <div className="text-xs text-zinc-500 uppercase tracking-widest mb-0.5">Выбранный пилот</div>
+                      <div className="font-bold text-white">{selectedPilotForAssign.firstName}</div>
+                      <div className="text-[10px] text-zinc-500">@{selectedPilotForAssign.username}</div>
                     </div>
-                  </button>
-                ))}
-                </>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 px-1">Добавить комментарий</div>
+                    <textarea
+                      autoFocus
+                      value={assignComment}
+                      onChange={(e) => setAssignComment(e.target.value)}
+                      placeholder="Напишите важное уточнение (адрес, детали, нюансы)..."
+                      className="w-full bg-black border border-zinc-800 rounded-2xl p-4 text-sm focus:outline-none focus:border-white transition-colors min-h-[120px] resize-none"
+                    />
+                  </div>
+
+                  <div className="flex gap-3">
+                    <button 
+                      onClick={() => setSelectedPilotForAssign(null)}
+                      className="flex-1 py-3 bg-zinc-800 text-white text-[10px] font-bold uppercase tracking-widest rounded-xl active:scale-95 transition-all"
+                    >
+                      Назад
+                    </button>
+                    <button 
+                      onClick={handleConfirmAssign}
+                      className="flex-[2] py-3 bg-white text-black text-[10px] font-bold uppercase tracking-widest rounded-xl active:scale-95 transition-all shadow-lg shadow-white/5"
+                    >
+                      Подтвердить
+                    </button>
+                  </div>
+                </div>
               )}
             </div>
             <div className={`sticky bottom-0 z-20 bg-zinc-900/80 backdrop-blur-md p-4 border-t border-zinc-800/50 shrink-0 pb-[max(env(safe-area-inset-bottom),1rem)] ${isKeyboardVisible ? 'hidden' : 'block'}`} />
