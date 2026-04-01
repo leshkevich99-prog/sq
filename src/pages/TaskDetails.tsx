@@ -1152,6 +1152,8 @@ export default function TaskDetails() {
                     onChange={(e) => setExpenseAmount(e.target.value)}
                     placeholder="0.00"
                     className="w-full bg-zinc-800 border border-zinc-700 rounded-xl p-4 text-white focus:outline-none focus:border-amber-500"
+                    enterKeyHint="done"
+                    onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
                   />
                 </div>
 
@@ -1163,6 +1165,13 @@ export default function TaskDetails() {
                     placeholder="Например: Заправка АИ-95, 20л"
                     rows={2}
                     className="w-full bg-zinc-800 border border-zinc-700 rounded-xl p-4 text-white focus:outline-none focus:border-amber-500 resize-none"
+                    enterKeyHint="done"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        e.currentTarget.blur();
+                      }
+                    }}
                   />
                 </div>
 

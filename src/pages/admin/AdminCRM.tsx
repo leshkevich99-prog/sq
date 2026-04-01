@@ -678,6 +678,8 @@ export default function AdminCRM() {
                     value={billingAmount}
                     onChange={(e) => setBillingAmount(e.target.value)}
                     className="w-full bg-black border border-zinc-800 rounded-xl py-3 pl-9 pr-4 text-sm focus:outline-none focus:border-accent text-white" 
+                    enterKeyHint="done"
+                    onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
                   />
                 </div>
               </div>
@@ -689,6 +691,13 @@ export default function AdminCRM() {
                   value={billingDescription}
                   onChange={(e) => setBillingDescription(e.target.value)}
                   className="w-full bg-black border border-zinc-800 rounded-xl p-3 text-sm focus:outline-none focus:border-accent h-24 resize-none text-white"
+                  enterKeyHint="done"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      e.currentTarget.blur();
+                    }
+                  }}
                 ></textarea>
               </div>
 
@@ -736,6 +745,8 @@ export default function AdminCRM() {
                   onChange={(e) => setEditFirstName(e.target.value)}
                   placeholder="Имя клиента"
                   className="w-full bg-black border border-zinc-800 rounded-xl p-3 text-sm focus:outline-none focus:border-accent text-white"
+                  enterKeyHint="done"
+                  onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
                 />
               </div>
 

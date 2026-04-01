@@ -768,6 +768,13 @@ export default function AdminDashboard() {
                       onChange={(e) => setAssignComment(e.target.value)}
                       placeholder="Напишите важное уточнение (адрес, детали, нюансы)..."
                       className="w-full bg-black border border-zinc-800 rounded-2xl p-4 text-sm focus:outline-none focus:border-white transition-colors min-h-[120px] resize-none"
+                      enterKeyHint="done"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          (e.target as HTMLTextAreaElement).blur();
+                        }
+                      }}
                     />
                   </div>
 
