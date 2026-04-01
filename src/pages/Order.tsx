@@ -55,8 +55,8 @@ export default function Order() {
   // Step 1: New state for interactive order
   const [pickupAddress, setPickupAddress] = useState('');
   const [deliveryAddress, setDeliveryAddress] = useState('');
-  const [orderDate, setOrderDate] = useState('today');
-  const [orderTime, setOrderTime] = useState('asap');
+  const [orderDate, setOrderDate] = useState(new Date().toISOString().split('T')[0]);
+  const [orderTime, setOrderTime] = useState(new Date().toTimeString().split(' ')[0].substring(0, 5));
   const [washType, setWashType] = useState('standard');
   const [comment, setComment] = useState('');
   const [safetyAccepted, setSafetyAccepted] = useState(false);
@@ -364,6 +364,7 @@ export default function Order() {
               message: `🏎️ <b>Новое поручение #${requestNumber || ''}</b>\n\n` +
                        `<b>Услуга:</b> ${serviceName}\n` +
                        `<b>Клиент:</b> ${user?.firstName || 'клиент'}\n` +
+                       `<b>Когда:</b> ${orderDate} в ${orderTime}\n` +
                        `<b>Оплата:</b> ${useQuota ? 'Квота' : balanceDeduction > 0 ? `Депозит (${balanceDeduction}) + ${paidExternally}` : paidExternally}\n\n` +
                        `<i>Откройте приложение для деталей.</i>`
             })
@@ -620,31 +621,32 @@ export default function Order() {
             )}
 
             {/* Date & Time */}
+            {/* Specific Date & Time Selection */}
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
                 <label className="block text-xs text-zinc-500 uppercase tracking-wider ml-1">Дата</label>
-                <select 
-                  value={orderDate}
-                  onChange={(e) => setOrderDate(e.target.value)}
-                  className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-4 px-3 text-xs focus:outline-none focus:border-accent text-white appearance-none"
-                >
-                  <option value="today">Сегодня</option>
-                  <option value="tomorrow">Завтра</option>
-                  <option value="later">Позже (в чат)</option>
-                </select>
+                <div className="relative">
+                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none" size={16} />
+                  <input 
+                    type="date"
+                    value={orderDate}
+                    onChange={(e) => setOrderDate(e.target.value)}
+                    min={new Date().toISOString().split('T')[0]}
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-4 pl-10 pr-3 text-xs focus:outline-none focus:border-accent text-white [color-scheme:dark]"
+                  />
+                </div>
               </div>
               <div className="space-y-2">
                 <label className="block text-xs text-zinc-500 uppercase tracking-wider ml-1">Время</label>
-                <select 
-                  value={orderTime}
-                  onChange={(e) => setOrderTime(e.target.value)}
-                  className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-4 px-3 text-xs focus:outline-none focus:border-accent text-white appearance-none"
-                >
-                  <option value="asap">Как можно скорее</option>
-                  <option value="morning">Утро (09:00-12:00)</option>
-                  <option value="afternoon">День (12:00-18:00)</option>
-                  <option value="evening">Вечер (18:00-22:00)</option>
-                </select>
+                <div className="relative">
+                  <Clock className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none" size={16} />
+                  <input 
+                    type="time"
+                    value={orderTime}
+                    onChange={(e) => setOrderTime(e.target.value)}
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-4 pl-10 pr-3 text-xs focus:outline-none focus:border-accent text-white [color-scheme:dark]"
+                  />
+                </div>
               </div>
             </div>
 

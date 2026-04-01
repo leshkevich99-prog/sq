@@ -12,6 +12,8 @@ interface ServiceRequest {
   carId: string;
   createdAt: string;
   pilotId?: string;
+  orderDate?: string;
+  orderTime?: string;
 }
 
 interface Car {
@@ -236,9 +238,21 @@ export default function Home() {
                activeRequest.serviceType === 'bureaucracy' ? 'Бюрократия' : 
                activeRequest.serviceType === 'wash' ? 'Мойка' : 'СТО / ТО'}
             </h3>
-            <p className="text-sm text-zinc-400 mb-5">
-              {cars[activeRequest.carId]?.make} {cars[activeRequest.carId]?.model}
-            </p>
+            <div className="flex items-center justify-between mb-5">
+              <p className="text-sm text-zinc-400">
+                {cars[activeRequest.carId]?.make} {cars[activeRequest.carId]?.model}
+              </p>
+              <div className="flex items-center gap-1.5 text-zinc-500 bg-black/40 px-2 py-1 rounded-lg border border-zinc-800/50">
+                <Clock size={10} />
+                <span className="text-[10px] font-bold">
+                  {activeRequest.orderDate === 'today' ? 'Сегодня' : 
+                   activeRequest.orderDate === 'tomorrow' ? 'Завтра' : 
+                   activeRequest.orderDate?.includes('-') ? new Date(activeRequest.orderDate).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }) : 
+                   activeRequest.orderDate}
+                  {activeRequest.orderTime && ` • ${activeRequest.orderTime === 'asap' ? 'ASAP' : activeRequest.orderTime}`}
+                </span>
+              </div>
+            </div>
 
             <div className="relative pt-2">
               <div className="absolute top-3 left-0 w-full h-0.5 bg-zinc-800"></div>

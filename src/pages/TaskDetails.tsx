@@ -678,11 +678,18 @@ export default function TaskDetails() {
             <div className="flex gap-4">
               <div>
                 <div className="text-[10px] text-zinc-500 uppercase tracking-widest mb-1">Дата</div>
-                <div className="text-sm font-medium">{request.orderDate === 'today' ? 'Сегодня' : request.orderDate === 'tomorrow' ? 'Завтра' : request.orderDate}</div>
+                <div className="text-sm font-medium">
+                  {request.orderDate === 'today' ? 'Сегодня' : 
+                   request.orderDate === 'tomorrow' ? 'Завтра' : 
+                   request.orderDate?.includes('-') ? new Date(request.orderDate).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' }) : 
+                   request.orderDate}
+                </div>
               </div>
               <div>
                 <div className="text-[10px] text-zinc-500 uppercase tracking-widest mb-1">Время</div>
-                <div className="text-sm font-medium">{request.orderTime === 'asap' ? 'Как можно скорее' : request.orderTime}</div>
+                <div className="text-sm font-medium">
+                  {request.orderTime === 'asap' ? 'Как можно скорее' : request.orderTime}
+                </div>
               </div>
             </div>
           </div>
