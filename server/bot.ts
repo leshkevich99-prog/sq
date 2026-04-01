@@ -187,10 +187,13 @@ export async function handleSuccessfulPayment(chatId: number, payment: any) {
         if (orderData) {
           // 1. Create real request
           const requestId = uuidv4();
+          const requestNumber = await firestore.getNextNumber('requests');
+          
           await firestore.collection('requests').set(requestId, {
             userId: orderData.userId,
             carId: orderData.carId,
             serviceType: orderData.serviceType,
+            requestNumber,
             pickupAddress: orderData.pickupAddress || '',
             deliveryAddress: orderData.deliveryAddress || '',
             orderDate: orderData.orderDate || '',
@@ -237,12 +240,15 @@ export async function handleSuccessfulPayment(chatId: number, payment: any) {
 
           // 3. Notify admins
           const admins = await firestore.collection('users').all([{ type: 'where', field: 'role', op: '==', value: 'admin' }]);
+          const clientData = await firestore.collection('users').get(orderData.userId);
+          const clientName = clientData?.firstName || 'клиент';
+
           for (const adminUser of admins) {
             // Add in-app notification
-            await firestore.collection('notifications').add({
+            await firestore.collection('notifications').set(uuidv4(), {
               userId: adminUser.id,
-              title: 'Новое оплаченное поручение',
-              message: `Поступило оплаченное поручение на "${orderData.serviceType}".`,
+              title: `Новая оплаченная задача #${requestNumber}`,
+              message: `Поступила оплаченная задача на "${orderData.serviceType}" от ${clientName}.`,
               type: 'info',
               link: `/task/${requestId}`,
               read: false,
@@ -251,7 +257,19 @@ export async function handleSuccessfulPayment(chatId: number, payment: any) {
 
             // Send Telegram notification
             if (adminUser.telegramId) {
-              await sendNotification(adminUser.telegramId, `💰 Новое оплаченное поручение!\n\nУслуга: ${orderData.serviceType}\nОплата: ${orderData.balanceDeduction > 0 ? `Депозит (${orderData.balanceDeduction.toFixed(2)}) + ` : ''}${amount || (payment.total_amount / 100).toFixed(2)} Br\n\nОткройте приложение для деталей.`);
+              const msg = `🏎️ <b>Новая оплаченная задача #${requestNumber}</b>\n\n` +
+                          `<b>Услуга:</b> ${orderData.serviceType}\n` +
+                          `<b>Клиент:</b> ${clientName}\n` +
+                          `<b>Оплата:</b> ${amount || (payment.total_amount / 100).toFixed(2)} BYN\n\n` +
+                          `<i>Откройте приложение для просмотра деталей.</i>`;
+              
+              await sendNotification(adminUser.telegramId, msg, {
+                reply_markup: {
+                  inline_keyboard: [
+                    [{ text: '📂 Открыть задачу', url: `https://t.me/squadraby_bot/app?startapp=task_${requestId}` }]
+                  ]
+                }
+              });
             }
           }
 

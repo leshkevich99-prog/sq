@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { db, handleFirestoreError, OperationType, createNotification, collection, onSnapshot, doc, updateDoc, query, where, getDoc, orderBy, limit } from '../../firebase';
+import { db, handleFirestoreError, OperationType, createNotification, collection, addDoc, onSnapshot, doc, updateDoc, query, where, getDoc, orderBy, limit } from '../../firebase';
 import { Link } from 'react-router-dom';
 import { BynIcon } from '../../components/BynIcon';
 import { useKeyboard } from '../../hooks/useKeyboard';
@@ -28,6 +28,7 @@ interface RequestData {
   createdAt: string;
   pickupAddress?: string;
   totalPrice?: number;
+  requestNumber?: number;
 }
 
 interface UserData {
@@ -89,6 +90,7 @@ export default function AdminDashboard() {
   
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null);
+  const [assignComment, setAssignComment] = useState('');
   const [viewMode, setViewMode] = useState<'kanban' | 'list'>('kanban');
   const [activeKanbanTab, setActiveKanbanTab] = useState<'pending' | 'in_progress' | 'completed'>('pending');
 
@@ -172,39 +174,74 @@ export default function AdminDashboard() {
       const reqSnap = await getDoc(reqRef);
       if (!reqSnap.exists()) return;
       
-      const reqData = reqSnap.data();
+      const reqData = reqSnap.data() as RequestData;
       const pilot = pilots.find(p => p.id === pilotId);
+      const requestNumber = reqData.requestNumber || selectedRequestId.slice(-4);
 
       await updateDoc(reqRef, {
         pilotId,
         status: 'accepted'
       });
 
-      // Notify client
-      const clientTitle = 'Пилот назначен';
-      const clientBody = `Ваш пилот ${pilot?.firstName || 'назначен'} уже в пути.`;
+      // 1. Create internal comment in chat
+      if (assignComment.trim()) {
+        await addDoc(collection(db, 'messages'), {
+          requestId: selectedRequestId,
+          senderId: 'system', // or admin's ID if available
+          senderName: 'Администратор',
+          text: assignComment.trim(),
+          type: 'internal',
+          createdAt: new Date().toISOString()
+        });
+      }
+
+      // 2. Notify client (in-app)
       await createNotification(
         reqData.userId,
-        clientTitle,
-        clientBody,
+        'Пилот назначен',
+        `Ваш пилот ${pilot?.firstName || ''} уже в пути.`,
         'success',
         `/task/${selectedRequestId}`
       );
 
-      // Notify pilot
-      const pilotTitle = 'Новое поручение';
+      // 3. Notify pilot (in-app)
       const serviceName = SERVICE_LABELS[reqData.serviceType] || reqData.serviceType;
-      const pilotBody = `Вам назначено новое поручение: ${serviceName}.`;
       await createNotification(
         pilotId,
-        pilotTitle,
-        pilotBody,
+        'Новое поручение',
+        `Вам назначено новое поручение #${requestNumber}: ${serviceName}.`,
         'info',
         `/task/${selectedRequestId}`
       );
 
+      // 4. Notify pilot (Telegram)
+      if (pilot?.telegramId) {
+        const tgMessage = `🚀 <b>Вам назначено новое поручение #${requestNumber}</b>\n\n` +
+                          `<b>Услуга:</b> ${serviceName}\n` +
+                          `<b>Адрес:</b> ${reqData.pickupAddress || 'не указан'}\n` +
+                          (assignComment.trim() ? `<b>Комментарий админа:</b> ${assignComment.trim()}\n\n` : '\n') +
+                          `<i>Откройте приложение для начала работы.</i>`;
+        
+        await fetch('/api/notifications/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            telegramId: pilot.telegramId,
+            message: tgMessage,
+            options: {
+              reply_markup: {
+                inline_keyboard: [
+                  [{ text: '📂 Открыть задачу', url: `https://t.me/squadraby_bot/app?startapp=task_${selectedRequestId}` }]
+                ]
+              }
+            }
+          })
+        });
+      }
+
       setAssignModalOpen(false);
       setSelectedRequestId(null);
+      setAssignComment('');
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, `requests/${selectedRequestId}`);
     }
@@ -551,7 +588,7 @@ export default function AdminDashboard() {
               <tbody className="divide-y divide-zinc-800">
                 {requests.map(req => (
                   <tr key={req.id} className="hover:bg-zinc-800/50 transition-colors">
-                    <td className="px-6 py-4 text-xs font-mono text-zinc-500">#{req.id?.slice(-6) || '---'}</td>
+                    <td className="px-6 py-4 text-xs font-mono text-zinc-500">#{req.requestNumber || req.id?.slice(-4)}</td>
                     <td className="px-6 py-4">
                       <div className="text-sm font-bold">{users[req.userId]?.firstName || 'Неизвестно'}</div>
                       <div className="text-[10px] text-zinc-500">@{users[req.userId]?.username || '---'}</div>
@@ -600,7 +637,7 @@ export default function AdminDashboard() {
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-bold">{users[req.userId]?.firstName || 'Клиент'}</span>
-                      <span className="text-[10px] font-mono text-zinc-500">#{req.id?.slice(-4)}</span>
+                      <span className="text-[10px] font-mono text-zinc-500">#{req.requestNumber || req.id?.slice(-4)}</span>
                     </div>
                     <div className="text-[10px] text-zinc-500 uppercase tracking-widest mt-0.5">
                       {req.serviceType} • {new Date(req.createdAt).toLocaleDateString()}
@@ -627,7 +664,18 @@ export default function AdminDashboard() {
               </button>
             </div>
             
+            <div className="p-6 pb-0">
+              <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-2 px-1">Комментарий для пилота</div>
+              <textarea
+                value={assignComment}
+                onChange={(e) => setAssignComment(e.target.value)}
+                placeholder="Напишите важное уточнение для пилота..."
+                className="w-full bg-black border border-zinc-800 rounded-2xl p-4 text-sm focus:outline-none focus:border-white transition-colors min-h-[100px] resize-none"
+              />
+            </div>
+
             <div className="p-6 space-y-2 overflow-y-auto flex-1">
+              <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-2 px-1">Выберите сотрудника</div>
               {pilots.length === 0 ? (
                 <p className="text-zinc-400 text-sm text-center py-8">Нет доступных пилотов</p>
               ) : (
@@ -736,7 +784,7 @@ function TaskCard({ req, user, car, pilot, onAssign }: { req: RequestData; user?
         <div className="mb-3">
           <div className="flex items-center gap-2 mb-0.5">
             <h3 className="font-bold text-sm truncate">{user?.firstName || 'Клиент'}</h3>
-            <span className="text-[9px] font-mono text-zinc-600">#{req.id?.slice(-4)}</span>
+            <span className="text-[9px] font-mono text-zinc-600">#{req.requestNumber || req.id?.slice(-4)}</span>
           </div>
           <p className="text-[9px] text-zinc-500 uppercase tracking-widest truncate">@{user?.username || '---'}</p>
         </div>

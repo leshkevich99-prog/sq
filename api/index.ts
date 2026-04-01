@@ -451,7 +451,14 @@ async function startServer() {
       }
       
       console.log(`[NOTIFY] Sending Telegram message to ${telegramId}`);
-      const success = await sendNotification(telegramId.toString(), message, options || {});
+      
+      // Use existing options or default to HTML if not specified
+      const finalOptions = {
+        parse_mode: 'HTML',
+        ...options
+      };
+
+      const success = await sendNotification(telegramId.toString(), message, finalOptions);
       
       if (success) {
         res.json({ success: true });
@@ -866,12 +873,16 @@ async function startServer() {
         }
       }
 
+      // 1c. Get sequential request number
+      const requestNumber = await firestore.getNextNumber('requests');
+
       // 2. Create the actual request
       const taskData = {
         ...rest,
         id,
         userId,
         serviceType,
+        requestNumber,
         totalPrice: useQuota ? 0 : totalPrice,
         createdAt: new Date().toISOString(),
         status: 'pending'

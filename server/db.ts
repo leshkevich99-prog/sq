@@ -140,6 +140,16 @@ export const firestore = {
         await docRef.delete();
       }
     };
+  },
+  getNextNumber: async (id: string) => {
+    const docRef = getDb().collection('counters').doc(id);
+    const result = await getDb().runTransaction(async (transaction: any) => {
+      const doc = await transaction.get(docRef);
+      const newNumber = (doc.exists ? doc.data()?.lastNumber || 0 : 0) + 1;
+      transaction.set(docRef, { lastNumber: newNumber }, { merge: true });
+      return newNumber;
+    });
+    return result;
   }
 };
 

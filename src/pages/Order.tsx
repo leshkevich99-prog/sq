@@ -6,6 +6,7 @@ import { useFirebase } from '../components/FirebaseProvider';
 import { db, handleFirestoreError, OperationType, createNotification, collection, query, where, getDocs, addDoc, onSnapshot, updateDoc, doc, orderBy, limit } from '../firebase';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
+import { useKeyboard } from '../hooks/useKeyboard';
 
 interface CarData {
   id: string;
@@ -62,6 +63,7 @@ export default function Order() {
   const [isCommentFocused, setIsCommentFocused] = useState(false);
   const [isPickupFocused, setIsPickupFocused] = useState(false);
   const [isDeliveryFocused, setIsDeliveryFocused] = useState(false);
+  const isKeyboardVisible = useKeyboard();
   
   const commentRef = useRef<HTMLTextAreaElement>(null);
   const pickupRef = useRef<HTMLInputElement>(null);
@@ -247,7 +249,7 @@ export default function Order() {
         // For now keep frontend notification if notifyAdmins exists
         try {
           if (typeof notifyAdmins === 'function') {
-            await notifyAdmins(newRequest.id, service, useQuota, balanceDeduction, 0);
+            await notifyAdmins(newRequest.id, service, useQuota, balanceDeduction, 0, newRequest.requestNumber);
           }
         } catch (adminNotifyErr) {
           console.warn("Could not notify admins via frontend (likely permission related)", adminNotifyErr);
@@ -336,7 +338,7 @@ export default function Order() {
     }
   };
 
-  const notifyAdmins = async (requestId: string, serviceType: string, useQuota: boolean, balanceDeduction: number, paidExternally: number) => {
+  const notifyAdmins = async (requestId: string, serviceType: string, useQuota: boolean, balanceDeduction: number, paidExternally: number, requestNumber?: number) => {
     const adminQuery = query(collection(db, 'users'), where('role', '==', 'admin'));
     const adminSnaps = await getDocs(adminQuery);
     
@@ -346,7 +348,7 @@ export default function Order() {
       const adminData = adminDoc.data();
       createNotification(
         adminDoc.id,
-        'Новое поручение',
+        `Новое поручение #${requestNumber || ''}`,
         `Поступило новое поручение на "${serviceName}" от ${user?.firstName || 'клиента'}.`,
         'info',
         `/task/${requestId}`
@@ -359,7 +361,11 @@ export default function Order() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               telegramId: adminData.telegramId,
-              message: `🏎️ Новое поручение!\n\nУслуга: ${serviceName}\nКлиент: ${user?.firstName || 'клиент'}\nОплата: ${useQuota ? 'Квота' : balanceDeduction > 0 ? `Депозит (${balanceDeduction}) + ${paidExternally}` : paidExternally}\n\nОткройте приложение для деталей.`
+              message: `🏎️ <b>Новое поручение #${requestNumber || ''}</b>\n\n` +
+                       `<b>Услуга:</b> ${serviceName}\n` +
+                       `<b>Клиент:</b> ${user?.firstName || 'клиент'}\n` +
+                       `<b>Оплата:</b> ${useQuota ? 'Квота' : balanceDeduction > 0 ? `Депозит (${balanceDeduction}) + ${paidExternally}` : paidExternally}\n\n` +
+                       `<i>Откройте приложение для деталей.</i>`
             })
           });
         } catch (e) {}
@@ -672,33 +678,38 @@ export default function Order() {
             </div>
           </div>
 
-          <label className="flex items-start gap-3 p-4 bg-red-500/10 border border-red-500/20 rounded-xl cursor-pointer mb-6">
-            <div className={`mt-0.5 w-5 h-5 rounded border flex items-center justify-center shrink-0 transition-colors ${
-              safetyAccepted ? 'bg-red-500 border-red-500' : 'border-red-500/50'
-            }`}>
-              {safetyAccepted && <Check size={14} className="text-white" />}
-            </div>
-            <p className="text-xs text-red-400 font-medium leading-relaxed">
-              Я подтверждаю, что ознакомлен с правилами: совместные поездки пилотов с владельцами запрещены регламентом безопасности.
-            </p>
-            <input 
-              type="checkbox" 
-              className="hidden" 
-              checked={safetyAccepted}
-              onChange={(e) => setSafetyAccepted(e.target.checked)}
-            />
-          </label>
 
-          <button 
-            onClick={handleOrder}
-            disabled={submitting || !selectedCarId || !safetyAccepted}
-            className="w-full bg-white text-black py-4 rounded-xl font-bold uppercase tracking-wider active:scale-[0.98] transition-transform disabled:opacity-50"
-          >
-            {submitting ? 'Отправка...' : 'Подтвердить вызов'}
-          </button>
-          <p className="text-center text-xs text-zinc-500 mt-4">
-            Нажимая кнопку, вы соглашаетесь с условиями сервиса
-          </p>
+          {!isKeyboardVisible && (
+            <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
+              <label className="flex items-start gap-3 p-4 bg-red-500/10 border border-red-500/20 rounded-xl cursor-pointer mb-6">
+                <div className={`mt-0.5 w-5 h-5 rounded border flex items-center justify-center shrink-0 transition-colors ${
+                  safetyAccepted ? 'bg-red-500 border-red-500' : 'border-red-500/50'
+                }`}>
+                  {safetyAccepted && <Check size={14} className="text-white" />}
+                </div>
+                <p className="text-xs text-red-400 font-medium leading-relaxed">
+                  Я подтверждаю, что ознакомлен с правилами: совместные поездки пилотов с владельцами запрещены регламентом безопасности.
+                </p>
+                <input 
+                  type="checkbox" 
+                  className="hidden" 
+                  checked={safetyAccepted}
+                  onChange={(e) => setSafetyAccepted(e.target.checked)}
+                />
+              </label>
+
+              <button 
+                onClick={handleOrder}
+                disabled={submitting || !selectedCarId || !safetyAccepted}
+                className="w-full bg-white text-black py-4 rounded-xl font-bold uppercase tracking-wider active:scale-[0.98] transition-transform disabled:opacity-50"
+              >
+                {submitting ? 'Отправка...' : 'Подтвердить вызов'}
+              </button>
+              <p className="text-center text-xs text-zinc-500 mt-4">
+                Нажимая кнопку, вы соглашаетесь с условиями сервиса
+              </p>
+            </div>
+          )}
         </>
       )}
     </div>

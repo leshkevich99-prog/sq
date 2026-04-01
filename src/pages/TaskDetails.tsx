@@ -46,6 +46,7 @@ interface RequestData {
   photos?: string[];
   photosBefore?: string[];
   photosAfter?: string[];
+  requestNumber?: number;
   photoMetadata?: Record<string, {
     timestamp: string;
     lat?: number;
@@ -552,7 +553,9 @@ export default function TaskDetails() {
             <button onClick={() => navigate(-1)} className="p-2 bg-zinc-900 rounded-full border border-zinc-800 active:scale-90 transition-transform shrink-0">
               <ArrowLeft size={20} />
             </button>
-            <h1 className="text-base sm:text-lg font-bold uppercase tracking-wide whitespace-nowrap overflow-hidden text-ellipsis">Детали поручения</h1>
+            <h1 className="text-base sm:text-lg font-bold uppercase tracking-wide whitespace-nowrap overflow-hidden text-ellipsis">
+              Поручение {request.requestNumber ? `#${request.requestNumber}` : ''}
+            </h1>
           </div>
           
           {(user?.role === 'client' || user?.role === 'pilot' || user?.role === 'admin') && 
