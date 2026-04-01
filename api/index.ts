@@ -30,6 +30,36 @@ async function startServer() {
   app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
   console.log('Express middleware configured');
 
+  // Helper to notify all admins
+  const notifyAdmins = async (title: string, body: string, path?: string) => {
+    try {
+      const admins = await firestore.collection('users').all([{ type: 'where', field: 'role', op: '==', value: 'admin' }]);
+      const now = new Date().toISOString();
+      
+      for (const admin of admins) {
+        // 1. In-app notification
+        await firestore.collection('notifications').set(uuidv4(), {
+          userId: admin.id,
+          title,
+          body,
+          type: 'system',
+          link: path || '/notifications',
+          read: false,
+          createdAt: now
+        });
+        
+        // 2. Telegram notification
+        if (admin.telegramId) {
+          const appUrl = process.env.SQUADRA_URL || '';
+          const message = `<b>${title}</b>\n\n${body}${path ? `\n\n<a href="${appUrl}${path}">Открыть в приложении</a>` : ''}`;
+          await sendNotification(admin.telegramId.toString(), message, { parse_mode: 'HTML' });
+        }
+      }
+    } catch (e) {
+      console.error('[NOTIFY_ADMINS] Error:', e);
+    }
+  };
+
   // Initialize Telegram Bot asynchronously
   initBot().then(() => {
     console.log('Telegram Bot initialization completed');
@@ -180,6 +210,13 @@ async function startServer() {
           role,
           createdAt: new Date().toISOString()
         });
+
+        // Notify admins about new registration
+        notifyAdmins(
+          'Новая регистрация',
+          `Зарегистрирован новый пользователь: ${tgUser.first_name}${tgUser.username ? ` (@${tgUser.username})` : ''} (Роль: ${role})`,
+          '/admin/users'
+        );
       }
 
       const token = generateToken({ id: userData.id, telegramId: userData.telegramId, role: userData.role });
@@ -811,6 +848,14 @@ async function startServer() {
         createdAt: new Date().toISOString()
       };
       const created = await firestore.collection('cars').set(id, carData);
+      
+      // Notify admins about new car
+      notifyAdmins(
+        'Новый автомобиль',
+        `Пользователь добавил новый автомобиль: ${carData.make} ${carData.model} (${carData.plate})`,
+        '/admin/moderation'
+      );
+
       res.json(created);
     } catch (e: any) {
       res.status(500).json({ error: e.message });
@@ -957,6 +1002,18 @@ async function startServer() {
       }
 
       const updated = await firestore.collection(collection).update(id, data);
+
+      // Notification logic for task status change to review
+      if (collection === 'requests' && data.status === 'review') {
+        const userDoc = await firestore.collection('users').get(item.userId);
+        const taskNumber = item.requestNumber || id.substring(0, 8);
+        notifyAdmins(
+          'Поручение требует проверки',
+          `Пилот перевел поручение #${taskNumber} в статус "Проверка".\nКлиент: ${userDoc?.firstName || 'Неизвестно'}`,
+          `/task/${id}`
+        );
+      }
+
       res.json(updated);
     } catch (e) {
       res.status(400).json({ error: 'Failed to update item' });

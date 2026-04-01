@@ -14,10 +14,12 @@ import {
   Power,
   Filter,
   Navigation,
-  MessageSquare
+  MessageSquare,
+  X
 } from 'lucide-react';
 import { useFirebase } from '../../components/FirebaseProvider';
 import { db, handleFirestoreError, OperationType, createNotification, collection, query, where, onSnapshot, doc, updateDoc, getDoc, orderBy, limit } from '../../firebase';
+import { getNavLinks } from '../../utils/navigation';
 
 interface RequestData {
   id: string;
@@ -151,14 +153,6 @@ export default function PilotDashboard() {
     if (!address) return;
     setSelectedAddress(address);
     setShowNavModal(true);
-  };
-
-  const getNavLinks = (address: string) => {
-    const encodedAddress = encodeURIComponent(address);
-    return [
-      { name: 'Яндекс Карты', url: `yandexmaps://maps.yandex.ru/?text=${encodedAddress}`, fallback: `https://yandex.ru/maps/?text=${encodedAddress}` },
-      { name: 'Google Maps', url: `comgooglemaps://?q=${encodedAddress}`, fallback: `https://www.google.com/maps/search/?api=1&query=${encodedAddress}` }
-    ];
   };
 
   const handleUpdateStatus = async (requestId: string, newStatus: string) => {
@@ -358,12 +352,18 @@ export default function PilotDashboard() {
 
       {/* Navigation Modal */}
       {showNavModal && (
-        <div className="fixed inset-0 z-[500] bg-black/80 backdrop-blur-sm flex flex-col justify-end animate-in fade-in duration-200">
-          <div className="w-full max-w-md mx-auto bg-zinc-900 rounded-t-3xl sm:rounded-2xl sm:mb-4 animate-in slide-in-from-bottom-full duration-300 max-h-[85vh] flex flex-col relative overflow-hidden">
+        <div 
+          className="fixed inset-0 z-[500] bg-black/80 backdrop-blur-sm flex flex-col justify-end animate-in fade-in duration-200"
+          onClick={() => setShowNavModal(false)}
+        >
+          <div 
+            className="w-full max-w-md mx-auto bg-zinc-900 rounded-t-3xl sm:rounded-2xl sm:mb-4 animate-in slide-in-from-bottom-full duration-300 max-h-[85vh] flex flex-col relative overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="sticky top-0 z-20 bg-zinc-900/80 backdrop-blur-md p-6 border-b border-zinc-800/50 flex justify-between items-center shrink-0">
               <h3 className="text-lg font-bold uppercase tracking-widest">Выбрать навигатор</h3>
               <button onClick={() => setShowNavModal(false)} className="p-2 bg-zinc-800 hover:bg-zinc-700 hover:text-white rounded-full transition-colors text-zinc-400">
-                <AlertTriangle size={20} className="rotate-180" />
+                <X size={20} />
               </button>
             </div>
             <div className="p-6 space-y-3 overflow-y-auto flex-1 pb-[max(env(safe-area-inset-bottom),1.5rem)]">

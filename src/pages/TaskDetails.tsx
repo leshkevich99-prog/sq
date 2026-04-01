@@ -7,6 +7,8 @@ import { useKeyboard } from '../hooks/useKeyboard';
 import imageCompression from 'browser-image-compression';
 import toast from 'react-hot-toast';
 import { BynIcon } from '../components/BynIcon';
+import { Skeleton } from '../components/Skeleton';
+import { getNavLinks } from '../utils/navigation';
 import { 
   ArrowLeft, 
   Car as CarIcon, 
@@ -93,6 +95,7 @@ export default function TaskDetails() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadType, setUploadType] = useState<'before' | 'after'>('before');
   const [showNavModal, setShowNavModal] = useState(false);
+  const [selectedAddress, setSelectedAddress] = useState<string | null>(null);
   const [locationPermission, setLocationPermission] = useState<'prompt' | 'granted' | 'denied'>('prompt');
   
   // Expense Modal State
@@ -968,6 +971,17 @@ export default function TaskDetails() {
         {/* Action Buttons for Pilot */}
         {user?.role === 'pilot' && (
           <div className="space-y-3 mt-6">
+            {(request.status === 'accepted' || request.status === 'driving' || request.status === 'in_progress') && (
+              <div className="grid grid-cols-1 gap-3">
+                <button 
+                  onClick={() => openNavigation(request.pickupAddress || '')}
+                  className="flex items-center justify-center gap-2 py-4 bg-zinc-900 border border-zinc-800 rounded-xl font-bold uppercase tracking-widest text-xs"
+                >
+                  <Navigation size={16} /> Маршрут
+                </button>
+              </div>
+            )}
+
             {request.status === 'accepted' && (
               <>
                 <button 
@@ -1038,15 +1052,6 @@ export default function TaskDetails() {
                   Вернуться на шаг назад
                 </button>
                 
-                <div className="grid grid-cols-1 gap-3">
-                  <button 
-                    onClick={() => openNavigation(request.pickupAddress || '')}
-                    className="flex items-center justify-center gap-2 py-4 bg-zinc-900 border border-zinc-800 rounded-xl font-bold uppercase tracking-widest text-xs"
-                  >
-                    <Navigation size={16} /> Маршрут
-                  </button>
-                </div>
-                
                 <button 
                   onClick={() => navigate(`/task/${id}/chat`)}
                   className="w-full flex items-center justify-center gap-2 py-4 bg-zinc-900 border border-zinc-800 rounded-xl font-bold uppercase tracking-widest text-xs"
@@ -1097,8 +1102,14 @@ export default function TaskDetails() {
 
         {/* Expense Modal */}
         {showExpenseModal && (
-          <div className="fixed inset-0 z-[400] bg-black/80 backdrop-blur-sm flex flex-col justify-end animate-in fade-in duration-200">
-            <div className="w-full max-w-md mx-auto bg-zinc-900 rounded-t-3xl sm:rounded-2xl sm:mb-4 animate-in slide-in-from-bottom-full duration-300 max-h-[85vh] flex flex-col relative overflow-hidden">
+          <div 
+            className="fixed inset-0 z-[400] bg-black/80 backdrop-blur-sm flex flex-col justify-end animate-in fade-in duration-200"
+            onClick={() => setShowExpenseModal(false)}
+          >
+            <div 
+              className="w-full max-w-md mx-auto bg-zinc-900 rounded-t-3xl sm:rounded-2xl sm:mb-4 animate-in slide-in-from-bottom-full duration-300 max-h-[85vh] flex flex-col relative overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
               <div className="sticky top-0 z-20 bg-zinc-900/80 backdrop-blur-md p-6 border-b border-zinc-800/50 flex justify-between items-center shrink-0">
                 <h3 className="text-lg font-bold uppercase tracking-widest">Добавить расход</h3>
                 <button onClick={() => setShowExpenseModal(false)} className="text-zinc-500 hover:text-white p-2">
@@ -1189,8 +1200,14 @@ export default function TaskDetails() {
 
         {/* Navigation Modal */}
         {showNavModal && (
-          <div className="fixed inset-0 z-[400] bg-black/80 backdrop-blur-sm flex flex-col justify-end animate-in fade-in duration-200">
-            <div className="w-full max-w-md mx-auto bg-zinc-900 rounded-t-3xl sm:rounded-2xl sm:mb-4 animate-in slide-in-from-bottom-full duration-300 max-h-[85vh] flex flex-col relative overflow-hidden">
+          <div 
+            className="fixed inset-0 z-[400] bg-black/80 backdrop-blur-sm flex flex-col justify-end animate-in fade-in duration-200"
+            onClick={() => setShowNavModal(false)}
+          >
+            <div 
+              className="w-full max-w-md mx-auto bg-zinc-900 rounded-t-3xl sm:rounded-2xl sm:mb-4 animate-in slide-in-from-bottom-full duration-300 max-h-[85vh] flex flex-col relative overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
               <div className="sticky top-0 z-20 bg-zinc-900/80 backdrop-blur-md p-6 border-b border-zinc-800/50 flex justify-between items-center shrink-0">
                 <h3 className="text-lg font-bold uppercase tracking-widest">Выбрать навигатор</h3>
                 <button onClick={() => setShowNavModal(false)} className="text-zinc-500 hover:text-white p-2">
