@@ -38,13 +38,13 @@ export function getNavLinks(address: string): NavLink[] {
     : `https://yandex.ru/maps/?text=${encodedAddress}`;
 
   // Google Maps URL:
-  // If coordinates found, use them as 'query' directly for pinpoint accuracy.
+  // Using destination parameter for pinpoint accuracy and immediate navigation readiness.
   const googleUrl = lat && lng
-    ? `comgooglemaps://?q=${lat},${lng}&zoom=16`
+    ? `comgooglemaps://?daddr=${lat},${lng}&directionsmode=driving`
     : `comgooglemaps://?q=${encodedAddress}`;
   
   const googleFallback = lat && lng
-    ? `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`
+    ? `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`
     : `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`;
 
   return [
