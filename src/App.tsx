@@ -38,6 +38,7 @@ import SOS from './pages/pilot/SOS';
 
 import { Terminal } from 'lucide-react';
 import DebugSwitcher from './components/DebugSwitcher';
+import NotificationManager from './components/NotificationManager';
 
 function AppRoutes() {
   const { user, loading } = useFirebase();
@@ -72,6 +73,7 @@ function AppRoutes() {
 
   return (
     <div className="w-full h-full relative">
+      <NotificationManager />
       <Routes>
         {role === 'client' && (
           <>

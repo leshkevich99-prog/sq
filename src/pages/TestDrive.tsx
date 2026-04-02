@@ -328,28 +328,28 @@ export default function TestDrive() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 w-full">
-          <div className="space-y-2">
+        <div className="flex flex-col min-[360px]:flex-row gap-3 w-full">
+          <div className="flex-[1.4] space-y-2">
             <label className="block text-xs text-zinc-500 uppercase tracking-wider ml-1">Дата</label>
             <div className="relative">
-              <Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-500" size={16} />
+              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none" size={14} />
               <input 
                 type="date" 
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-4 pl-8 pr-2 text-xs focus:outline-none focus:border-amber-500 text-white [color-scheme:dark] appearance-none box-border" 
+                className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-3.5 pl-9 pr-2 text-sm focus:outline-none focus:border-amber-500 text-white [color-scheme:dark]" 
               />
             </div>
           </div>
-          <div className="space-y-2">
+          <div className="flex-1 space-y-2">
             <label className="block text-xs text-zinc-500 uppercase tracking-wider ml-1">Время</label>
             <div className="relative">
-              <Clock className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-500" size={16} />
+              <Clock className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none" size={14} />
               <input 
                 type="time" 
                 value={time}
                 onChange={(e) => setTime(e.target.value)}
-                className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-4 pl-8 pr-2 text-xs focus:outline-none focus:border-amber-500 text-white [color-scheme:dark] appearance-none box-border" 
+                className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-3.5 pl-9 pr-2 text-sm focus:outline-none focus:border-amber-500 text-white [color-scheme:dark]" 
               />
             </div>
           </div>
