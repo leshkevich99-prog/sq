@@ -60,6 +60,25 @@ export default function AdminTransactions() {
     };
   }, []);
 
+  const handleConfirm = async (txId: string) => {
+    if (!window.confirm('Вы уверены, что хотите подтвердить этот платеж вручную?')) return;
+    
+    try {
+      const response = await fetch(`/api/admin/transactions/${txId}/confirm`, {
+        method: 'POST',
+        headers: { 
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      if (!response.ok) throw new Error('Ошибка при подтверждении');
+      // Toast or simple alert
+      alert('Успешно подтверждено');
+    } catch (err) {
+      console.error(err);
+      alert('Ошибка при подтверждении');
+    }
+  };
+
   const filteredTxs = transactions.filter(tx => {
     const user = users[tx.userId];
     const searchStr = ((user?.firstName || '') + (user?.username || '') + tx.description).toLowerCase();
@@ -174,10 +193,29 @@ export default function AdminTransactions() {
                     <td className="px-6 py-4 text-xs text-zinc-400 max-w-xs">
                       <div className="truncate">{tx.description}</div>
                       {tx.status === 'pending' && (
-                        <div className="mt-1">
+                        <div className="mt-1 flex items-center gap-2">
                           <span className="inline-block px-2 py-0.5 bg-amber-500/20 text-amber-500 text-[10px] uppercase tracking-wider font-bold rounded">
                             Ожидает оплаты
                           </span>
+                          <button 
+                            onClick={() => handleConfirm(tx.id)}
+                            className="bg-emerald-500 text-white text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded hover:bg-emerald-600 transition-colors"
+                          >
+                            Подтвердить
+                          </button>
+                        </div>
+                      )}
+                      {tx.status === 'processing' && (
+                        <div className="mt-1 flex items-center gap-2">
+                          <span className="inline-block px-2 py-0.5 bg-blue-500/20 text-blue-500 text-[10px] uppercase tracking-wider font-bold rounded">
+                            Выставление счета
+                          </span>
+                          <button 
+                            onClick={() => handleConfirm(tx.id)}
+                            className="bg-emerald-500 text-white text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded hover:bg-emerald-600 transition-colors"
+                          >
+                            Подтвердить
+                          </button>
                         </div>
                       )}
                       {tx.receiptUrl && (
@@ -234,9 +272,30 @@ export default function AdminTransactions() {
                         {tx.type}
                       </span>
                       {tx.status === 'pending' && (
-                        <span className="px-1.5 py-0.5 bg-amber-500/10 text-amber-500 text-[9px] uppercase tracking-wider font-bold rounded">
-                          Ожидает
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="px-1.5 py-0.5 bg-amber-500/10 text-amber-500 text-[9px] uppercase tracking-wider font-bold rounded">
+                            Ожидает
+                          </span>
+                          <button 
+                            onClick={() => handleConfirm(tx.id)}
+                            className="bg-emerald-500 text-white text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded"
+                          >
+                            Подтвердить
+                          </button>
+                        </div>
+                      )}
+                      {tx.status === 'processing' && (
+                        <div className="flex items-center gap-2">
+                          <span className="px-1.5 py-0.5 bg-blue-500/10 text-blue-500 text-[9px] uppercase tracking-wider font-bold rounded">
+                            B2B
+                          </span>
+                          <button 
+                            onClick={() => handleConfirm(tx.id)}
+                            className="bg-emerald-500 text-white text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded"
+                          >
+                            Подтвердить
+                          </button>
+                        </div>
                       )}
                     </div>
                     <div className="text-[9px] text-zinc-500 uppercase tracking-widest">

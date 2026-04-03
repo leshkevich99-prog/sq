@@ -740,7 +740,7 @@ async function startServer() {
 
   app.post('/api/payments/b2b-request', authenticateToken, async (req: AuthRequest, res) => {
     try {
-      const { unp, companyName, amount } = req.body;
+      const { unp, companyName, amount, email } = req.body;
       const userId = req.user?.id;
       const user = await firestore.collection('users').get(userId!);
 
@@ -748,31 +748,33 @@ async function startServer() {
         return res.status(400).json({ error: 'Missing UNP or Company Name' });
       }
 
-      console.log(`[B2B] Request from user ${userId}: ${companyName} (UNP: ${unp})`);
+      // 1. Create PROCESSING transaction in Firestore
+      const txId = uuidv4();
+      await firestore.collection('transactions').set(txId, {
+        userId,
+        type: 'deposit',
+        amount: Number(amount) || 0,
+        description: `B2B: Запрос счета (${companyName})`,
+        status: 'processing',
+        paymentMethod: 'b2b',
+        unp,
+        companyName,
+        email: email || user?.email || '—',
+        createdAt: new Date().toISOString()
+      });
 
-      // 1. Notify Admins
+      // 2. Notify Admins
       await notifyAdmins(
         'Запрос счета B2B',
         `Клиент ${user?.firstName} (@${user?.username}) запросил счет для организации:\n\n` +
         `📦 <b> ${companyName}</b>\n` +
         `🆔 <b>УНП:</b> ${unp}\n` +
+        `📧 <b>Email:</b> ${email || '—'}\n` +
         `💰 <b>Сумма:</b> ${amount || 'Не указана'} BYN`,
-        '/admin/transactions'
+        `/admin/transactions?id=${txId}`
       );
 
-      // 2. Log as a pending transaction (optional but good for tracking)
-      const txId = uuidv4();
-      await firestore.collection('transactions').set(txId, {
-        userId,
-        type: 'external_invoice',
-        amount: Number(amount) || 0,
-        description: `Запрос счета B2B: ${companyName}`,
-        status: 'pending',
-        metadata: { unp, companyName },
-        createdAt: new Date().toISOString()
-      });
-
-      res.json({ success: true, message: 'Запрос отправлен. Менеджер свяжется с вами.' });
+      res.json({ success: true, message: 'Запрос принят. Менеджер выставит счет в ближайшее время.', transactionId: txId });
     } catch (e: any) {
       console.error('[B2B] Error:', e);
       res.status(500).json({ error: e.message });
@@ -797,15 +799,31 @@ async function startServer() {
         description || 'Пополнение депозита Squadra'
       );
 
-      // Extract ERIP specific data if available, or just return checkout info
-      // In a real bePaid ERIP response, the instructions are often in payment_method.erip
       const eripData = checkout.payment_method?.erip || {};
+      const eripId = eripData.request_id || checkout.token.substring(0, 8).toUpperCase();
+      const instruction = eripData.instruction || 'Платежи -> Авто-мото -> Squadra -> Оплата по коду';
       
+      // 1. Create PENDING transaction in Firestore
+      const txId = uuidv4();
+      await firestore.collection('transactions').set(txId, {
+        userId,
+        type: 'deposit',
+        amount: Number(amount),
+        description: `ЕРИП: Ожидание оплаты`,
+        status: 'pending',
+        createdAt: new Date().toISOString(),
+        paymentMethod: 'erip',
+        eripId: eripId,
+        instruction: instruction,
+        accountNumber: eripData.account_number || userId.substring(0, 8).toUpperCase(),
+        bepaidToken: checkout.token
+      });
+
       res.json({ 
         token: checkout.token,
-        redirect_url: checkout.redirect_url, // For fallback hosted page
-        erip_id: eripData.request_id || checkout.token.substring(0, 8).toUpperCase(), // bePaid ERIP ID
-        instruction: eripData.instruction || 'Платежи -> Авто-мото -> Squadra -> Оплата по коду',
+        redirect_url: checkout.redirect_url,
+        erip_id: eripId,
+        instruction: instruction,
         account_number: eripData.account_number || userId.substring(0, 8).toUpperCase()
       });
     } catch (e: any) {
@@ -833,29 +851,46 @@ async function startServer() {
 
       // Check status
       if (transaction.status === 'successful') {
-        // Extract userId from tracking_id (format: erip_{userId}_{timestamp})
         const trackingId = transaction.tracking_id || '';
         const parts = trackingId.split('_');
-        const userId = parts[1]; // erip_{userId}_{time}
+        const userId = parts[1];
         
         if (userId) {
-          const amount = transaction.amount / 100; // bePaid uses kopeks
-          console.log(`[BEPAID_WEBHOOK] Success! Adding ${amount} BYN to user ${userId}`);
+          const amount = transaction.amount / 100;
+          console.log(`[BEPAID_WEBHOOK] Success! Updating transaction for user ${userId}`);
 
-          // Create deposit transaction in Firestore
-          const txId = uuidv4();
-          await firestore.collection('transactions').set(txId, {
-            userId,
-            type: 'deposit',
-            amount: amount,
-            description: `Авто-зачисление: ${transaction.payment_method_type === 'erip' ? 'ЕРИП' : 'bePaid'}`,
-            status: 'completed',
-            createdAt: new Date().toISOString(),
-            providerPaymentId: transaction.uid,
-            receiptUrl: transaction.receipt_url || null
-          });
+          // Try to find pending transaction by token or tracking_id
+          const pendingTxs = await firestore.collection('transactions').all([
+            { type: 'where', field: 'userId', op: '==', value: userId },
+            { type: 'where', field: 'status', op: '==', value: 'pending' }
+          ]);
 
-          // Notify user via Bot if possible
+          const pendingTx = pendingTxs.find((tx: any) => tx.bepaidToken === transaction.token || tx.eripId === transaction.payment_method?.erip?.request_id);
+
+          if (pendingTx) {
+             await firestore.collection('transactions').update(pendingTx.id, {
+               status: 'completed',
+               description: `Пополнение ЕРИП (Авто)`,
+               updatedAt: new Date().toISOString(),
+               providerPaymentId: transaction.uid,
+               receiptUrl: transaction.receipt_url || null
+             });
+          } else {
+            // Fallback: Create new completed transaction
+            const txId = uuidv4();
+            await firestore.collection('transactions').set(txId, {
+              userId,
+              type: 'deposit',
+              amount: amount,
+              description: `Авто-зачисление: ${transaction.payment_method_type === 'erip' ? 'ЕРИП' : 'bePaid'}`,
+              status: 'completed',
+              createdAt: new Date().toISOString(),
+              providerPaymentId: transaction.uid,
+              receiptUrl: transaction.receipt_url || null
+            });
+          }
+
+          // Notify user
           const user = await firestore.collection('users').get(userId);
           if (user?.telegramId) {
             await sendNotification(user.telegramId, `✅ <b>Оплата получена!</b>\n\nВаш баланс пополнен на <b>${amount.toFixed(2)} BYN</b>.\nМетод: ${transaction.payment_method_type.toUpperCase()}`);
@@ -931,6 +966,36 @@ async function startServer() {
   app.get('/api/admin/transactions', authenticateToken, isAdmin, async (req, res) => {
     const transactions = await firestore.collection('transactions').all([{ type: 'orderBy', field: 'createdAt', dir: 'desc' }]);
     res.json({ transactions });
+  });
+
+  app.post('/api/admin/transactions/:id/confirm', authenticateToken, isAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const tx = await firestore.collection('transactions').get(id);
+
+      if (!tx) return res.status(404).json({ error: 'Transaction not found' });
+      if (tx.status === 'completed') return res.status(400).json({ error: 'Already completed' });
+
+      await firestore.collection('transactions').update(id, {
+        status: 'completed',
+        updatedAt: new Date().toISOString(),
+        confirmedBy: (req as any).user?.username || 'Admin'
+      });
+
+      // Notify User
+      const user = await firestore.collection('users').get(tx.userId);
+      if (user?.telegramId) {
+        await sendNotification(
+          user.telegramId, 
+          `✅ <b>Оплата подтверждена администратором!</b>\n\nСумма <b>${tx.amount.toFixed(2)} BYN</b> зачислена на ваш баланс.`
+        );
+      }
+
+      res.json({ success: true });
+    } catch (e: any) {
+      console.error('[Admin] Confirm Error:', e);
+      res.status(500).json({ error: e.message });
+    }
   });
 
   app.post('/api/admin/broadcast', authenticateToken, isAdmin, async (req, res) => {

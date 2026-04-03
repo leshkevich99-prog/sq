@@ -14,9 +14,14 @@ interface Transaction {
   description: string;
   receiptUrl?: string;
   status?: string;
-  createdAt: any; // Can be string or Timestamp
+  createdAt: any;
   providerPaymentId?: string;
   telegramPaymentId?: string;
+  paymentMethod?: string;
+  eripId?: string;
+  instruction?: string;
+  accountNumber?: string;
+  bepaidToken?: string;
 }
 
 import { TARIFFS } from '../../config/tariffs';
@@ -36,6 +41,7 @@ export default function Finances() {
   const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
   const [unp, setUnp] = useState('');
   const [companyName, setCompanyName] = useState('');
+  const [email, setEmail] = useState('');
   const [eripInfo, setEripInfo] = useState<{ erip_id: string; instruction: string; account_number: string } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -180,6 +186,7 @@ export default function Finances() {
       setTopUpModalOpen(false);
       setUnp('');
       setCompanyName('');
+      setEmail('');
       toast.success('Запрос отправлен', { id: toastId });
     } catch (err: any) {
       console.error(err);
@@ -258,8 +265,12 @@ export default function Finances() {
     return desc || 'Транзакция';
   };
 
-  // Calculate balance
+  // Calculate balance based only on completed transactions
   const balance = transactions.reduce((acc, tx) => {
+    // Legacy transactions might not have a status field - assume they are completed
+    const isCompleted = !tx.status || tx.status === 'completed';
+    if (!isCompleted) return acc;
+
     if (tx.type === 'deposit') return acc + tx.amount;
     if (tx.type === 'deposit_deduction') return acc - tx.amount;
     return acc;
@@ -394,8 +405,18 @@ export default function Finances() {
                 status={tx.status}
                 onClick={() => {
                   setSelectedTx(tx);
-                  setIsReceiptModalOpen(true);
                   WebApp.HapticFeedback.impactOccurred('light');
+                  if (tx.status === 'pending' && tx.paymentMethod === 'erip') {
+                    setEripInfo({
+                      erip_id: tx.eripId,
+                      instruction: tx.instruction,
+                      account_number: tx.accountNumber || ''
+                    });
+                    setTopUpModalOpen(true);
+                    setActiveMethod('erip');
+                  } else {
+                    setIsReceiptModalOpen(true);
+                  }
                 }}
               />
             );
@@ -590,6 +611,16 @@ export default function Finances() {
                       className="w-full bg-black/40 border border-zinc-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-zinc-500 transition-colors uppercase font-mono"
                     />
                   </div>
+                  <div>
+                    <label className="text-[10px] text-zinc-500 uppercase tracking-widest mb-1.5 block px-1">Email для получения счета</label>
+                    <input 
+                      type="email" 
+                      placeholder="info@company.by"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="w-full bg-black/40 border border-zinc-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-zinc-500 transition-colors lowercase font-mono"
+                    />
+                  </div>
                 </div>
                 <button 
                   onClick={handleB2BRequest}
@@ -642,11 +673,24 @@ const TransactionCard: React.FC<{
           <h4 className="font-medium text-sm">{title}</h4>
           <p className="text-xs text-zinc-500 mt-0.5">{date}</p>
           {description && <p className="text-xs text-zinc-400 mt-1 line-clamp-1">{description}</p>}
-          {status === 'pending' && manual && (
-            <div className="text-[10px] text-amber-500 uppercase mt-1 font-bold">
-              Ожидает прямой оплаты клиентом
-            </div>
-          )}
+          
+          <div className="flex gap-2 mt-2">
+            {status === 'pending' && (
+              <span className="text-[9px] bg-amber-500/10 text-amber-500 px-2 py-0.5 rounded border border-amber-500/20 font-bold uppercase tracking-wider">
+                Ожидает оплаты
+              </span>
+            )}
+            {status === 'processing' && (
+              <span className="text-[9px] bg-blue-500/10 text-blue-500 px-2 py-0.5 rounded border border-blue-500/20 font-bold uppercase tracking-wider">
+                Выставление счета
+              </span>
+            )}
+            {status === 'completed' && (
+              <span className="text-[9px] bg-emerald-500/10 text-emerald-500 px-2 py-0.5 rounded border border-emerald-500/20 font-bold uppercase tracking-wider">
+                Завершено
+              </span>
+            )}
+          </div>
         </div>
       </div>
       <div className="text-right shrink-0 ml-2">
