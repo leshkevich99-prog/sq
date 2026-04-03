@@ -3,6 +3,35 @@ import fs from 'node:fs';
 import { firestore } from './db.js';
 import { v4 as uuidv4 } from 'uuid';
 
+// Helper to fetch official bePaid receipt URL
+async function fetchBePaidReceiptUrl(uid: string): Promise<string | null> {
+  const shopId = process.env.BEPAID_SHOP_ID;
+  const secretKey = process.env.BEPAID_SECRET_KEY;
+
+  if (!shopId || !secretKey || !uid) return null;
+
+  try {
+    const auth = Buffer.from(`${shopId}:${secretKey}`).toString('base64');
+    const response = await fetch(`https://gateway.bepaid.by/transactions/${uid}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Basic ${auth}`,
+        'Accept': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      console.warn(`bePaid API error: ${response.status} for UID ${uid}`);
+      return null;
+    }
+    const data: any = await response.json();
+    return data?.transaction?.receipt_url || null;
+  } catch (error) {
+    console.error('Error fetching bePaid receipt:', error);
+    return null;
+  }
+}
+
 let bot: TelegramBot | null = null;
 
 export async function initBot() {
@@ -151,7 +180,9 @@ export async function handleSuccessfulPayment(chatId: number, payment: any) {
           // 1. Record deposit (replenishment)
           const providerPaymentId = payment.provider_payment_charge_id;
           const telegramPaymentId = payment.telegram_payment_charge_id;
-          const receiptUrl = payment.receipt_url || null;
+
+          // Fetch real receipt URL from bePaid API
+          const receiptUrl = await fetchBePaidReceiptUrl(providerPaymentId) || payment.receipt_url || null;
 
           await firestore.collection('transactions').add({
             userId,
@@ -219,7 +250,9 @@ export async function handleSuccessfulPayment(chatId: number, payment: any) {
           // 1. Record deposit (replenishment)
           const providerPaymentId = payment.provider_payment_charge_id;
           const telegramPaymentId = payment.telegram_payment_charge_id;
-          const receiptUrl = payment.receipt_url || null;
+
+          // Fetch real receipt URL from bePaid API
+          const receiptUrl = await fetchBePaidReceiptUrl(providerPaymentId) || payment.receipt_url || null;
 
           await firestore.collection('transactions').add({
             userId,
@@ -314,7 +347,9 @@ export async function handleSuccessfulPayment(chatId: number, payment: any) {
           // 1. Record deposit (replenishment)
           const providerPaymentId = payment.provider_payment_charge_id;
           const telegramPaymentId = payment.telegram_payment_charge_id;
-          const receiptUrl = payment.receipt_url || null;
+
+          // Fetch real receipt URL from bePaid API
+          const receiptUrl = await fetchBePaidReceiptUrl(providerPaymentId) || payment.receipt_url || null;
 
           await firestore.collection('transactions').add({
             userId,
@@ -368,9 +403,8 @@ export async function handleSuccessfulPayment(chatId: number, payment: any) {
         const providerPaymentId = payment.provider_payment_charge_id;
         const telegramPaymentId = payment.telegram_payment_charge_id;
         
-        // We cannot reliably guess the receipt URL without a hash. 
-        // Real receipt_url should be fetched via bePaid API if credentials were provided.
-        const receiptUrl = payment.receipt_url || null; 
+        // Fetch real receipt URL from bePaid API
+        const receiptUrl = await fetchBePaidReceiptUrl(providerPaymentId) || payment.receipt_url || null; 
 
         await firestore.collection('transactions').add({
           userId,
