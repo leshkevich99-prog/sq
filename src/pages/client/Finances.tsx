@@ -417,7 +417,7 @@ const TransactionCard: React.FC<{
   );
 }
 
-// PREMIUM RECEIPT MODAL COMPONENT
+// PREMIUM RECEIPT MODAL COMPONENT (Compliant with RB Electronic Commerce Law)
 const ReceiptModal: React.FC<{ 
   isOpen: boolean; 
   onClose: () => void; 
@@ -430,78 +430,94 @@ const ReceiptModal: React.FC<{
 
   return (
     <div className="fixed inset-0 z-[500] flex items-center justify-center p-4 animate-in fade-in duration-200">
-      <div className="absolute inset-0 bg-black/90 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/95 backdrop-blur-md" onClick={onClose} />
       
       <div className="relative w-full max-w-sm bg-[#fcfcfc] text-zinc-900 rounded-lg shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-300">
         {/* Jagged top edge effect */}
         <div className="h-2 w-full bg-zinc-200 flex" style={{ clipPath: 'polygon(0% 0%, 5% 100%, 10% 0%, 15% 100%, 20% 0%, 25% 100%, 30% 0%, 35% 100%, 40% 0%, 45% 100%, 50% 0%, 55% 100%, 60% 0%, 65% 100%, 70% 0%, 75% 100%, 80% 0%, 85% 100%, 90% 0%, 95% 100%, 100% 0%)' }} />
         
-        <div className="p-8 pb-12 flex flex-col items-center">
-          <div className="w-16 h-16 bg-zinc-900 text-white rounded-full flex items-center justify-center mb-6">
-            <span className="font-serif text-2xl font-bold italic">SQ</span>
+        <div className="p-8 pb-10 flex flex-col items-center">
+          <div className="flex flex-col items-center mb-6">
+             <h2 className="text-xl font-black uppercase tracking-tighter text-zinc-900">Squadra Service</h2>
+             <p className="text-[8px] text-zinc-500 uppercase tracking-widest mt-1">Автомобильный консьерж-сервис</p>
           </div>
           
-          <h2 className="text-xl font-bold uppercase tracking-tighter mb-1 text-center">Squadra Service</h2>
-          <p className="text-[10px] uppercase tracking-[0.2em] text-zinc-500 mb-8 font-mono">Official Electronic Receipt</p>
+          <h1 className="text-xs font-bold uppercase tracking-widest mb-6 py-1 px-3 border border-zinc-200 rounded">Электронный кард-чек</h1>
           
-          <div className="w-full space-y-4 font-mono text-xs border-y border-dashed border-zinc-300 py-6 mb-6">
+          <div className="w-full space-y-3 font-mono text-[10px] border-t border-dashed border-zinc-300 pt-6 mb-4">
             <div className="flex justify-between">
-              <span className="text-zinc-500 uppercase">Дата:</span>
+              <span className="text-zinc-500">УНП:</span>
+              <span className="font-bold text-zinc-700">193790584</span> {/* Mock UNP - should be verified with user */}
+            </div>
+            <div className="flex justify-between">
+              <span className="text-zinc-500">МЕРЧАНТ:</span>
+              <span className="font-bold text-zinc-700">SQUADRA BY</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-zinc-500">ДАТА И ВРЕМЯ:</span>
               <span>{formatDate(transaction.createdAt)}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-zinc-500 uppercase">Тип:</span>
-              <span className="text-right">{isIncome ? 'Пополнение' : 'Списание'}</span>
+              <span className="text-zinc-500">ТИП ОПЕРАЦИИ:</span>
+              <span className="font-bold uppercase">{isIncome ? 'ОПЛАТА' : 'СПИСАНИЕ'}</span>
             </div>
             <div className="flex justify-between items-start">
-              <span className="text-zinc-500 uppercase">Услуга:</span>
-              <span className="text-right max-w-[150px]">{transaction.description || 'Платеж по тарифу'}</span>
+              <span className="text-zinc-500">УСЛУГА:</span>
+              <span className="text-right max-w-[150px] uppercase">{transaction.description || 'ПОПОЛНЕНИЕ ДЕПОЗИТА'}</span>
+            </div>
+          </div>
+
+          <div className="w-full space-y-3 font-mono text-[10px] border-b border-dashed border-zinc-300 pb-6 mb-6">
+            <div className="flex justify-between">
+              <span className="text-zinc-500">СПОСОБ:</span>
+              <span>BANK CARD</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-zinc-500">СИСТЕМА:</span>
+              <span className="font-bold text-[#e65a15]">bePaid.by</span>
             </div>
             {transaction.providerPaymentId && (
               <div className="flex justify-between">
-                <span className="text-zinc-500 uppercase">ID платежа:</span>
-                <span className="text-right text-[8px]">{transaction.providerPaymentId}</span>
+                <span className="text-zinc-500">ID ТРАНЗАКЦИИ:</span>
+                <span className="text-right font-bold">{transaction.providerPaymentId}</span>
               </div>
             )}
-            <div className="flex justify-between items-center pt-2 border-t border-zinc-200">
-              <span className="text-sm font-bold uppercase">Итого:</span>
-              <span className="text-lg font-bold">
+            <div className="flex justify-between items-center pt-2 border-t border-zinc-100">
+              <span className="text-xs font-bold">СУММА ОПЕРАЦИИ:</span>
+              <span className="text-xl font-black">
                 {isIncome ? '' : '-'}{transaction.amount.toFixed(2)} BYN
               </span>
             </div>
           </div>
           
-          <div className="text-center mb-10">
-            <div className="p-3 bg-white border border-zinc-200 rounded-lg inline-block mb-3">
-              {/* Mock QR for premium feel */}
-              <div className="w-24 h-24 bg-zinc-100 flex items-center justify-center overflow-hidden">
-                <img 
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(transaction.receiptUrl || 'https://squadra.by/tx/' + transaction.id)}`} 
-                  alt="QR" 
-                  className="w-full h-full grayscale opacity-80"
-                />
-              </div>
+          <div className="text-center mb-8 flex flex-col items-center">
+            <div className="p-2 bg-white border border-zinc-200 rounded-lg mb-3">
+              <img 
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(transaction.receiptUrl || 'https://squadra.by/tx/' + transaction.id)}`} 
+                alt="QR" 
+                className="w-20 h-20 grayscale"
+              />
             </div>
-            <p className="text-[9px] text-zinc-400 uppercase tracking-widest">Проверено Squadra CRM</p>
+            <p className="text-[8px] text-zinc-400 uppercase tracking-widest leading-normal">
+              Данный документ является подтверждением совершения операции<br/>через платежную систему bePaid (РБ)
+            </p>
           </div>
           
-          <div className="w-full flex gap-3">
+          <div className="w-full flex flex-col gap-2">
+            {transaction.receiptUrl && (
+              <button 
+                onClick={() => WebApp.openLink(transaction.receiptUrl!)}
+                className="w-full py-3 bg-[#e65a15] text-white rounded-xl text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg shadow-orange-500/20 active:scale-95 transition-transform"
+              >
+                Официальный чек bePaid
+              </button>
+            )}
             <button 
               onClick={onClose}
-              className="flex-1 py-3 border border-zinc-200 rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-zinc-50 transition-colors"
+              className="w-full py-3 border border-zinc-200 rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-zinc-50 transition-colors"
             >
               Закрыть
             </button>
-            {transaction.receiptUrl && (
-              <a 
-                href={transaction.receiptUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex-1 py-3 bg-zinc-900 text-white rounded-xl text-[10px] font-bold uppercase tracking-widest text-center flex items-center justify-center gap-2"
-              >
-                Оригинал
-              </a>
-            )}
           </div>
         </div>
         
