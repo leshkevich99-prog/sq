@@ -149,12 +149,19 @@ export async function handleSuccessfulPayment(chatId: number, payment: any) {
           
           // FOR CARD PAYMENTS: Record deposit then deduction as requested
           // 1. Record deposit (replenishment)
+          const providerPaymentId = payment.provider_payment_charge_id;
+          const telegramPaymentId = payment.telegram_payment_charge_id;
+          const receiptUrl = providerPaymentId ? `https://checkout.bepaid.by/receipt/${providerPaymentId}` : undefined;
+
           await firestore.collection('transactions').add({
             userId,
             type: 'deposit',
             amount: amount || (payment.total_amount / 100),
             description: `Оплата тарифа ${tariffName} (пополнение)`,
-            createdAt: new Date().toISOString()
+            createdAt: new Date().toISOString(),
+            providerPaymentId,
+            telegramPaymentId,
+            receiptUrl
           });
 
           // 2. Record deduction (withdrawal)
@@ -210,12 +217,19 @@ export async function handleSuccessfulPayment(chatId: number, payment: any) {
 
           // FOR CARD PAYMENTS: Record deposit then deduction as requested
           // 1. Record deposit (replenishment)
+          const providerPaymentId = payment.provider_payment_charge_id;
+          const telegramPaymentId = payment.telegram_payment_charge_id;
+          const receiptUrl = providerPaymentId ? `https://checkout.bepaid.by/receipt/${providerPaymentId}` : undefined;
+
           await firestore.collection('transactions').add({
             userId,
             type: 'deposit',
             amount: amount || (payment.total_amount / 100),
             description: `Оплата услуги "${orderData.serviceType}" (пополнение)`,
-            createdAt: new Date().toISOString()
+            createdAt: new Date().toISOString(),
+            providerPaymentId,
+            telegramPaymentId,
+            receiptUrl
           });
 
           // 2. Record deduction (withdrawal)
@@ -298,12 +312,19 @@ export async function handleSuccessfulPayment(chatId: number, payment: any) {
 
           // FOR CARD PAYMENTS: Record deposit then deduction as requested
           // 1. Record deposit (replenishment)
+          const providerPaymentId = payment.provider_payment_charge_id;
+          const telegramPaymentId = payment.telegram_payment_charge_id;
+          const receiptUrl = providerPaymentId ? `https://checkout.bepaid.by/receipt/${providerPaymentId}` : undefined;
+
           await firestore.collection('transactions').add({
             userId,
             type: 'deposit',
             amount: amount || (payment.total_amount / 100),
             description: `Оплата тест-драйва (пополнение)`,
-            createdAt: new Date().toISOString()
+            createdAt: new Date().toISOString(),
+            providerPaymentId,
+            telegramPaymentId,
+            receiptUrl
           });
 
           // 2. Record deduction (withdrawal)
@@ -344,12 +365,19 @@ export async function handleSuccessfulPayment(chatId: number, payment: any) {
       // Record generic deposit if it was a simple deposit replenishment
       if (type === 'deposit' || (!['subscription', 'service_order', 'test_drive'].includes(type))) {
         console.log(`Creating deposit record for user ${userId}`);
+        const providerPaymentId = payment.provider_payment_charge_id;
+        const telegramPaymentId = payment.telegram_payment_charge_id;
+        const receiptUrl = providerPaymentId ? `https://checkout.bepaid.by/receipt/${providerPaymentId}` : undefined;
+
         await firestore.collection('transactions').add({
           userId,
           type: 'deposit',
           amount: amount || (payment.total_amount / 100),
           description: 'Пополнение депозита',
-          createdAt: new Date().toISOString()
+          createdAt: new Date().toISOString(),
+          providerPaymentId,
+          telegramPaymentId,
+          receiptUrl
         });
       }
 

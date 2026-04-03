@@ -14,7 +14,9 @@ interface Transaction {
   description: string;
   receiptUrl?: string;
   status?: string;
-  createdAt: string;
+  createdAt: any; // Can be string or Timestamp
+  providerPaymentId?: string;
+  telegramPaymentId?: string;
 }
 
 import { TARIFFS } from '../../config/tariffs';
@@ -29,7 +31,31 @@ export default function Finances() {
   const [topUpLoading, setTopUpLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'all' | 'income' | 'expense'>('all');
   const [isInputFocused, setIsInputFocused] = useState(false);
+  const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
+  const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Helper to format date robustly
+  const formatDate = (dateValue: any) => {
+    if (!dateValue) return '—';
+    
+    let date: Date;
+    if (typeof dateValue === 'string') {
+      date = new Date(dateValue);
+    } else if (dateValue.seconds) {
+      // Firestore Timestamp
+      date = new Date(dateValue.seconds * 1000);
+    } else if (dateValue instanceof Date) {
+      date = dateValue;
+    } else {
+      date = new Date(dateValue);
+    }
+
+    if (isNaN(date.getTime())) return '—';
+
+    return date.toLocaleDateString('ru-RU') + ' ' + 
+           date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+  };
 
   const handleFocus = () => {
     setIsInputFocused(true);
@@ -51,8 +77,12 @@ export default function Finances() {
       snapshot.forEach(doc => {
         txs.push({ id: doc.id, ...doc.data() } as Transaction);
       });
-      // Sort client-side since we might not have an index for userId + createdAt
-      txs.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      // Sort client-side
+      txs.sort((a, b) => {
+        const dateA = a.createdAt?.seconds ? a.createdAt.seconds * 1000 : new Date(a.createdAt).getTime();
+        const dateB = b.createdAt?.seconds ? b.createdAt.seconds * 1000 : new Date(b.createdAt).getTime();
+        return (dateB || 0) - (dateA || 0);
+      });
       setTransactions(txs);
       setLoading(false);
     }, (error) => {
@@ -257,18 +287,31 @@ export default function Finances() {
               <TransactionCard 
                 key={tx.id}
                 title={getTransactionTitle(tx.type, tx.description)} 
-                date={new Date(tx.createdAt).toLocaleDateString() + ' ' + new Date(tx.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} 
+                date={formatDate(tx.createdAt)} 
                 amount={`${isIncome ? '+' : '-'}${tx.amount.toFixed(2)}`} 
                 type={isIncome ? 'income' : 'expense'} 
                 manual={tx.type === 'external_invoice'}
                 description={tx.description}
                 receiptUrl={tx.receiptUrl}
                 status={tx.status}
+                onClick={() => {
+                  setSelectedTx(tx);
+                  setIsReceiptModalOpen(true);
+                  WebApp.HapticFeedback.impactOccurred('light');
+                }}
               />
             );
           })}
         </div>
       )}
+
+      {/* Receipt Modal */}
+      <ReceiptModal 
+        isOpen={isReceiptModalOpen} 
+        onClose={() => setIsReceiptModalOpen(false)} 
+        transaction={selectedTx} 
+        formatDate={formatDate}
+      />
 
       {/* Top Up Modal */}
       {topUpModalOpen && (
@@ -332,10 +375,23 @@ export default function Finances() {
   );
 }
 
-const TransactionCard: React.FC<{ title: string; date: string; amount: string; type: 'income' | 'expense'; manual?: boolean; description?: string; receiptUrl?: string; status?: string }> = ({ title, date, amount, type, manual, description, receiptUrl, status }) => {
+const TransactionCard: React.FC<{ 
+  title: string; 
+  date: string; 
+  amount: string; 
+  type: 'income' | 'expense'; 
+  manual?: boolean; 
+  description?: string; 
+  receiptUrl?: string; 
+  status?: string;
+  onClick?: () => void;
+}> = ({ title, date, amount, type, manual, description, receiptUrl, status, onClick }) => {
   const isIncome = type === 'income';
   return (
-    <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-xl p-4 flex justify-between items-center">
+    <div 
+      onClick={onClick}
+      className="bg-zinc-900/50 border border-zinc-800/50 rounded-xl p-4 flex justify-between items-center active:scale-95 transition-transform cursor-pointer"
+    >
       <div className="flex items-center gap-3">
         <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${isIncome ? 'bg-emerald-500/10 text-emerald-500' : 'bg-zinc-800 text-zinc-400'}`}>
           {isIncome ? <ArrowDownRight size={20} /> : <ArrowUpRight size={20} />}
@@ -344,11 +400,6 @@ const TransactionCard: React.FC<{ title: string; date: string; amount: string; t
           <h4 className="font-medium text-sm">{title}</h4>
           <p className="text-xs text-zinc-500 mt-0.5">{date}</p>
           {description && <p className="text-xs text-zinc-400 mt-1 line-clamp-1">{description}</p>}
-          {receiptUrl && (
-            <a href={receiptUrl} target="_blank" rel="noopener noreferrer" className="text-[10px] text-accent hover:underline mt-1 inline-block">
-              Смотреть квитанцию
-            </a>
-          )}
           {status === 'pending' && manual && (
             <div className="text-[10px] text-amber-500 uppercase mt-1 font-bold">
               Ожидает прямой оплаты клиентом
@@ -361,6 +412,101 @@ const TransactionCard: React.FC<{ title: string; date: string; amount: string; t
           {amount} <BynIcon size="0.8em" />
         </div>
         {manual && <div className="text-[10px] text-zinc-500 uppercase mt-1">Вне депозита</div>}
+      </div>
+    </div>
+  );
+}
+
+// PREMIUM RECEIPT MODAL COMPONENT
+const ReceiptModal: React.FC<{ 
+  isOpen: boolean; 
+  onClose: () => void; 
+  transaction: Transaction | null;
+  formatDate: (d: any) => string;
+}> = ({ isOpen, onClose, transaction, formatDate }) => {
+  if (!isOpen || !transaction) return null;
+
+  const isIncome = transaction.type === 'deposit';
+
+  return (
+    <div className="fixed inset-0 z-[500] flex items-center justify-center p-4 animate-in fade-in duration-200">
+      <div className="absolute inset-0 bg-black/90 backdrop-blur-sm" onClick={onClose} />
+      
+      <div className="relative w-full max-w-sm bg-[#fcfcfc] text-zinc-900 rounded-lg shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-300">
+        {/* Jagged top edge effect */}
+        <div className="h-2 w-full bg-zinc-200 flex" style={{ clipPath: 'polygon(0% 0%, 5% 100%, 10% 0%, 15% 100%, 20% 0%, 25% 100%, 30% 0%, 35% 100%, 40% 0%, 45% 100%, 50% 0%, 55% 100%, 60% 0%, 65% 100%, 70% 0%, 75% 100%, 80% 0%, 85% 100%, 90% 0%, 95% 100%, 100% 0%)' }} />
+        
+        <div className="p-8 pb-12 flex flex-col items-center">
+          <div className="w-16 h-16 bg-zinc-900 text-white rounded-full flex items-center justify-center mb-6">
+            <span className="font-serif text-2xl font-bold italic">SQ</span>
+          </div>
+          
+          <h2 className="text-xl font-bold uppercase tracking-tighter mb-1 text-center">Squadra Service</h2>
+          <p className="text-[10px] uppercase tracking-[0.2em] text-zinc-500 mb-8 font-mono">Official Electronic Receipt</p>
+          
+          <div className="w-full space-y-4 font-mono text-xs border-y border-dashed border-zinc-300 py-6 mb-6">
+            <div className="flex justify-between">
+              <span className="text-zinc-500 uppercase">Дата:</span>
+              <span>{formatDate(transaction.createdAt)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-zinc-500 uppercase">Тип:</span>
+              <span className="text-right">{isIncome ? 'Пополнение' : 'Списание'}</span>
+            </div>
+            <div className="flex justify-between items-start">
+              <span className="text-zinc-500 uppercase">Услуга:</span>
+              <span className="text-right max-w-[150px]">{transaction.description || 'Платеж по тарифу'}</span>
+            </div>
+            {transaction.providerPaymentId && (
+              <div className="flex justify-between">
+                <span className="text-zinc-500 uppercase">ID платежа:</span>
+                <span className="text-right text-[8px]">{transaction.providerPaymentId}</span>
+              </div>
+            )}
+            <div className="flex justify-between items-center pt-2 border-t border-zinc-200">
+              <span className="text-sm font-bold uppercase">Итого:</span>
+              <span className="text-lg font-bold">
+                {isIncome ? '' : '-'}{transaction.amount.toFixed(2)} BYN
+              </span>
+            </div>
+          </div>
+          
+          <div className="text-center mb-10">
+            <div className="p-3 bg-white border border-zinc-200 rounded-lg inline-block mb-3">
+              {/* Mock QR for premium feel */}
+              <div className="w-24 h-24 bg-zinc-100 flex items-center justify-center overflow-hidden">
+                <img 
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(transaction.receiptUrl || 'https://squadra.by/tx/' + transaction.id)}`} 
+                  alt="QR" 
+                  className="w-full h-full grayscale opacity-80"
+                />
+              </div>
+            </div>
+            <p className="text-[9px] text-zinc-400 uppercase tracking-widest">Проверено Squadra CRM</p>
+          </div>
+          
+          <div className="w-full flex gap-3">
+            <button 
+              onClick={onClose}
+              className="flex-1 py-3 border border-zinc-200 rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-zinc-50 transition-colors"
+            >
+              Закрыть
+            </button>
+            {transaction.receiptUrl && (
+              <a 
+                href={transaction.receiptUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 py-3 bg-zinc-900 text-white rounded-xl text-[10px] font-bold uppercase tracking-widest text-center flex items-center justify-center gap-2"
+              >
+                Оригинал
+              </a>
+            )}
+          </div>
+        </div>
+        
+        {/* Jagged bottom edge effect */}
+        <div className="h-2 w-full bg-zinc-200 flex rotate-180" style={{ clipPath: 'polygon(0% 0%, 5% 100%, 10% 0%, 15% 100%, 20% 0%, 25% 100%, 30% 0%, 35% 100%, 40% 0%, 45% 100%, 50% 0%, 55% 100%, 60% 0%, 65% 100%, 70% 0%, 75% 100%, 80% 0%, 85% 100%, 90% 0%, 95% 100%, 100% 0%)' }} />
       </div>
     </div>
   );
