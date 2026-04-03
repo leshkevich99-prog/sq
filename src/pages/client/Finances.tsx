@@ -491,15 +491,21 @@ const ReceiptModal: React.FC<{
           </div>
           
           <div className="text-center mb-8 flex flex-col items-center">
-            <div className="p-2 bg-white border border-zinc-200 rounded-lg mb-3">
+            <button 
+              onClick={() => {
+                const url = transaction.receiptUrl || `https://squadra.by/tx/${transaction.id}`;
+                WebApp.openLink(url);
+              }}
+              className="p-2 bg-white border border-zinc-200 rounded-lg mb-3 active:scale-95 transition-transform hover:border-[#e65a15] group"
+            >
               <img 
                 src={`https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(transaction.receiptUrl || 'https://squadra.by/tx/' + transaction.id)}`} 
                 alt="QR" 
-                className="w-20 h-20 grayscale"
+                className="w-20 h-20 grayscale group-hover:grayscale-0 transition-all"
               />
-            </div>
+            </button>
             <p className="text-[8px] text-zinc-400 uppercase tracking-widest leading-normal">
-              Данный документ является подтверждением совершения операции<br/>через платежную систему bePaid (РБ)
+              Нажмите на QR-код для перехода к оригиналу<br/>через платежную систему bePaid (РБ)
             </p>
           </div>
           
