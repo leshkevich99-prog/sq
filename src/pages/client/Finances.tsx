@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Wallet, ArrowUpRight, ArrowDownRight, CreditCard, X, Check } from 'lucide-react';
+import { Wallet, ArrowUpRight, ArrowDownRight, CreditCard, X, Check, HelpCircle, Search, FileText } from 'lucide-react';
 import { BynIcon } from '../../components/BynIcon';
 import WebApp from '@twa-dev/sdk';
 import { useFirebase } from '../../components/FirebaseProvider';
@@ -30,9 +30,13 @@ export default function Finances() {
   const [topUpAmount, setTopUpAmount] = useState('');
   const [topUpLoading, setTopUpLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'all' | 'income' | 'expense'>('all');
+  const [activeMethod, setActiveMethod] = useState<'card' | 'erip' | 'b2b'>('card');
   const [isInputFocused, setIsInputFocused] = useState(false);
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
   const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
+  const [unp, setUnp] = useState('');
+  const [companyName, setCompanyName] = useState('');
+  const [eripInfo, setEripInfo] = useState<{ erip_id: string; instruction: string; account_number: string } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Helper to format date robustly
@@ -146,6 +150,100 @@ export default function Finances() {
     } catch (error) {
       console.error('Top up error:', error);
       toast.error('Ошибка при создании счета', { id: toastId });
+    } finally {
+      setTopUpLoading(false);
+    }
+  };
+
+  const handleB2BRequest = async () => {
+    if (!unp || !companyName) {
+      toast.error('Введите УНП и название компании');
+      return;
+    }
+
+    setTopUpLoading(true);
+    const toastId = toast.loading('Обработка запроса...');
+    try {
+      const response = await fetch('/api/payments/b2b-request', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({ unp, companyName, amount: topUpAmount })
+      });
+
+      if (!response.ok) throw new Error('Ошибка при отправке запроса');
+      
+      WebApp.HapticFeedback.notificationOccurred('success');
+      WebApp.showAlert('Ваша заявка на выставление счета (B2B) принята. Менеджер Squadra вышлет счет в Telegram в ближайшее время.');
+      setTopUpModalOpen(false);
+      setUnp('');
+      setCompanyName('');
+      toast.success('Запрос отправлен', { id: toastId });
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message, { id: toastId });
+    } finally {
+      setTopUpLoading(false);
+    }
+  };
+
+  const handleEripReport = async () => {
+    setTopUpLoading(true);
+    const toastId = toast.loading('Отправка уведомления...');
+    try {
+      const response = await fetch('/api/payments/erip-report', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({ amount: topUpAmount })
+      });
+
+      if (!response.ok) throw new Error('Ошибка при отправке отчета');
+      
+      WebApp.HapticFeedback.notificationOccurred('success');
+      WebApp.showAlert('Спасибо! Мы уже получили уведомление о вашем платеже. После подтверждения администратором баланс обновится.');
+      setTopUpModalOpen(false);
+      setTopUpAmount('');
+      toast.success('Отчет отправлен', { id: toastId });
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message, { id: toastId });
+    } finally {
+      setTopUpLoading(false);
+    }
+  };
+
+  const fetchEripInfo = async () => {
+    if (!topUpAmount || isNaN(Number(topUpAmount)) || Number(topUpAmount) < 1) {
+      toast.error('Введите корректную сумму для генерации счета');
+      return;
+    }
+
+    setTopUpLoading(true);
+    const toastId = toast.loading('Генерация счета ЕРИП...');
+    try {
+      const response = await fetch('/api/payments/erip/create', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({ amount: topUpAmount })
+      });
+
+      if (!response.ok) throw new Error('Ошибка при создании счета bePaid');
+      
+      const data = await response.json();
+      setEripInfo(data);
+      WebApp.HapticFeedback.impactOccurred('medium');
+      toast.success('Данные ЕРИП получены', { id: toastId });
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message, { id: toastId });
     } finally {
       setTopUpLoading(false);
     }
@@ -316,58 +414,202 @@ export default function Finances() {
       {/* Top Up Modal */}
       {topUpModalOpen && (
         <div className="fixed inset-0 z-[400] bg-black/80 backdrop-blur-sm flex flex-col justify-end animate-in fade-in duration-200">
-          <div className="w-full max-w-md mx-auto bg-zinc-900 rounded-t-3xl sm:rounded-2xl sm:mb-4 animate-in slide-in-from-bottom-full duration-300 max-h-[85vh] flex flex-col relative overflow-hidden">
-            <div className="sticky top-0 z-20 bg-zinc-900/80 backdrop-blur-md p-6 border-b border-zinc-800/50 flex justify-between items-center shrink-0">
-              <h2 className="text-xl font-bold uppercase tracking-tighter">Пополнение депозита</h2>
-              <button onClick={() => setTopUpModalOpen(false)} className="text-zinc-500 hover:text-white p-2">
+          <div className="absolute inset-0" onClick={() => setTopUpModalOpen(false)} />
+          <div className="relative bg-zinc-900 rounded-t-[32px] p-6 pb-12 w-full animate-in slide-in-from-bottom duration-300 border-t border-zinc-800">
+            <div className="w-12 h-1.5 bg-zinc-800 rounded-full mx-auto mb-6" />
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold uppercase tracking-tighter">Пополнение депозита</h3>
+              <button onClick={() => setTopUpModalOpen(false)} className="text-zinc-500 hover:text-white transition-colors">
                 <X size={24} />
               </button>
             </div>
-            
-            <div className="p-6 space-y-4 overflow-y-auto flex-1">
-              <p className="text-sm text-zinc-400 mb-2">
-                Введите сумму, на которую вы хотите пополнить ваш депозит. Заявка будет обработана в ближайшее время.
-              </p>
 
-              <div>
-                <div className="flex justify-between items-center mb-2">
-                  <label className="block text-xs font-bold uppercase tracking-wider text-zinc-500">Сумма (<BynIcon size="0.8em" className="inline-block" />)</label>
-                  {isInputFocused && (
+            {/* Payment Method Selector */}
+            <div className="flex gap-2 p-1 bg-black/40 rounded-xl mb-6 border border-zinc-800/50">
+              <PaymentMethodBtn 
+                id="card" 
+                label="Карта" 
+                active={activeMethod === 'card'} 
+                onClick={() => setActiveMethod('card')} 
+              />
+              <PaymentMethodBtn 
+                id="erip" 
+                label="ЕРИП" 
+                active={activeMethod === 'erip'} 
+                onClick={() => setActiveMethod('erip')} 
+              />
+              <PaymentMethodBtn 
+                id="b2b" 
+                label="Счёт B2B" 
+                active={activeMethod === 'b2b'} 
+                onClick={() => setActiveMethod('b2b')} 
+              />
+            </div>
+
+            {activeMethod === 'card' && (
+              <div className="space-y-6">
+                <div className="text-center">
+                  <div className="text-[10px] text-zinc-500 uppercase tracking-widest mb-1">Сумма к пополнению</div>
+                  <div className="flex items-center justify-center gap-2">
+                    <input 
+                      ref={inputRef}
+                      type="number" 
+                      value={topUpAmount} 
+                      onChange={(e) => setTopUpAmount(e.target.value)}
+                      placeholder="0.00"
+                      className="bg-transparent border-none text-4xl font-mono text-white text-center focus:outline-none w-48 placeholder:text-zinc-800"
+                      autoFocus
+                    />
+                    <span className="text-2xl font-mono text-zinc-500">BYN</span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-3">
+                  {['100', '500', '1000'].map(val => (
                     <button 
-                      onClick={() => {
-                        inputRef.current?.blur();
-                        setIsInputFocused(false);
-                      }}
-                      className="text-[10px] font-bold uppercase text-accent flex items-center gap-1 bg-accent/10 px-2 py-1 rounded-lg"
+                      key={val} 
+                      onClick={() => { setTopUpAmount(val); WebApp.HapticFeedback.selectionChanged(); }}
+                      className={`py-3 rounded-xl border text-sm font-bold uppercase tracking-wider transition-all ${topUpAmount === val ? 'bg-white text-black border-white' : 'bg-transparent text-zinc-400 border-zinc-800 hover:border-zinc-600'}`}
                     >
-                      Готово <Check size={10} />
+                      {val}
                     </button>
-                  )}
+                  ))}
                 </div>
-                <div className="relative">
-                  <input 
-                    ref={inputRef}
-                    type="number" 
-                    placeholder="0.00" 
-                    value={topUpAmount}
-                    onChange={(e) => setTopUpAmount(e.target.value)}
-                    onFocus={handleFocus}
-                    onBlur={() => setTimeout(() => setIsInputFocused(false), 100)}
-                    className="w-full bg-black border border-zinc-800 rounded-xl py-3 px-4 text-sm focus:outline-none focus:border-accent text-white" 
-                  />
-                </div>
-              </div>
-            </div>
 
-            <div className={`sticky bottom-0 z-20 bg-zinc-900/80 backdrop-blur-md p-6 border-t border-zinc-800/50 shrink-0 pb-[max(env(safe-area-inset-bottom),1.5rem)] ${isKeyboardVisible ? 'hidden' : 'block'}`}>
-              <button 
-                onClick={handleTopUp}
-                disabled={topUpLoading || !topUpAmount || Number(topUpAmount) <= 0}
-                className="w-full py-3 bg-white text-black text-sm font-bold uppercase tracking-wider rounded-xl disabled:opacity-50 hover:bg-zinc-200 transition-colors"
-              >
-                {topUpLoading ? 'Обработка...' : 'Оплатить'}
-              </button>
-            </div>
+                <button 
+                  onClick={handleTopUp}
+                  disabled={!topUpAmount || parseFloat(topUpAmount) < 3.28 || topUpLoading}
+                  className="w-full h-14 bg-white text-black rounded-2xl flex items-center justify-center gap-2 font-bold uppercase tracking-[0.2em] relative overflow-hidden group disabled:opacity-50 disabled:grayscale transition-all active:scale-[0.98]"
+                >
+                  {topUpLoading ? (
+                    <div className="w-5 h-5 border-2 border-black/20 border-t-black rounded-full animate-spin" />
+                  ) : (
+                    <>
+                      <CreditCard size={20} />
+                      <span>ПОПОЛНИТЬ КАРТОЙ</span>
+                    </>
+                  )}
+                </button>
+                <p className="text-[10px] text-zinc-500 text-center uppercase tracking-widest opacity-60">Безопасная оплата через bePaid (РБ)</p>
+              </div>
+            )}
+
+            {activeMethod === 'erip' && (
+              <div className="space-y-6 animate-in slide-in-from-right-4 duration-300">
+                {!eripInfo ? (
+                  <div className="flex flex-col items-center justify-center py-8 text-center space-y-4">
+                    <div className="w-16 h-16 rounded-full bg-zinc-800 flex items-center justify-center text-zinc-500">
+                      <HelpCircle size={32} />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-white">Готовы к оплате?</p>
+                      <p className="text-xs text-zinc-500 mt-1">Нажмите кнопку ниже, чтобы получить<br />номер счета в системе ЕРИП</p>
+                    </div>
+                    <button 
+                      onClick={fetchEripInfo}
+                      disabled={!topUpAmount || topUpLoading}
+                      className="px-8 py-3 bg-white text-black rounded-xl text-xs font-bold uppercase tracking-widest active:scale-95 transition-all disabled:opacity-50"
+                    >
+                      {topUpLoading ? 'Генерация...' : 'Получить номер счета'}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    <div className="bg-black/50 border border-emerald-500/20 rounded-2xl p-5 space-y-4">
+                      <div className="flex items-center gap-3 text-emerald-500">
+                        <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+                          <Check size={18} />
+                        </div>
+                        <span className="text-xs font-bold uppercase tracking-wider">Счет ЕРИП сформирован</span>
+                      </div>
+                      
+                      <div className="space-y-2 text-[11px] text-zinc-400 leading-relaxed font-mono uppercase">
+                        <p className="text-zinc-500 text-[9px] mb-1">Путь в дереве ЕРИП:</p>
+                        <p>{eripInfo.instruction}</p>
+                      </div>
+
+                      <div className="pt-2 border-t border-zinc-800 flex items-center justify-between">
+                        <div>
+                          <div className="text-[8px] text-zinc-500 uppercase tracking-widest mb-1">Номер счета (bePaid)</div>
+                          <div className="text-lg font-bold text-white tracking-widest">{eripInfo.erip_id}</div>
+                        </div>
+                        <button 
+                          onClick={() => {
+                            WebApp.HapticFeedback.notificationOccurred('success');
+                            navigator.clipboard.writeText(eripInfo.erip_id);
+                            toast.success('Номер скопирован');
+                          }}
+                          className="text-xs bg-zinc-800 text-white px-4 py-2 rounded-lg font-bold uppercase tracking-widest active:bg-zinc-700"
+                        >
+                          Копировать
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      <button 
+                        onClick={handleEripReport}
+                        disabled={topUpLoading}
+                        className="w-full h-14 bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 rounded-2xl flex items-center justify-center gap-2 font-bold uppercase tracking-[0.2em] hover:bg-emerald-500/20 transition-all active:scale-[0.98] disabled:opacity-50"
+                      >
+                        <Search size={20} />
+                        <span>Я ОПЛАТИЛ В ЕРИП</span>
+                      </button>
+                      <button 
+                        onClick={() => setEripInfo(null)}
+                        className="w-full py-2 text-[10px] text-zinc-500 uppercase font-bold tracking-widest hover:text-zinc-400"
+                      >
+                        Изменить сумму
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {activeMethod === 'b2b' && (
+              <div className="space-y-6 animate-in slide-in-from-right-4 duration-300">
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-[10px] text-zinc-500 uppercase tracking-widest mb-1.5 block px-1">УНП вашей организации</label>
+                    <input 
+                      type="text" 
+                      placeholder="123456789"
+                      value={unp}
+                      onChange={(e) => setUnp(e.target.value)}
+                      className="w-full bg-black/40 border border-zinc-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-zinc-500 transition-colors uppercase font-mono"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-zinc-500 uppercase tracking-widest mb-1.5 block px-1">Название (ООО/ИП)</label>
+                    <input 
+                      type="text" 
+                      placeholder="ООО АВТО-ЛЮКС"
+                      value={companyName}
+                      onChange={(e) => setCompanyName(e.target.value)}
+                      className="w-full bg-black/40 border border-zinc-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-zinc-500 transition-colors uppercase font-mono"
+                    />
+                  </div>
+                </div>
+                <button 
+                  onClick={handleB2BRequest}
+                  disabled={topUpLoading || !unp || !companyName}
+                  className="w-full h-14 bg-zinc-100 text-black rounded-2xl flex items-center justify-center gap-2 font-bold uppercase tracking-[0.2em] transition-all active:scale-[0.98] disabled:opacity-50"
+                >
+                  {topUpLoading ? (
+                    <div className="w-5 h-5 border-2 border-black/20 border-t-black rounded-full animate-spin" />
+                  ) : (
+                    <>
+                      <FileText size={20} />
+                      <span>ПОЛУЧИТЬ СЧЕТ</span>
+                    </>
+                  )}
+                </button>
+                <p className="text-[8px] text-zinc-500 text-center uppercase tracking-[0.2em] leading-normal">
+                  Менеджер сформирует счет и свяжется с вами<br />в течение 15 минут
+                </p>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -416,6 +658,15 @@ const TransactionCard: React.FC<{
     </div>
   );
 }
+
+const PaymentMethodBtn: React.FC<{ id: string; label: string; active: boolean; onClick: () => void }> = ({ id, label, active, onClick }) => (
+  <button 
+    onClick={onClick}
+    className={`flex-1 py-3 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all ${active ? 'bg-zinc-800 text-white shadow-lg' : 'text-zinc-500 hover:text-zinc-400'}`}
+  >
+    {label}
+  </button>
+);
 
 // PREMIUM RECEIPT MODAL COMPONENT (Compliant with RB Electronic Commerce Law)
 const ReceiptModal: React.FC<{ 

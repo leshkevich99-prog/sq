@@ -9,6 +9,7 @@ import { fileURLToPath } from 'url';
 import { initBot, sendNotification, getBot, createInvoiceLink, handleSuccessfulPayment } from '../server/bot.js';
 import { firestore, adminAuth, bucket } from '../server/db.js';
 import { generateToken, authenticateToken, AuthRequest, isAdmin } from '../server/auth.js';
+import { BePaidAPI } from '../server/bepaid.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -734,6 +735,160 @@ async function startServer() {
     } catch (error: any) {
       console.error('Payment creation error details:', error);
       res.status(500).json({ error: error.message || 'Internal server error' });
+    }
+  });
+
+  app.post('/api/payments/b2b-request', authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      const { unp, companyName, amount } = req.body;
+      const userId = req.user?.id;
+      const user = await firestore.collection('users').get(userId!);
+
+      if (!unp || !companyName) {
+        return res.status(400).json({ error: 'Missing UNP or Company Name' });
+      }
+
+      console.log(`[B2B] Request from user ${userId}: ${companyName} (UNP: ${unp})`);
+
+      // 1. Notify Admins
+      await notifyAdmins(
+        'Запрос счета B2B',
+        `Клиент ${user?.firstName} (@${user?.username}) запросил счет для организации:\n\n` +
+        `📦 <b> ${companyName}</b>\n` +
+        `🆔 <b>УНП:</b> ${unp}\n` +
+        `💰 <b>Сумма:</b> ${amount || 'Не указана'} BYN`,
+        '/admin/transactions'
+      );
+
+      // 2. Log as a pending transaction (optional but good for tracking)
+      const txId = uuidv4();
+      await firestore.collection('transactions').set(txId, {
+        userId,
+        type: 'external_invoice',
+        amount: Number(amount) || 0,
+        description: `Запрос счета B2B: ${companyName}`,
+        status: 'pending',
+        metadata: { unp, companyName },
+        createdAt: new Date().toISOString()
+      });
+
+      res.json({ success: true, message: 'Запрос отправлен. Менеджер свяжется с вами.' });
+    } catch (e: any) {
+      console.error('[B2B] Error:', e);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.post('/api/payments/erip/create', authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      const { amount, description } = req.body;
+      const userId = req.user?.id;
+
+      if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+      if (!amount || isNaN(Number(amount))) {
+        return res.status(400).json({ error: 'Invalid or missing amount' });
+      }
+
+      console.log(`[ERIP] Creating bePaid checkout for user ${userId}, amount ${amount}`);
+
+      const checkout = await BePaidAPI.createEripCheckout(
+        Number(amount), 
+        userId, 
+        description || 'Пополнение депозита Squadra'
+      );
+
+      // Extract ERIP specific data if available, or just return checkout info
+      // In a real bePaid ERIP response, the instructions are often in payment_method.erip
+      const eripData = checkout.payment_method?.erip || {};
+      
+      res.json({ 
+        token: checkout.token,
+        redirect_url: checkout.redirect_url, // For fallback hosted page
+        erip_id: eripData.request_id || checkout.token.substring(0, 8).toUpperCase(), // bePaid ERIP ID
+        instruction: eripData.instruction || 'Платежи -> Авто-мото -> Squadra -> Оплата по коду',
+        account_number: eripData.account_number || userId.substring(0, 8).toUpperCase()
+      });
+    } catch (e: any) {
+      console.error('[ERIP] Create Error:', e);
+      res.status(500).json({ error: e.message || 'Failed to create ERIP checkout' });
+    }
+  });
+
+  // bePaid Webhook (Callback) for all payment methods (CC, ERIP, etc.)
+  app.post('/api/payments/bepaid/webhook', async (req, res) => {
+    console.log('[BEPAID_WEBHOOK] Received notification:', JSON.stringify(req.body));
+    
+    try {
+      // 1. Verify Authentication
+      if (!BePaidAPI.verifyWebhook(req.headers, JSON.stringify(req.body))) {
+        console.warn('[BEPAID_WEBHOOK] Unauthorized access attempt');
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+
+      const { transaction } = req.body;
+      if (!transaction) {
+        console.warn('[BEPAID_WEBHOOK] No transaction data in body');
+        return res.status(400).json({ error: 'Invalid payload' });
+      }
+
+      // Check status
+      if (transaction.status === 'successful') {
+        // Extract userId from tracking_id (format: erip_{userId}_{timestamp})
+        const trackingId = transaction.tracking_id || '';
+        const parts = trackingId.split('_');
+        const userId = parts[1]; // erip_{userId}_{time}
+        
+        if (userId) {
+          const amount = transaction.amount / 100; // bePaid uses kopeks
+          console.log(`[BEPAID_WEBHOOK] Success! Adding ${amount} BYN to user ${userId}`);
+
+          // Create deposit transaction in Firestore
+          const txId = uuidv4();
+          await firestore.collection('transactions').set(txId, {
+            userId,
+            type: 'deposit',
+            amount: amount,
+            description: `Авто-зачисление: ${transaction.payment_method_type === 'erip' ? 'ЕРИП' : 'bePaid'}`,
+            status: 'completed',
+            createdAt: new Date().toISOString(),
+            providerPaymentId: transaction.uid,
+            receiptUrl: transaction.receipt_url || null
+          });
+
+          // Notify user via Bot if possible
+          const user = await firestore.collection('users').get(userId);
+          if (user?.telegramId) {
+            await sendNotification(user.telegramId, `✅ <b>Оплата получена!</b>\n\nВаш баланс пополнен на <b>${amount.toFixed(2)} BYN</b>.\nМетод: ${transaction.payment_method_type.toUpperCase()}`);
+          }
+        }
+      }
+
+      res.json({ status: 'ok' });
+    } catch (e: any) {
+      console.error('[BEPAID_WEBHOOK] Error handling:', e);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
+  app.post('/api/payments/erip-report', authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      const userId = req.user?.id;
+      const user = await firestore.collection('users').get(userId!);
+      const { amount } = req.body;
+
+      console.log(`[ERIP] Payment report from user ${userId}: ${amount} BYN`);
+
+      // 1. Notify Admins
+      await notifyAdmins(
+        'Отчет об оплате ЕРИП',
+        `Клиент ${user?.firstName} (@${user?.username}) сообщил о совершении платежа в ЕРИП на сумму <b>${amount || '???'} BYN</b>.\n\nПроверьте выписку bePaid.`,
+        '/admin/transactions'
+      );
+
+      res.json({ success: true });
+    } catch (e: any) {
+      console.error('[ERIP] Error:', e);
+      res.status(500).json({ error: e.message });
     }
   });
 
