@@ -160,7 +160,13 @@ export default function TestDrive() {
     <div className="animate-in fade-in duration-500 w-full max-w-full overflow-x-hidden">
       <header className="sticky top-0 z-40 bg-black/95 backdrop-blur-md pt-4 pb-4 -mx-4 px-4 mb-4 border-b border-zinc-900/50">
         <div className="flex items-center gap-4">
-          <button onClick={() => navigate(-1)} className="p-2 bg-zinc-900 rounded-full border border-zinc-800 active:scale-90 transition-transform">
+          <button 
+            onClick={() => {
+              navigate(-1);
+              WebApp.HapticFeedback.impactOccurred('light');
+            }} 
+            className="p-2 bg-zinc-900 rounded-full border border-zinc-800 active:scale-90 transition-transform"
+          >
             <ArrowLeft size={20} />
           </button>
           <div>
@@ -230,6 +236,7 @@ export default function TestDrive() {
           <div className="relative w-full">
             <input 
               type="tel" 
+              inputMode="tel"
               placeholder="+375 (XX) XXX-XX-XX" 
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
@@ -266,6 +273,7 @@ export default function TestDrive() {
             <button 
               type="button"
               onClick={() => {
+                WebApp.HapticFeedback.impactOccurred('medium');
                 if (!navigator.geolocation) {
                   toast.error('Геолокация не поддерживается вашим браузером');
                   return;
@@ -283,7 +291,7 @@ export default function TestDrive() {
                   }
                 );
               }}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-amber-500 hover:text-white transition-colors"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-amber-500 hover:text-white transition-colors active:scale-90 transition-transform"
             >
               <div className="text-[10px] font-bold uppercase">GPS</div>
             </button>
@@ -304,6 +312,7 @@ export default function TestDrive() {
             <button 
               type="button"
               onClick={() => {
+                WebApp.HapticFeedback.impactOccurred('medium');
                 if (!navigator.geolocation) {
                   toast.error('Геолокация не поддерживается вашим браузером');
                   return;
@@ -321,7 +330,7 @@ export default function TestDrive() {
                   }
                 );
               }}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-amber-500 hover:text-white transition-colors"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-amber-500 hover:text-white transition-colors active:scale-90 transition-transform"
             >
               <div className="text-[10px] font-bold uppercase">GPS</div>
             </button>
@@ -374,14 +383,18 @@ export default function TestDrive() {
               type="checkbox" 
               className="hidden" 
               checked={safetyAccepted}
-              onChange={(e) => setSafetyAccepted(e.target.checked)}
+              onChange={(e) => {
+                setSafetyAccepted(e.target.checked);
+                WebApp.HapticFeedback.impactOccurred('medium');
+              }}
             />
           </label>
 
           <button 
             type="submit"
             disabled={submitting || !safetyAccepted}
-            className="w-full py-4 bg-amber-500 text-black rounded-xl font-bold uppercase tracking-widest text-sm shadow-lg shadow-amber-500/20 disabled:opacity-50"
+            onClick={() => WebApp.HapticFeedback.impactOccurred('medium')}
+            className="w-full py-4 bg-amber-500 text-black rounded-xl font-bold uppercase tracking-widest text-sm shadow-lg shadow-amber-500/20 disabled:opacity-50 active:scale-[0.98] transition-transform"
           >
             {submitting ? 'Отправка...' : safetyAccepted ? 'Оплатить и записаться' : 'Примите регламент'}
           </button>

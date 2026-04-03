@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useFirebase } from '../components/FirebaseProvider';
+import WebApp from '@twa-dev/sdk';
 import { db, handleFirestoreError, OperationType, doc, getDoc, updateDoc } from '../firebase';
 import { User, Phone, Save, ArrowLeft, LogOut, Check } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -108,7 +109,13 @@ export default function Profile() {
       <header className="sticky top-[56px] z-30 bg-black/95 backdrop-blur-md py-3 -mx-4 px-4 mb-6 border-b border-zinc-900/50">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <button onClick={() => navigate(-1)} className="p-2 bg-zinc-900 rounded-full border border-zinc-800 active:scale-90 transition-transform">
+            <button 
+              onClick={() => {
+                navigate(-1);
+                WebApp.HapticFeedback.impactOccurred('light');
+              }} 
+              className="p-2 bg-zinc-900 rounded-full border border-zinc-800 active:scale-90 transition-transform"
+            >
               <ArrowLeft size={18} />
             </button>
             <div onClick={handleSecretTap}>
@@ -131,6 +138,7 @@ export default function Profile() {
                     onClick={() => {
                       firstNameRef.current?.blur();
                       setFocusedField(null);
+                      WebApp.HapticFeedback.impactOccurred('light');
                     }}
                     className="text-[10px] font-bold uppercase text-accent flex items-center gap-1 bg-accent/10 px-2 py-1 rounded-lg"
                   >
@@ -165,6 +173,7 @@ export default function Profile() {
                     onClick={() => {
                       lastNameRef.current?.blur();
                       setFocusedField(null);
+                      WebApp.HapticFeedback.impactOccurred('light');
                     }}
                     className="text-[10px] font-bold uppercase text-accent flex items-center gap-1 bg-accent/10 px-2 py-1 rounded-lg"
                   >
@@ -199,6 +208,7 @@ export default function Profile() {
                     onClick={() => {
                       phoneRef.current?.blur();
                       setFocusedField(null);
+                      WebApp.HapticFeedback.impactOccurred('light');
                     }}
                     className="text-[10px] font-bold uppercase text-accent flex items-center gap-1 bg-accent/10 px-2 py-1 rounded-lg"
                   >
@@ -213,6 +223,7 @@ export default function Profile() {
                 <input
                   ref={phoneRef}
                   type="tel"
+                  inputMode="tel"
                   name="phone"
                   value={formData.phone}
                   onChange={handleChange}
@@ -229,7 +240,8 @@ export default function Profile() {
         <button
           type="submit"
           disabled={saving}
-          className="w-full bg-white text-black font-bold uppercase tracking-wider py-4 rounded-xl hover:bg-zinc-200 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+          onClick={() => WebApp.HapticFeedback.impactOccurred('medium')}
+          className="w-full bg-white text-black font-bold uppercase tracking-wider py-4 rounded-xl hover:bg-zinc-200 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
         >
           <Save size={20} />
           {saving ? 'Сохранение...' : 'Сохранить изменения'}

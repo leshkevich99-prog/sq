@@ -36,7 +36,7 @@ async function startServer() {
     try {
       const admins = await firestore.collection('users').all([{ type: 'where', field: 'role', op: '==', value: 'admin' }]);
       const now = new Date().toISOString();
-      
+
       for (const admin of admins) {
         // 1. In-app notification
         await firestore.collection('notifications').set(uuidv4(), {
@@ -48,24 +48,24 @@ async function startServer() {
           read: false,
           createdAt: now
         });
-        
+
         // 2. Telegram notification
         if (admin.telegramId) {
           const message = `<b>${title}</b>\n\n${body}`;
           const options: any = { parse_mode: 'HTML' };
-          
+
           if (path && path.includes('/task/')) {
             const taskId = path.split('/').pop();
             // Deep link directly to the task in the Mini App
             const webAppUrl = `https://t.me/squadraby_bot/app?startapp=task_${taskId}`;
-            
+
             options.reply_markup = {
               inline_keyboard: [
                 [{ text: '📂 Открыть поручение', url: webAppUrl }]
               ]
             };
           }
-          
+
           await sendNotification(admin.telegramId.toString(), message, options);
         }
       }
@@ -105,7 +105,7 @@ async function startServer() {
         const sa = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
         status.env.project_id = sa.project_id;
       }
-      
+
       // Test firestore write/read
       const testRef = firestore.collection('_system_health');
       const testId = 'last_check';
@@ -159,7 +159,7 @@ async function startServer() {
       // 1. Classical Telegram Verification (Manual parse is more stable for TG)
       const params: Record<string, string> = {};
       let receivedHash = '';
-      
+
       const parts = String(initData).split('&');
       for (const part of parts) {
         const [key, ...valueParts] = part.split('=');
@@ -187,18 +187,18 @@ async function startServer() {
       // 2. Extract user data safely
       const userStr = params['user'];
       if (!userStr) return res.status(400).json({ error: 'Missing user data' });
-      
+
       const tgUser = JSON.parse(userStr);
       const tgIdStr = tgUser.id.toString();
 
       // 3. Find or Create user in Firestore
       console.log(`[AUTH] Checking user existence for TG ID: ${tgIdStr}`);
       let userData = null;
-      
+
       const userQuery = await firestore.collection('users').all([
         { type: 'where', field: 'telegramId', op: '==', value: tgIdStr }
       ]);
-      
+
       if (userQuery && userQuery.length > 0) {
         userData = userQuery[0];
         console.log(`[AUTH] Existing user found: ${userData.id}`);
@@ -214,7 +214,7 @@ async function startServer() {
         const newId = uuidv4();
         // Default role based on specific TG account or client
         const role = (tgUser.username?.toLowerCase() === 'ttaammmo' || tgIdStr === '123456789') ? 'admin' : 'client';
-        
+
         userData = await firestore.collection('users').set(newId, {
           telegramId: tgIdStr,
           username: tgUser.username || '',
@@ -292,7 +292,7 @@ async function startServer() {
   // ==========================================
   // DEBUG / TESTING AUTH (DEVELOPMENT ONLY)
   // ==========================================
-  
+
   // Setup standard test accounts for 3 testers
   app.post('/api/auth/setup-test-accounts', async (req, res) => {
     try {
@@ -307,7 +307,7 @@ async function startServer() {
       for (const tester of testers) {
         for (const role of roles) {
           const testId = `${tester.id}_${role}`.toLowerCase();
-          
+
           const userData = {
             id: testId,
             telegramId: `test_${testId}`,
@@ -319,7 +319,7 @@ async function startServer() {
             createdAt: new Date().toISOString(),
             isTestAccount: true
           };
-          
+
           await firestore.collection('users').set(testId, userData);
           results.push({ id: testId, status: 'updated' });
         }
@@ -340,10 +340,10 @@ async function startServer() {
         return res.status(404).json({ error: 'User not found' });
       }
 
-      const token = generateToken({ 
-        id: userData.id, 
-        telegramId: userData.telegramId, 
-        role: userData.role 
+      const token = generateToken({
+        id: userData.id,
+        telegramId: userData.telegramId,
+        role: userData.role
       });
 
       let firebaseCustomToken = null;
@@ -406,10 +406,10 @@ async function startServer() {
       } else if (req.body.base64Data) {
         console.log('[UPLOAD] Detected base64Data in body');
         const base64String = req.body.base64Data;
-        
+
         // Handle potential data URL format or raw base64
         const matches = base64String.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
-        
+
         if (matches && matches.length === 3) {
           mimetype = matches[1];
           fileBuffer = Buffer.from(matches[2], 'base64');
@@ -418,7 +418,7 @@ async function startServer() {
           mimetype = 'image/jpeg';
           fileBuffer = Buffer.from(base64String, 'base64');
         }
-        
+
         originalName = req.body.fileName ? path.basename(req.body.fileName) : `upload_${Date.now()}.jpg`;
         console.log(`[UPLOAD] Decoded base64: ${mimetype}, size: ${fileBuffer.length}`);
       } else {
@@ -459,7 +459,7 @@ async function startServer() {
 
     } catch (e: any) {
       console.error('[UPLOAD] CRITICAL ERROR:', e);
-      res.status(500).json({ 
+      res.status(500).json({
         url: null,
         error: e.message || 'File upload failed',
         details: e.toString()
@@ -500,9 +500,9 @@ async function startServer() {
       if (!telegramId || !message) {
         return res.status(400).json({ error: 'Missing telegramId or message' });
       }
-      
+
       console.log(`[NOTIFY] Sending Telegram message to ${telegramId}`);
-      
+
       // Use existing options or default to HTML if not specified
       const finalOptions = {
         parse_mode: 'HTML',
@@ -510,7 +510,7 @@ async function startServer() {
       };
 
       const success = await sendNotification(telegramId.toString(), message, finalOptions);
-      
+
       if (success) {
         res.json({ success: true });
       } else {
@@ -532,17 +532,17 @@ async function startServer() {
         status: 'active',
         createdAt: new Date().toISOString()
       };
-      
+
       await firestore.collection('sos_alerts').set(id, alert);
-      
+
       // Notify admins via Bot
-      const admins = await firestore.collection('users').all([{type: 'where', field: 'role', op: '==', value: 'admin'}]);
+      const admins = await firestore.collection('users').all([{ type: 'where', field: 'role', op: '==', value: 'admin' }]);
       for (const admin of admins) {
         if (admin.telegramId) {
           await sendNotification(admin.telegramId.toString(), `🚨 ВНИМАНИЕ: СИГНАЛ SOS 🚨\n\nПилот: ${req.user?.id}\n\nТребуется срочная помощь!`);
         }
       }
-      
+
       res.json(alert);
     } catch (e: any) {
       res.status(500).json({ error: e.message });
@@ -592,7 +592,7 @@ async function startServer() {
               const host = req.headers.host;
               const protocol = req.headers['x-forwarded-proto'] || 'https';
               const appUrl = host ? `${protocol}://${host}/` : (process.env.SQUADRA_URL || '');
-              
+
               if (!appUrl) {
                 console.error('No host header and no SQUADRA_URL set. Cannot send link.');
                 return;
@@ -794,15 +794,15 @@ async function startServer() {
       console.log(`[ERIP] Creating bePaid checkout for user ${userId}, amount ${amount}`);
 
       const checkout = await BePaidAPI.createEripCheckout(
-        Number(amount), 
-        userId, 
+        Number(amount),
+        userId,
         description || 'Пополнение депозита Squadra'
       );
 
       const eripData = checkout.payment_method?.erip || {};
       const eripId = eripData.request_id || checkout.token.substring(0, 8).toUpperCase();
       const instruction = eripData.instruction || 'Платежи -> Авто-мото -> Squadra -> Оплата по коду';
-      
+
       // 1. Create PENDING transaction in Firestore
       const txId = uuidv4();
       await firestore.collection('transactions').set(txId, {
@@ -819,7 +819,7 @@ async function startServer() {
         bepaidToken: checkout.token
       });
 
-      res.json({ 
+      res.json({
         token: checkout.token,
         redirect_url: checkout.redirect_url,
         erip_id: eripId,
@@ -835,7 +835,7 @@ async function startServer() {
   // bePaid Webhook (Callback) for all payment methods (CC, ERIP, etc.)
   app.post('/api/payments/bepaid/webhook', async (req, res) => {
     console.log('[BEPAID_WEBHOOK] Received notification:', JSON.stringify(req.body));
-    
+
     try {
       // 1. Verify Authentication
       if (!BePaidAPI.verifyWebhook(req.headers, JSON.stringify(req.body))) {
@@ -854,7 +854,7 @@ async function startServer() {
         const trackingId = transaction.tracking_id || '';
         const parts = trackingId.split('_');
         const userId = parts[1];
-        
+
         if (userId) {
           const amount = transaction.amount / 100;
           console.log(`[BEPAID_WEBHOOK] Success! Updating transaction for user ${userId}`);
@@ -868,13 +868,13 @@ async function startServer() {
           const pendingTx = pendingTxs.find((tx: any) => tx.bepaidToken === transaction.token || tx.eripId === transaction.payment_method?.erip?.request_id);
 
           if (pendingTx) {
-             await firestore.collection('transactions').update(pendingTx.id, {
-               status: 'completed',
-               description: `Пополнение ЕРИП (Авто)`,
-               updatedAt: new Date().toISOString(),
-               providerPaymentId: transaction.uid,
-               receiptUrl: transaction.receipt_url || null
-             });
+            await firestore.collection('transactions').update(pendingTx.id, {
+              status: 'completed',
+              description: `Пополнение ЕРИП (Авто)`,
+              updatedAt: new Date().toISOString(),
+              providerPaymentId: transaction.uid,
+              receiptUrl: transaction.receipt_url || null
+            });
           } else {
             // Fallback: Create new completed transaction
             const txId = uuidv4();
@@ -986,7 +986,7 @@ async function startServer() {
       const user = await firestore.collection('users').get(tx.userId);
       if (user?.telegramId) {
         await sendNotification(
-          user.telegramId, 
+          user.telegramId,
           `✅ <b>Оплата подтверждена администратором!</b>\n\nСумма <b>${tx.amount.toFixed(2)} BYN</b> зачислена на ваш баланс.`
         );
       }
@@ -1000,7 +1000,7 @@ async function startServer() {
 
   app.post('/api/admin/broadcast', authenticateToken, isAdmin, async (req, res) => {
     const { title, body, type, target } = req.body;
-    
+
     try {
       let users: any[] = [];
       if (target === 'all') {
@@ -1015,7 +1015,7 @@ async function startServer() {
       const sentAt = new Date().toISOString();
 
       // Create notifications for each user
-      const promises = users.map(u => 
+      const promises = users.map(u =>
         firestore.collection('notifications').set(uuidv4(), {
           userId: u.id,
           title,
@@ -1081,7 +1081,7 @@ async function startServer() {
         createdAt: new Date().toISOString()
       };
       const created = await firestore.collection('cars').set(id, carData);
-      
+
       // Notify admins about new car
       notifyAdmins(
         'Новый автомобиль',
@@ -1099,12 +1099,12 @@ async function startServer() {
   app.post('/api/requests', authenticateToken, async (req: AuthRequest, res) => {
     try {
       const id = uuidv4();
-      const { 
-        useQuota, 
-        serviceType, 
-        totalPrice, 
+      const {
+        useQuota,
+        serviceType,
+        totalPrice,
         balanceDeduction,
-        ...rest 
+        ...rest
       } = req.body;
       const userId = req.user?.id;
 
@@ -1221,7 +1221,7 @@ async function startServer() {
         const isOwner = item.userId === req.user?.id;
         const isAssignedPilot = item.pilotId === req.user?.id;
         const isAdmin = req.user?.role === 'admin';
-        
+
         if (!isOwner && !isAssignedPilot && !isAdmin) {
           return res.status(403).json({ error: 'Forbidden: You are not assigned to this task' });
         }

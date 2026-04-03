@@ -250,6 +250,13 @@ function TariffCard({
   isPurchasing?: boolean;
   onPurchase: () => void;
 }) {
+  const handleClick = () => {
+    if (!isActive && !isPurchasing) {
+      WebApp.HapticFeedback.impactOccurred('medium');
+      onPurchase();
+    }
+  };
+
   return (
     <div className={`rounded-2xl p-5 border ${isActive ? 'bg-zinc-900 border-zinc-700' : 'bg-black border-zinc-800'}`}>
       <div className="flex justify-between items-start mb-4">
@@ -272,12 +279,12 @@ function TariffCard({
         ))}
       </ul>
       <button 
-        onClick={onPurchase}
+        onClick={handleClick}
         disabled={isActive || isPurchasing}
-        className={`w-full py-3 rounded-xl text-sm font-medium uppercase tracking-wider transition-colors ${
+        className={`w-full py-3 rounded-xl text-sm font-medium uppercase tracking-wider transition-all ${
           isActive 
             ? 'bg-zinc-800 text-zinc-400 cursor-default' 
-            : 'bg-white text-black hover:bg-zinc-200 active:scale-[0.98] disabled:opacity-50'
+            : 'bg-white text-black hover:bg-zinc-200 active:scale-[0.98] transition-transform disabled:opacity-50'
         }`}
       >
         {isActive ? 'Активен' : isPurchasing ? 'Оплата...' : 'Выбрать тариф'}

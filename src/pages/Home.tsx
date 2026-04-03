@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { useFirebase } from '../components/FirebaseProvider';
 import { db, handleFirestoreError, OperationType, collection, query, where, onSnapshot, limit, orderBy, getDocs, doc, getDoc } from '../firebase';
 import { TARIFFS, TariffType } from '../config/tariffs';
+import WebApp from '@twa-dev/sdk';
 
 interface ServiceRequest {
   id: string;
@@ -170,7 +171,11 @@ export default function Home() {
       {/* Balance Warning */}
       {balance !== null && balance < 400 && user?.subscription && (
         <section className="mb-8">
-          <Link to="/finances" className="block">
+          <Link 
+            to="/finances" 
+            onClick={() => WebApp.HapticFeedback.impactOccurred('light')}
+            className="block"
+          >
             <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-4 flex items-center justify-between hover:bg-red-500/20 transition-colors">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center text-red-500">
@@ -198,7 +203,8 @@ export default function Home() {
               </p>
               <Link 
                 to="/garage" 
-                className="inline-flex items-center gap-2 bg-white text-black px-6 py-3 rounded-xl text-sm font-bold uppercase tracking-wider hover:bg-zinc-200 transition-colors"
+                onClick={() => WebApp.HapticFeedback.impactOccurred('medium')}
+                className="inline-flex items-center gap-2 bg-white text-black px-6 py-3 rounded-xl text-sm font-bold uppercase tracking-wider hover:bg-zinc-200 transition-colors active:scale-95 transition-transform"
               >
                 <Plus size={18} /> Добавить авто
               </Link>
@@ -211,7 +217,11 @@ export default function Home() {
       {/* Active Task Tracker */}
       {activeRequest ? (
         <section className="mb-8">
-          <Link to={`/task/${activeRequest.id}`} className="block group">
+          <Link 
+            to={`/task/${activeRequest.id}`} 
+            onClick={() => WebApp.HapticFeedback.impactOccurred('light')}
+            className="block group"
+          >
             <div className={`bg-zinc-900 rounded-2xl p-5 relative overflow-hidden transition-colors border ${
               activeRequest.status === 'review' 
                 ? 'border-purple-500/40 group-hover:border-purple-500/60' 
@@ -294,7 +304,11 @@ export default function Home() {
                   </div>
                 </div>
                 {pilot?.phone && (
-                  <a href={`tel:${pilot.phone}`} className="w-10 h-10 rounded-full bg-white text-black flex items-center justify-center hover:bg-zinc-200 transition-colors">
+                  <a 
+                    href={`tel:${pilot.phone}`} 
+                    onClick={() => WebApp.HapticFeedback.impactOccurred('medium')}
+                    className="w-10 h-10 rounded-full bg-white text-black flex items-center justify-center hover:bg-zinc-200 transition-colors active:scale-90 transition-transform"
+                  >
                     <Phone size={18} />
                   </a>
                 )}
@@ -309,7 +323,8 @@ export default function Home() {
             <p className="text-zinc-400 text-sm mb-4">У вас нет активных поручений</p>
             <Link 
               to="/order" 
-              className="inline-flex items-center justify-center px-6 py-2 bg-white text-black rounded-full text-sm font-bold uppercase tracking-wider"
+              onClick={() => WebApp.HapticFeedback.impactOccurred('medium')}
+              className="inline-flex items-center justify-center px-6 py-2 bg-white text-black rounded-full text-sm font-bold uppercase tracking-wider active:scale-95 transition-transform"
             >
               Вызвать пилота
             </Link>
@@ -349,7 +364,8 @@ export default function Home() {
               </p>
               <Link 
                 to="/tariffs"
-                className="inline-flex items-center text-sm font-medium text-white hover:text-zinc-300 transition-colors"
+                onClick={() => WebApp.HapticFeedback.impactOccurred('light')}
+                className="inline-flex items-center text-sm font-medium text-white hover:text-zinc-300 transition-colors active:translate-x-1 transition-transform"
               >
                 Управление тарифом <ArrowRight size={16} className="ml-1" />
               </Link>
@@ -436,16 +452,14 @@ export default function Home() {
               </div>
               <button 
                 onClick={() => {
-                  const WebApp = (window as any).Telegram?.WebApp;
-                  if (WebApp) {
-                    if (typeof WebApp.addToHomeScreen === 'function') {
-                      WebApp.addToHomeScreen();
-                    } else {
-                      WebApp.showAlert('Чтобы добавить приложение на главный экран:\n\n1. Нажмите на три точки (⋮) в верхнем углу\n2. Выберите "Добавить на гл. экран"\n\nТеперь Squadra всегда под рукой!');
-                    }
+                  WebApp.HapticFeedback.impactOccurred('medium');
+                  if (typeof WebApp.addToHomeScreen === 'function') {
+                    WebApp.addToHomeScreen();
+                  } else {
+                    WebApp.showAlert('Чтобы добавить приложение на главный экран:\n\n1. Нажмите на три точки (⋮) в верхнем углу\n2. Выберите "Добавить на гл. экран"\n\nТеперь Squadra всегда под рукой!');
                   }
                 }}
-                className="px-4 py-2 bg-zinc-800 text-white text-[10px] font-bold uppercase tracking-widest rounded-lg hover:bg-zinc-700 transition-colors shrink-0"
+                className="px-4 py-2 bg-zinc-800 text-white text-[10px] font-bold uppercase tracking-widest rounded-lg hover:bg-zinc-700 transition-colors shrink-0 active:scale-95 transition-transform"
               >
                 Добавить
               </button>

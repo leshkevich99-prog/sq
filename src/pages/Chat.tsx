@@ -4,6 +4,7 @@ import { db, handleFirestoreError, OperationType, collection, query, where, orde
 import { useFirebase } from '../components/FirebaseProvider';
 import { ArrowLeft, Send } from 'lucide-react';
 import toast from 'react-hot-toast';
+import WebApp from '@twa-dev/sdk';
 
 interface Message {
   id: string;
@@ -219,7 +220,13 @@ export default function Chat() {
       {/* Header */}
       <header className="sticky top-0 z-40 bg-black/95 backdrop-blur-md px-4 pt-4 pb-0 border-b border-zinc-900/50">
         <div className="flex items-center gap-4 mb-4">
-          <button onClick={() => navigate(-1)} className="p-2 bg-zinc-900 rounded-full border border-zinc-800 active:scale-90 transition-transform">
+          <button 
+            onClick={() => {
+              navigate(-1);
+              WebApp.HapticFeedback.impactOccurred('light');
+            }} 
+            className="p-2 bg-zinc-900 rounded-full border border-zinc-800 active:scale-90 transition-transform"
+          >
             <ArrowLeft size={20} />
           </button>
           <div className="flex-1">
@@ -232,7 +239,10 @@ export default function Chat() {
         {(user?.role === 'admin' || user?.role === 'pilot') && (
           <div className="flex gap-4 px-2">
             <button 
-              onClick={() => setActiveTab('public')}
+              onClick={() => {
+                setActiveTab('public');
+                WebApp.HapticFeedback.impactOccurred('light');
+              }}
               className={`pb-3 text-[10px] font-black uppercase tracking-[0.2em] relative transition-colors ${
                 activeTab === 'public' ? 'text-amber-500' : 'text-zinc-500'
               }`}
@@ -241,7 +251,10 @@ export default function Chat() {
               {activeTab === 'public' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-amber-500" />}
             </button>
             <button 
-              onClick={() => setActiveTab('internal')}
+              onClick={() => {
+                setActiveTab('internal');
+                WebApp.HapticFeedback.impactOccurred('light');
+              }}
               className={`pb-3 text-[10px] font-black uppercase tracking-[0.2em] relative transition-colors ${
                 activeTab === 'internal' ? 'text-purple-500' : 'text-zinc-500'
               }`}
@@ -299,8 +312,11 @@ export default function Chat() {
                 {quickResponses.map((text) => (
                   <button
                     key={text}
-                    onClick={() => sendQuickResponse(text)}
-                    className="whitespace-nowrap px-3 py-1.5 bg-zinc-900 border border-zinc-800 rounded-full text-[10px] font-bold uppercase tracking-widest text-zinc-400 active:bg-amber-500 active:text-black transition-colors"
+                    onClick={() => {
+                      sendQuickResponse(text);
+                      WebApp.HapticFeedback.impactOccurred('light');
+                    }}
+                    className="whitespace-nowrap px-3 py-1.5 bg-zinc-900 border border-zinc-800 rounded-full text-[10px] font-bold uppercase tracking-widest text-zinc-400 active:bg-amber-500 active:text-black transition-all active:scale-95 transition-transform"
                   >
                     {text}
                   </button>
@@ -324,7 +340,8 @@ export default function Chat() {
               <button 
                 type="submit"
                 disabled={!newMessage.trim()}
-                className={`w-12 h-12 ${activeTab === 'internal' ? 'bg-purple-600' : 'bg-amber-500'} text-black rounded-full flex items-center justify-center disabled:opacity-50 disabled:bg-zinc-800 disabled:text-zinc-500 transition-colors`}
+                onClick={() => WebApp.HapticFeedback.impactOccurred('medium')}
+                className={`w-12 h-12 ${activeTab === 'internal' ? 'bg-purple-600' : 'bg-amber-500'} text-black rounded-full flex items-center justify-center disabled:opacity-50 disabled:bg-zinc-800 disabled:text-zinc-500 transition-all active:scale-90 transition-transform`}
               >
                 <Send size={20} className="ml-1" />
               </button>

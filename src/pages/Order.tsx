@@ -64,7 +64,7 @@ export default function Order() {
   const [isPickupFocused, setIsPickupFocused] = useState(false);
   const [isDeliveryFocused, setIsDeliveryFocused] = useState(false);
   const isKeyboardVisible = useKeyboard();
-  
+
   const commentRef = useRef<HTMLTextAreaElement>(null);
   const pickupRef = useRef<HTMLInputElement>(null);
   const deliveryRef = useRef<HTMLInputElement>(null);
@@ -78,7 +78,7 @@ export default function Order() {
 
   useEffect(() => {
     if (!user) return;
-    
+
     // Fetch cars
     const fetchCars = async () => {
       try {
@@ -102,10 +102,10 @@ export default function Order() {
 
     // Fetch balance
     const qBalance = query(
-      collection(db, 'transactions'), 
+      collection(db, 'transactions'),
       where('userId', '==', user.uid)
     );
-    
+
     const unsubscribeBalance = onSnapshot(qBalance, (snapshot) => {
       let currentBalance = 0;
       snapshot.forEach(doc => {
@@ -144,7 +144,7 @@ export default function Order() {
 
   const handleOrder = async () => {
     if (!user || !selectedCarId) return;
-    
+
     // Validation
     if (!pickupAddress) {
       toast.error('Укажите адрес забора');
@@ -158,17 +158,17 @@ export default function Order() {
       toast.error('Необходимо подтвердить согласие с регламентом безопасности');
       return;
     }
-    
+
     // Calculate Price
     let price = SERVICE_PRICES[service] || 0;
 
     // Check quotas/limits - Combine both sources to avoid missing data if one is empty
     let useQuota = false;
-    const availableLimits: any = { 
-      ...(user.quotas || {}), 
-      ...(user.limits || {}) 
+    const availableLimits: any = {
+      ...(user.quotas || {}),
+      ...(user.limits || {})
     };
-    
+
     // Check if user has quota for this service
     if (availableLimits[service] && Number(availableLimits[service]) > 0) {
       const confirmMsg = `У вас есть доступная квота на эту услугу (${availableLimits[service]} шт.). Использовать квоту?`;
@@ -244,7 +244,7 @@ export default function Order() {
         }
 
         const newRequest = await response.json();
-        
+
         // Notify admins (moved to helper or inline if needed, but the server also can do this)
         // For now keep frontend notification if notifyAdmins exists
         try {
@@ -258,7 +258,7 @@ export default function Order() {
         toast.success('Поручение успешно отправлено!', { id: toastId });
         WebApp.HapticFeedback.notificationOccurred('success');
         navigate('/');
-        
+
         // Reset form
         setPickupAddress('');
         setDeliveryAddress('');
@@ -294,7 +294,7 @@ export default function Order() {
 
       const response = await fetch('/api/payments/bepaid/create', {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
         },
@@ -341,7 +341,7 @@ export default function Order() {
   const notifyAdmins = async (requestId: string, serviceType: string, useQuota: boolean, balanceDeduction: number, paidExternally: number, requestNumber?: number) => {
     const adminQuery = query(collection(db, 'users'), where('role', '==', 'admin'));
     const adminSnaps = await getDocs(adminQuery);
-    
+
     const serviceName = SERVICE_LABELS[serviceType] || serviceType;
 
     for (const adminDoc of adminSnaps.docs) {
@@ -362,14 +362,14 @@ export default function Order() {
             body: JSON.stringify({
               telegramId: adminData.telegramId,
               message: `🏎️ <b>Новое поручение #${requestNumber || ''}</b>\n\n` +
-                       `<b>Услуга:</b> ${serviceName}\n` +
-                       `<b>Клиент:</b> ${user?.firstName || 'клиент'}\n` +
-                       `<b>Когда:</b> ${orderDate} в ${orderTime}\n` +
-                       `<b>Оплата:</b> ${useQuota ? 'Квота' : balanceDeduction > 0 ? `Депозит (${balanceDeduction}) + ${paidExternally}` : paidExternally}\n\n` +
-                       `<i>Откройте приложение для деталей.</i>`
+                `<b>Услуга:</b> ${serviceName}\n` +
+                `<b>Клиент:</b> ${user?.firstName || 'клиент'}\n` +
+                `<b>Когда:</b> ${orderDate} в ${orderTime}\n` +
+                `<b>Оплата:</b> ${useQuota ? 'Квота' : balanceDeduction > 0 ? `Депозит (${balanceDeduction}) + ${paidExternally}` : paidExternally}\n\n` +
+                `<i>Откройте приложение для деталей.</i>`
             })
           });
-        } catch (e) {}
+        } catch (e) { }
       }
     }
   };
@@ -378,7 +378,7 @@ export default function Order() {
 
   useEffect(() => {
     if (!user) return;
-    
+
     // Fetch active orders
     const qOrders = query(
       collection(db, 'requests'),
@@ -436,11 +436,11 @@ export default function Order() {
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="font-bold text-sm">
-                        {order.serviceType === 'logistics' ? 'Логистика' : 
-                         order.serviceType === 'valet' ? 'Валет' : 
-                         order.serviceType === 'parking' ? 'Паркинг' : 
-                         order.serviceType === 'bureaucracy' ? 'Бюрократия' : 
-                         order.serviceType === 'wash' ? 'Мойка' : 'Сервис'}
+                        {order.serviceType === 'logistics' ? 'Логистика' :
+                          order.serviceType === 'valet' ? 'Валет' :
+                            order.serviceType === 'parking' ? 'Паркинг' :
+                              order.serviceType === 'bureaucracy' ? 'Бюрократия' :
+                                order.serviceType === 'wash' ? 'Мойка' : 'Сервис'}
                       </span>
                       {getStatusBadge(order.status)}
                     </div>
@@ -476,9 +476,8 @@ export default function Order() {
                 <button
                   key={car.id}
                   onClick={() => setSelectedCarId(car.id)}
-                  className={`px-4 py-3 rounded-xl border flex items-center gap-3 whitespace-nowrap transition-colors ${
-                    selectedCarId === car.id ? 'bg-accent/10 border-accent text-white' : 'bg-zinc-900 border-zinc-800 text-zinc-400'
-                  }`}
+                  className={`px-4 py-3 rounded-xl border flex items-center gap-3 whitespace-nowrap transition-colors ${selectedCarId === car.id ? 'bg-accent/10 border-accent text-white' : 'bg-zinc-900 border-zinc-800 text-zinc-400'
+                    }`}
                 >
                   <Car size={18} className={selectedCarId === car.id ? 'text-accent' : 'text-zinc-500'} />
                   <div className="text-left">
@@ -497,13 +496,11 @@ export default function Order() {
                 <button
                   key={s.id}
                   onClick={() => setService(s.id)}
-                  className={`w-full text-left p-4 rounded-xl border flex items-center gap-4 transition-colors ${
-                    service === s.id ? 'bg-accent/10 border-accent' : 'bg-zinc-900 border-zinc-800'
-                  }`}
+                  className={`w-full text-left p-4 rounded-xl border flex items-center gap-4 transition-colors ${service === s.id ? 'bg-accent/10 border-accent' : 'bg-zinc-900 border-zinc-800'
+                    }`}
                 >
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
-                    service === s.id ? 'bg-accent text-black' : 'bg-zinc-800 text-zinc-400'
-                  }`}>
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${service === s.id ? 'bg-accent text-black' : 'bg-zinc-800 text-zinc-400'
+                    }`}>
                     <s.icon size={20} />
                   </div>
                   <div className="flex-1">
@@ -511,8 +508,8 @@ export default function Order() {
                     <div className="text-xs text-zinc-500 mt-0.5">{s.desc}</div>
                   </div>
                   <div className={`text-sm font-mono font-bold ${service === s.id ? 'text-accent' : 'text-zinc-400'}`}>
-                    {Number(user?.quotas?.[s.id] || user?.limits?.[s.id] || 0) > 0 
-                      ? <span className="text-emerald-500 uppercase tracking-widest text-[10px] bg-emerald-500/10 px-2 py-1 rounded border border-emerald-500/20">Квота: {Number(user?.quotas?.[s.id] || user?.limits?.[s.id])}</span> 
+                    {Number(user?.quotas?.[s.id] || user?.limits?.[s.id] || 0) > 0
+                      ? <span className="text-emerald-500 uppercase tracking-widest text-[10px] bg-emerald-500/10 px-2 py-1 rounded border border-emerald-500/20">Квота: {Number(user?.quotas?.[s.id] || user?.limits?.[s.id])}</span>
                       : s.price}
                   </div>
                 </button>
@@ -526,7 +523,7 @@ export default function Order() {
               <div className="flex justify-between items-center ml-1">
                 <label className="block text-xs text-zinc-500 uppercase tracking-wider">Адрес забора</label>
                 {isPickupFocused && (
-                  <button 
+                  <button
                     onClick={() => {
                       pickupRef.current?.blur();
                       setIsPickupFocused(false);
@@ -539,17 +536,17 @@ export default function Order() {
               </div>
               <div className="relative">
                 <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
-                <input 
+                <input
                   ref={pickupRef}
-                  type="text" 
-                  placeholder="Улица, дом, подъезд" 
+                  type="text"
+                  placeholder="Улица, дом, подъезд"
                   value={pickupAddress}
                   onChange={(e) => setPickupAddress(e.target.value)}
                   onFocus={() => handleFocus(pickupRef, setIsPickupFocused)}
                   onBlur={() => setTimeout(() => setIsPickupFocused(false), 100)}
-                  className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-4 pl-10 pr-12 text-sm focus:outline-none focus:border-accent text-white" 
+                  className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-4 pl-10 pr-12 text-sm focus:outline-none focus:border-accent text-white"
                 />
-                <button 
+                <button
                   onClick={() => getCurrentLocation('pickup')}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-accent hover:text-white transition-colors"
                 >
@@ -564,7 +561,7 @@ export default function Order() {
                 <div className="flex justify-between items-center ml-1">
                   <label className="block text-xs text-zinc-500 uppercase tracking-wider">Адрес доставки</label>
                   {isDeliveryFocused && (
-                    <button 
+                    <button
                       onClick={() => {
                         deliveryRef.current?.blur();
                         setIsDeliveryFocused(false);
@@ -577,17 +574,17 @@ export default function Order() {
                 </div>
                 <div className="relative">
                   <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
-                  <input 
+                  <input
                     ref={deliveryRef}
-                    type="text" 
-                    placeholder="Куда доставить автомобиль?" 
+                    type="text"
+                    placeholder="Куда доставить автомобиль?"
                     value={deliveryAddress}
                     onChange={(e) => setDeliveryAddress(e.target.value)}
                     onFocus={() => handleFocus(deliveryRef, setIsDeliveryFocused)}
                     onBlur={() => setTimeout(() => setIsDeliveryFocused(false), 100)}
-                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-4 pl-10 pr-12 text-sm focus:outline-none focus:border-accent text-white" 
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-4 pl-10 pr-12 text-sm focus:outline-none focus:border-accent text-white"
                   />
-                  <button 
+                  <button
                     onClick={() => getCurrentLocation('delivery')}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-accent hover:text-white transition-colors"
                   >
@@ -601,18 +598,17 @@ export default function Order() {
             {service === 'wash' && (
               <div className="space-y-4 animate-in slide-in-from-top-2 duration-300">
                 <label className="flex items-center gap-3 p-4 bg-zinc-900 border border-zinc-800 rounded-xl cursor-pointer">
-                  <div className={`w-6 h-6 rounded border flex items-center justify-center ${
-                    washType === 'detailing' ? 'bg-amber-500 border-amber-500' : 'border-zinc-600'
-                  }`}>
+                  <div className={`w-6 h-6 rounded border flex items-center justify-center ${washType === 'detailing' ? 'bg-amber-500 border-amber-500' : 'border-zinc-600'
+                    }`}>
                     {washType === 'detailing' && <Check size={16} className="text-black" />}
                   </div>
                   <div className="flex-1">
                     <div className="font-medium text-white">Дополнительные услуги детейлинга</div>
                     <div className="text-xs text-zinc-500">Укажите пожелания в комментарии</div>
                   </div>
-                  <input 
-                    type="checkbox" 
-                    className="hidden" 
+                  <input
+                    type="checkbox"
+                    className="hidden"
                     checked={washType === 'detailing'}
                     onChange={(e) => setWashType(e.target.checked ? 'detailing' : 'standard')}
                   />
@@ -627,7 +623,7 @@ export default function Order() {
                 <label className="block text-xs text-zinc-500 uppercase tracking-wider ml-1">Дата</label>
                 <div className="relative">
                   <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none" size={14} />
-                  <input 
+                  <input
                     type="date"
                     value={orderDate}
                     onChange={(e) => setOrderDate(e.target.value)}
@@ -640,7 +636,7 @@ export default function Order() {
                 <label className="block text-xs text-zinc-500 uppercase tracking-wider ml-1">Время</label>
                 <div className="relative">
                   <Clock className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none" size={14} />
-                  <input 
+                  <input
                     type="time"
                     value={orderTime}
                     onChange={(e) => setOrderTime(e.target.value)}
@@ -657,7 +653,7 @@ export default function Order() {
                   {service === 'service' ? 'Описание проблемы' : 'Комментарий для пилота'}
                 </label>
                 {isCommentFocused && (
-                  <button 
+                  <button
                     onClick={() => {
                       commentRef.current?.blur();
                       setIsCommentFocused(false);
@@ -668,9 +664,9 @@ export default function Order() {
                   </button>
                 )}
               </div>
-              <textarea 
+              <textarea
                 ref={commentRef}
-                placeholder={service === 'service' ? 'Опишите, что нужно сделать или какие есть неисправности...' : 'Где лежат ключи, особенности парковки и т.д.'} 
+                placeholder={service === 'service' ? 'Опишите, что нужно сделать или какие есть неисправности...' : 'Где лежат ключи, особенности парковки и т.д.'}
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
                 onFocus={() => handleFocus(commentRef, setIsCommentFocused)}
@@ -684,23 +680,22 @@ export default function Order() {
           {!isKeyboardVisible && (
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
               <label className="flex items-start gap-3 p-4 bg-red-500/10 border border-red-500/20 rounded-xl cursor-pointer mb-6">
-                <div className={`mt-0.5 w-5 h-5 rounded border flex items-center justify-center shrink-0 transition-colors ${
-                  safetyAccepted ? 'bg-red-500 border-red-500' : 'border-red-500/50'
-                }`}>
+                <div className={`mt-0.5 w-5 h-5 rounded border flex items-center justify-center shrink-0 transition-colors ${safetyAccepted ? 'bg-red-500 border-red-500' : 'border-red-500/50'
+                  }`}>
                   {safetyAccepted && <Check size={14} className="text-white" />}
                 </div>
                 <p className="text-xs text-red-400 font-medium leading-relaxed">
                   Я подтверждаю, что ознакомлен с правилами: совместные поездки пилотов с владельцами запрещены регламентом безопасности.
                 </p>
-                <input 
-                  type="checkbox" 
-                  className="hidden" 
+                <input
+                  type="checkbox"
+                  className="hidden"
                   checked={safetyAccepted}
                   onChange={(e) => setSafetyAccepted(e.target.checked)}
                 />
               </label>
 
-              <button 
+              <button
                 onClick={handleOrder}
                 disabled={submitting || !selectedCarId || !safetyAccepted}
                 className="w-full bg-white text-black py-4 rounded-xl font-bold uppercase tracking-wider active:scale-[0.98] transition-transform disabled:opacity-50"

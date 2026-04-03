@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Settings, AlertCircle, Calendar, Plus, X, Wrench, ShieldCheck, FileText, Trash2, Camera, Loader2, CheckCircle, History, ExternalLink } from 'lucide-react';
+import WebApp from '@twa-dev/sdk';
 import { useFirebase } from '../components/FirebaseProvider';
 import { db, handleFirestoreError, OperationType, collection, query, where, onSnapshot, addDoc, updateDoc, deleteDoc, doc, orderBy, storage, ref, uploadBytes, getDownloadURL } from '../firebase';
 import imageCompression from 'browser-image-compression';
@@ -103,8 +104,11 @@ export default function Garage() {
           <p className="text-zinc-400 text-sm mt-1">Ваши автомобили</p>
         </div>
         <button 
-          onClick={() => setShowAddModal(true)}
-          className="p-2 bg-accent text-white rounded-full shadow-lg"
+          onClick={() => {
+            setShowAddModal(true);
+            WebApp.HapticFeedback.impactOccurred('medium');
+          }}
+          className="p-2 bg-accent text-white rounded-full shadow-lg active:scale-90 transition-transform"
         >
           <Plus size={20} />
         </button>
@@ -288,7 +292,7 @@ function AddCarModal({ onClose, userId }: { onClose: () => void, userId?: string
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-[9px] text-zinc-500 mb-0.5 uppercase tracking-wider">Год</label>
-                <input required type="number" value={year} onChange={e => setYear(e.target.value)} className="w-full min-w-0 bg-black border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:border-accent outline-none box-border appearance-none" placeholder="2020" />
+                <input required type="number" inputMode="numeric" value={year} onChange={e => setYear(e.target.value)} className="w-full min-w-0 bg-black border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:border-accent outline-none box-border appearance-none" placeholder="2020" />
               </div>
               <div>
                 <label className="block text-[9px] text-zinc-500 mb-0.5 uppercase tracking-wider">Номер</label>
@@ -688,10 +692,23 @@ function CarDetailsModal({ car, onClose }: { car: Car, onClose: () => void }) {
         </div>
         
         <div className={`sticky bottom-0 z-20 bg-zinc-900/80 backdrop-blur-md p-4 border-t border-zinc-800/50 shrink-0 pb-[max(env(safe-area-inset-bottom),1rem)] flex gap-2 ${isKeyboardVisible ? 'hidden' : 'flex'}`}>
-          <button onClick={handleDelete} className="p-4 bg-red-500/10 text-red-500 rounded-xl hover:bg-red-500/20 transition-colors shrink-0">
+          <button 
+            onClick={() => {
+              handleDelete();
+              WebApp.HapticFeedback.notificationOccurred('warning');
+            }} 
+            className="p-4 bg-red-500/10 text-red-500 rounded-xl hover:bg-red-500/20 transition-colors shrink-0 active:scale-95 transition-transform"
+          >
             <Trash2 size={20} />
           </button>
-          <button disabled={submitting} onClick={handleSave} className="flex-1 bg-white text-black rounded-xl py-4 text-sm font-bold uppercase tracking-widest disabled:opacity-50">
+          <button 
+            disabled={submitting} 
+            onClick={() => {
+              handleSave();
+              WebApp.HapticFeedback.impactOccurred('medium');
+            }} 
+            className="flex-1 bg-white text-black rounded-xl py-4 text-sm font-bold uppercase tracking-widest disabled:opacity-50 active:scale-[0.98] transition-transform"
+          >
             {submitting ? 'Сохранение...' : 'Сохранить изменения'}
           </button>
         </div>
