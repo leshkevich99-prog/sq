@@ -151,7 +151,7 @@ export async function handleSuccessfulPayment(chatId: number, payment: any) {
           // 1. Record deposit (replenishment)
           const providerPaymentId = payment.provider_payment_charge_id;
           const telegramPaymentId = payment.telegram_payment_charge_id;
-          const receiptUrl = payment.receipt_url || undefined;
+          const receiptUrl = payment.receipt_url || null;
 
           await firestore.collection('transactions').add({
             userId,
@@ -219,7 +219,7 @@ export async function handleSuccessfulPayment(chatId: number, payment: any) {
           // 1. Record deposit (replenishment)
           const providerPaymentId = payment.provider_payment_charge_id;
           const telegramPaymentId = payment.telegram_payment_charge_id;
-          const receiptUrl = payment.receipt_url || undefined;
+          const receiptUrl = payment.receipt_url || null;
 
           await firestore.collection('transactions').add({
             userId,
@@ -314,7 +314,7 @@ export async function handleSuccessfulPayment(chatId: number, payment: any) {
           // 1. Record deposit (replenishment)
           const providerPaymentId = payment.provider_payment_charge_id;
           const telegramPaymentId = payment.telegram_payment_charge_id;
-          const receiptUrl = payment.receipt_url || undefined;
+          const receiptUrl = payment.receipt_url || null;
 
           await firestore.collection('transactions').add({
             userId,
@@ -370,7 +370,7 @@ export async function handleSuccessfulPayment(chatId: number, payment: any) {
         
         // We cannot reliably guess the receipt URL without a hash. 
         // Real receipt_url should be fetched via bePaid API if credentials were provided.
-        const receiptUrl = payment.receipt_url || undefined; 
+        const receiptUrl = payment.receipt_url || null; 
 
         await firestore.collection('transactions').add({
           userId,
