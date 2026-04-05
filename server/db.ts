@@ -4,15 +4,25 @@ import { getAuth } from 'firebase-admin/auth';
 import { getStorage } from 'firebase-admin/storage';
 
 let db: any = null;
-export let adminAuth: any = null;
-export let bucket: any = null;
+let adminAuth: any = null;
+let bucket: any = null;
+
+export function getAdminAuth() {
+  ensureInit();
+  return adminAuth;
+}
+
+export function getBucket() {
+  ensureInit();
+  return bucket;
+}
 
 /**
  * Robustly initializes Firebase Admin.
  * Handles escaped newlines, extra quotes, and serverless cold starts.
  */
 function ensureInit() {
-  if (db && adminAuth) return;
+  if (db && adminAuth && bucket) return;
 
   console.log('[Firebase Init] Attempting to initialize Firebase Admin...');
 

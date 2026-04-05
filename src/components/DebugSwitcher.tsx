@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Shield, User, Hammer, Key, RefreshCw, X, CheckCircle2 } from 'lucide-react';
+import { Shield, User, Hammer, Key, RefreshCw, X, CheckCircle2, LogOut } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface DebugSwitcherProps {
@@ -20,11 +20,12 @@ const ROLES = [
 export default function DebugSwitcher({ onClose }: DebugSwitcherProps) {
   const [loading, setLoading] = useState(false);
 
+  // Function to handle login as a test account
   const handleLogin = async (tester: string, role: string) => {
     const userId = `${tester}_${role}`.toLowerCase();
     setLoading(true);
     const tid = toast.loading(`Вход как ${userId}...`);
-    
+
     try {
       const res = await fetch('/api/auth/debug-login', {
         method: 'POST',
@@ -32,7 +33,7 @@ export default function DebugSwitcher({ onClose }: DebugSwitcherProps) {
         body: JSON.stringify({ userId })
       });
       const data = await res.json();
-      
+
       if (res.ok) {
         localStorage.setItem('auth_token', data.token);
         toast.success('Успешный вход!', { id: tid });
@@ -40,8 +41,28 @@ export default function DebugSwitcher({ onClose }: DebugSwitcherProps) {
       } else {
         toast.error(data.error || 'Ошибка входа', { id: tid });
       }
-    } catch (e) {
+    } catch (error) {
       toast.error('Сетевая ошибка', { id: tid });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Function to reset the session and return to original account
+  const handleReset = async () => {
+    setLoading(true);
+    const tid = toast.loading('Выход из тестового аккаунта...');
+
+    try {
+      // Optionally call logout API
+      await fetch('/api/auth/logout', { method: 'POST' });
+      localStorage.removeItem('auth_token');
+      toast.success('Вы вышли из тестового аккаунта!', { id: tid });
+      
+      // Reload the application
+      setTimeout(() => window.location.reload(), 500);
+    } catch (error) {
+      toast.error('Ошибка выхода', { id: tid });
     } finally {
       setLoading(false);
     }
@@ -57,7 +78,7 @@ export default function DebugSwitcher({ onClose }: DebugSwitcherProps) {
       } else {
         toast.error('Ошибка обновления', { id: tid });
       }
-    } catch (e) {
+    } catch (error) {
       toast.error('Ошибка сети', { id: tid });
     } finally {
       setLoading(false);
@@ -89,7 +110,6 @@ export default function DebugSwitcher({ onClose }: DebugSwitcherProps) {
         </div>
 
         <div className="p-6 space-y-6">
-
           <div className="grid grid-cols-1 gap-4">
             {TESTERS.map((tester) => (
               <div key={tester.id} className="space-y-2">
@@ -109,6 +129,19 @@ export default function DebugSwitcher({ onClose }: DebugSwitcherProps) {
                 </div>
               </div>
             ))}
+          </div>
+
+          {/* Return to my account button */}
+          <div className="flex justify-center mt-6">
+            <button 
+              onClick={handleReset} 
+              disabled={loading} 
+              className="group flex items-center justify-center space-x-3 py-4 px-8 bg-zinc-900/50 border border-zinc-800 rounded-2xl hover:border-zinc-500 hover:bg-zinc-800 transition-all active:scale-95 disabled:opacity-50 w-full"
+              title="Вернуться в свой аккаунт"
+            >
+              <LogOut size={18} className="text-zinc-400 group-hover:text-white transition-colors" />
+              <span className="text-xs font-black uppercase tracking-widest text-zinc-400 group-hover:text-white transition-colors">Вернуться в свой аккаунт</span>
+            </button>
           </div>
         </div>
 

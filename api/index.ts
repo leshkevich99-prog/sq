@@ -7,7 +7,7 @@ import multer from 'multer';
 import { v4 as uuidv4 } from 'uuid';
 import { fileURLToPath } from 'url';
 import { initBot, sendNotification, getBot, createInvoiceLink, handleSuccessfulPayment } from '../server/bot.js';
-import { firestore, adminAuth, bucket } from '../server/db.js';
+import { firestore, getAdminAuth, getBucket } from '../server/db.js';
 import { generateToken, authenticateToken, AuthRequest, isAdmin } from '../server/auth.js';
 import { BePaidAPI } from '../server/bepaid.js';
 
@@ -96,8 +96,8 @@ async function startServer() {
         squadra_url: !!process.env.SQUADRA_URL
       },
       firestore: 'checking...',
-      auth: !!adminAuth,
-      storage: !!bucket
+      auth: !!getAdminAuth(),
+      storage: !!getBucket()
     };
 
     try {
@@ -237,8 +237,9 @@ async function startServer() {
 
       let firebaseCustomToken = null;
       try {
-        if (adminAuth) {
-          firebaseCustomToken = await adminAuth.createCustomToken(userData.id);
+        const auth = getAdminAuth();
+        if (auth) {
+          firebaseCustomToken = await auth.createCustomToken(userData.id);
         }
       } catch (authErr) {
         console.error('Error creating custom token:', authErr);
@@ -264,8 +265,9 @@ async function startServer() {
 
     let firebaseCustomToken = null;
     try {
-      if (adminAuth) {
-        firebaseCustomToken = await adminAuth.createCustomToken(user.id);
+      const auth = getAdminAuth();
+      if (auth) {
+        firebaseCustomToken = await auth.createCustomToken(user.id);
       }
     } catch (authErr) {
       console.error('Error creating custom token:', authErr);
@@ -348,8 +350,9 @@ async function startServer() {
 
       let firebaseCustomToken = null;
       try {
-        if (adminAuth) {
-          firebaseCustomToken = await adminAuth.createCustomToken(userData.id);
+        const auth = getAdminAuth();
+        if (auth) {
+          firebaseCustomToken = await auth.createCustomToken(userData.id);
         }
       } catch (authErr) {
         console.error('Error creating custom token:', authErr);
@@ -426,6 +429,7 @@ async function startServer() {
         return res.status(400).json({ error: 'No file uploaded' });
       }
 
+      const bucket = getBucket();
       if (!bucket) {
         console.error('[UPLOAD] Firebase Bucket is NULL');
         return res.status(500).json({ error: 'Storage not initialized' });
