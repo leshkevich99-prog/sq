@@ -865,46 +865,47 @@ async function startServer() {
         const payloadId = parts[2];
 
         if (userId) {
-          console.log(`[BEPAID_WEBHOOK] Success! User: ${userId}, Payload: ${payloadId}`);
-          
-          const methodType = transaction.payment_method_type === 'erip' ? 'ЕРИП' : 'bePaid (Card)';
           const amount = transaction.amount / 100;
+          const methodType = transaction.payment_method_type === 'erip' ? 'ЕРИП' : 'bePaid (Card)';
+          const txId = uuidv4();
 
-          // Try to find pending transaction by token or tracking_id
-          const pendingTxs = await firestore.collection('transactions').all([
-            { type: 'where', field: 'userId', op: '==', value: userId },
-            { type: 'where', field: 'status', op: '==', value: 'pending' }
-          ]);
+          await firestore.collection('transactions').set(txId, {
+            userId,
+            type: 'deposit',
+            amount,
+            description: `Пополнение ${methodType} (Авто)`,
+            status: 'completed',
+            createdAt: new Date().toISOString(),
+            providerPaymentId: transaction.uid,
+            receiptUrl: transaction.receipt_url || null
+          });
 
-          const pendingTx = pendingTxs.find((tx: any) => tx.bepaidToken === transaction.token || tx.eripId === transaction.payment_method?.erip?.request_id);
-
-          if (pendingTx) {
-            await firestore.collection('transactions').update(pendingTx.id, {
-              status: 'completed',
-              description: `Пополнение ${methodType} (Авто)`,
-              updatedAt: new Date().toISOString(),
-              providerPaymentId: transaction.uid,
-              receiptUrl: transaction.receipt_url || null
-            });
-          } else {
-            // Fallback: Create new completed transaction
-            const txId = uuidv4();
-            await firestore.collection('transactions').set(txId, {
-              userId,
-              type: 'deposit',
-              amount: amount,
-              description: `Авто-зачисление: ${methodType}`,
-              status: 'completed',
-              createdAt: new Date().toISOString(),
-              providerPaymentId: transaction.uid,
-              receiptUrl: transaction.receipt_url || null
-            });
+          if (payloadId) {
+            try {
+              const p = await firestore.collection('payment_payloads').get(payloadId);
+              if (p) {
+                const type = p.u ? p.t : p.type;
+                if ((type || (p.tariff ? 'subscription' : '')) === 'subscription') {
+                  const tariff = p.tariff || p.tariffName || 'telemetry';
+                  const tName = p.tn || p.tariffName || tariff.toUpperCase();
+                  await firestore.collection('users').set(userId, { subscription: tName, tariff: tariff.toLowerCase(), updatedAt: new Date().toISOString() }, { merge: true });
+                  await firestore.collection('transactions').set(uuidv4(), { userId, type: 'deposit_deduction', amount, description: `Списание за тариф: ${tName}`, status: 'completed', createdAt: new Date().toISOString() });
+                } else if (type === 'service_order' && (p.po || p.pendingOrderId)) {
+                  const poId = p.po || p.pendingOrderId;
+                  const o = await firestore.collection('pending_orders').get(poId);
+                  if (o) {
+                    await firestore.collection('requests').set(uuidv4(), { ...o, status: 'pending', actualCost: amount, createdAt: new Date().toISOString() });
+                    await firestore.collection('transactions').set(uuidv4(), { userId, type: 'deposit_deduction', amount, description: `Списание за услугу: ${o.serviceType}`, status: 'completed', createdAt: new Date().toISOString() });
+                    await firestore.collection('pending_orders').delete(poId);
+                  }
+                }
+              }
+            } catch (ee) { console.error('Payload error:', ee); }
           }
 
-          // Notify user
-          const user = await firestore.collection('users').get(userId);
-          if (user?.telegramId) {
-            await sendNotification(user.telegramId, `✅ <b>Оплата получена!</b>\n\nВаш баланс пополнен на <b>${amount.toFixed(2)} BYN</b>.\nМетод: ${transaction.payment_method_type.toUpperCase()}`);
+          const u = await firestore.collection('users').get(userId);
+          if (u?.telegramId) {
+            await sendNotification(u.telegramId, `✅ <b>Оплата получена!</b>\nСумма ${amount.toFixed(2)} BYN зачислена. Профиль обновлен.`);
           }
         }
       }

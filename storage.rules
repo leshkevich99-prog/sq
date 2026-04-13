@@ -2,21 +2,19 @@ rules_version = '2';
 service cloud.storage {
   match /b/{bucket}/o {
     
-    // ===============================================================
-    // Вспомогательные функции
-    // ===============================================================
     function isAuthenticated() {
       return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
     }
 
     function isAdmin() {
       return isAuthenticated() && (
         request.auth.token.email == "leshkevich.99@gmail.com" ||
         (firestore.exists(/databases/(default)/documents/users/$(request.auth.uid)) && 
-         firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'admin') ||
-        (firestore.exists(/databases/(default)/documents/users/$(request.auth.uid)) && 
-         firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.username in ['ttaammmo', '@ttaammmo', 'sasha_admin']) ||
-        request.auth.uid == 'test_admin'
+         firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'admin')
       );
     }
 
@@ -24,58 +22,36 @@ service cloud.storage {
       return isAuthenticated() && (
         isAdmin() ||
         (firestore.exists(/databases/(default)/documents/users/$(request.auth.uid)) && 
-         firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'pilot') ||
-        (firestore.exists(/databases/(default)/documents/users/$(request.auth.uid)) && 
-         firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.username in ['petya_pilot', 'test_pilot']) ||
-        request.auth.uid == 'test_pilot'
+         firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'pilot')
       );
     }
 
-    function isOwner(userId) {
-      return isAuthenticated() && request.auth.uid == userId;
-    }
-
-    // ===============================================================
-    // Правила путей
-    // ===============================================================
-
-    // 1. Рекомендации и повреждения автомобиля (recommendations/{carId}/{fileName})
-    match /recommendations/{carId}/{allPaths=**} {
-      // Чтение разрешено всем авторизованным пользователям
-      allow read: if isAuthenticated();
-      // Запись (создание/удаление) - только админы и пилоты
-      allow write: if isAdmin() || isPilot();
-    }
-
-    // 2. Документы автомобиля/техпаспорта (cars/{userId}/{fileName})
+    // Доступ к папке пользователя (техпаспорт и т.д.) - работает сразу!
     match /cars/{userId}/{allPaths=**} {
-      // Только владелец или админ
       allow read, write: if isOwner(userId) || isAdmin();
     }
 
-    // 3. Фото поручений (requests/{requestId}/{fileName})
+    // Фото поручений
     match /requests/{requestId}/{allPaths=**} {
-      // Чтение: Админ, Пилот или Владелец поручения
-      allow read: if isAdmin() || isPilot() || 
-                   (firestore.exists(/databases/(default)/documents/requests/$(requestId)) && 
-                    firestore.get(/databases/(default)/documents/requests/$(requestId)).data.userId == request.auth.uid);
-      
-      // Запись: Админ или Пилот
+      allow read: if isAuthenticated();
       allow write: if isAdmin() || isPilot();
     }
 
-    // 4. Чеки расходов (receipts/{fileName})
-    // Примечание: так как в текущем коде формат receipts/{requestId}_{timestamp}.jpg,
-    // мы разрешаем чтение всем авторизованным пользователям для стабильности системы оплаты,
-    // но ограничиваем запись. В будущем рекомендуется перейти на путь receipts/{requestId}/{fileName}
+    // Рекомендации по машинам
+    match /recommendations/{carId}/{allPaths=**} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin() || isPilot();
+    }
+
+    // Чеки
     match /receipts/{fileName} {
       allow read: if isAuthenticated();
       allow write: if isAdmin() || isPilot();
     }
 
-    // 5. По умолчанию доступ запрещен
+    // Все остальное - только админы
     match /{allPaths=**} {
-      allow read, write: if false;
+      allow read, write: if isAdmin();
     }
   }
 }
