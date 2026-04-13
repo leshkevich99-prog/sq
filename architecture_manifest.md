@@ -23,7 +23,16 @@
 - **Channels**: 
   - Firestore `notifications` collection (In-app).
   - Telegram Bot via `sendNotification` with `inline_keyboard` support.
-- **Deep Linking**: Telegram buttons use `t.me/.../?startapp=task_ID` for direct access.
+- **ASUS Services**: Bloatware like `LightingService` (AURA SYNC) should be monitored or disabled if 0xc0000005 errors persist, as they often conflict with Canary-build memory management.
+
+## 8. Cloud Storage Security (RBAC)
+- **Rules**: `storage.rules` implements strict Role-Based Access Control synchronized with Firestore.
+- **Paths**:
+  - `recommendations/`: Private write (Pilots/Admins), public read for Auth users.
+  - `cars/`: Sensitive documents - read/write restricted to Owner and Admin.
+  - `requests/`: Shared evidence - read for Admin, Pilot, or Request User (verified via Firestore cross-lookup).
+  - `receipts/`: Payment evidence - read for Auth users.
+- **Enforcement**: Integrated into `firebase.json` for automatic deployment. Cross-service validation uses `firestore.get()` for data integrity.
 
 ### 4. Persistence & Session Management
 - **Auth Provider**: `src/components/FirebaseProvider.tsx`
