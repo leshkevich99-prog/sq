@@ -79,6 +79,63 @@ export class BePaidAPI {
   }
 
   /**
+   * Creates a checkout session for Credit Card
+   */
+  static async createCardCheckout(amount: number, userId: string, description: string = 'Пополнение счета Squadra') {
+    const url = 'https://checkout.bepaid.by/checkouts';
+    const amountInKopeks = Math.round(amount * 100);
+
+    const payload = {
+      checkout: {
+        transaction_type: 'payment',
+        order: {
+          amount: amountInKopeks,
+          currency: 'BYN',
+          description: description,
+          tracking_id: `cc_${userId}_${Date.now()}`
+        },
+        settings: {
+          success_url: `${process.env.SQUADRA_URL}/finances?status=success`,
+          decline_url: `${process.env.SQUADRA_URL}/finances?status=fail`,
+          fail_url: `${process.env.SQUADRA_URL}/finances?status=error`,
+          notification_url: `${process.env.SQUADRA_URL}/api/payments/bepaid/webhook`,
+          language: 'ru'
+        },
+        payment_method: {
+          types: ['card']
+        },
+        customer: {
+          user_id: userId
+        }
+      }
+    };
+
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': this.getAuthHeader(),
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('[BePaidAPI] Card Checkout error:', errorData);
+        throw new Error(errorData.message || 'Failed to create bePaid card checkout');
+      }
+
+      const data: any = await response.json();
+      return data.checkout;
+    } catch (error: any) {
+      console.error('[BePaidAPI] Card Network error:', error.message);
+      throw error;
+    }
+  }
+
+  /**
    * Verifies the authenticity of a bePaid webhook
    */
   static verifyWebhook(headers: any, bodyPath: string) {

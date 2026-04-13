@@ -120,30 +120,26 @@ export async function initBot() {
 }
 
 export async function handleSuccessfulPayment(chatId: number, payment: any) {
-  if (!bot || !payment) return;
+  // Try to get bot even if not fully initialized yet
+  const activeBot = bot || getBot();
+  if (!payment) return;
 
-  console.log('Successful payment received:', JSON.stringify(payment));
+  console.log(`[Payment] Webhook received successful_payment for chatId ${chatId}. Amount: ${payment.total_amount / 100} BYN`);
   
   try {
     let rawPayload;
     try {
-      // Try to parse as JSON first (for backward compatibility)
       rawPayload = JSON.parse(payment.invoice_payload);
     } catch (e) {
-      // If not JSON, it's likely a payloadId (UUID)
-      console.log(`Fetching payload from Firestore for ID: ${payment.invoice_payload}`);
-      rawPayload = await firestore.collection('payment_payloads').get(payment.invoice_payload);
-      
-      if (!rawPayload) {
-        console.error(`Payload not found in Firestore for ID: ${payment.invoice_payload}`);
-        bot?.sendMessage(chatId, '⚠️ Ошибка: данные платежа не найдены. Пожалуйста, свяжитесь с поддержкой.');
-        return;
-      }
+      console.log(`[Payment] Fetching payload from Firestore: ${payment.invoice_payload}`);
+      // Use the firestore object from db.js
+      const payloadDoc = await firestore.collection('payment_payloads').get(payment.invoice_payload);
+      rawPayload = payloadDoc;
     }
 
     if (!rawPayload) {
-      console.error('No payload data resolved');
-      bot?.sendMessage(chatId, '⚠️ Ошибка: не удалось обработать данные платежа.');
+      console.error('[Payment] CRITICAL: Payload NOT FOUND in Firestore');
+      activeBot?.sendMessage(chatId, '⚠️ Ошибка: данные платежа не найдены в системе. Свяжитесь с поддержкой.');
       return;
     }
 

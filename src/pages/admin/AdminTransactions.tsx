@@ -67,7 +67,7 @@ export default function AdminTransactions() {
       const response = await fetch(`/api/admin/transactions/${txId}/confirm`, {
         method: 'POST',
         headers: { 
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
         }
       });
       if (!response.ok) throw new Error('Ошибка при подтверждении');

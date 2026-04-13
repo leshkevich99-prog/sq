@@ -730,12 +730,14 @@ async function startServer() {
         return res.json({ payment_url: invoiceLink, isNative: true });
       }
 
-      console.warn('createInvoiceLink returned null, falling back to external bePaid URL');
-      const token = process.env.VITE_BEPAID_TOKEN || process.env.BEPAID_TOKEN;
-      console.log(`Using bePaid token: ${token ? 'present' : 'missing'}`);
-      const payment_url = `https://checkout.bepaid.by/v2/checkout?token=${token || 'mock_token'}&amount=${Math.round(numAmount * 100)}&currency=BYN&description=${encodeURIComponent(description || 'Payment')}`;
+      console.warn('createInvoiceLink returned null, falling back to external bePaid card checkout');
+      const checkout = await BePaidAPI.createCardCheckout(
+        numAmount,
+        userId,
+        description || 'Пополнение депозита Squadra'
+      );
 
-      res.json({ payment_url, isNative: false });
+      res.json({ payment_url: checkout.redirect_url, isNative: false });
     } catch (error: any) {
       console.error('Payment creation error details:', error);
       res.status(500).json({ error: error.message || 'Internal server error' });
@@ -860,8 +862,10 @@ async function startServer() {
         const userId = parts[1];
 
         if (userId) {
-          const amount = transaction.amount / 100;
           console.log(`[BEPAID_WEBHOOK] Success! Updating transaction for user ${userId}`);
+          
+          const methodType = transaction.payment_method_type === 'erip' ? 'ЕРИП' : 'bePaid (Card)';
+          const amount = transaction.amount / 100;
 
           // Try to find pending transaction by token or tracking_id
           const pendingTxs = await firestore.collection('transactions').all([
@@ -874,7 +878,7 @@ async function startServer() {
           if (pendingTx) {
             await firestore.collection('transactions').update(pendingTx.id, {
               status: 'completed',
-              description: `Пополнение ЕРИП (Авто)`,
+              description: `Пополнение ${methodType} (Авто)`,
               updatedAt: new Date().toISOString(),
               providerPaymentId: transaction.uid,
               receiptUrl: transaction.receipt_url || null
@@ -886,7 +890,7 @@ async function startServer() {
               userId,
               type: 'deposit',
               amount: amount,
-              description: `Авто-зачисление: ${transaction.payment_method_type === 'erip' ? 'ЕРИП' : 'bePaid'}`,
+              description: `Авто-зачисление: ${methodType}`,
               status: 'completed',
               createdAt: new Date().toISOString(),
               providerPaymentId: transaction.uid,
