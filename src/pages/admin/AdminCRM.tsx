@@ -99,10 +99,13 @@ export default function AdminCRM() {
 
   const fetchData = React.useCallback(async () => {
     try {
+      const token = localStorage.getItem('auth_token');
+      const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+      
       const [userRes, carRes, txRes] = await Promise.all([
-        fetch('/api/admin/users'),
-        fetch('/api/admin/cars'), // Need an admin endpoint for ALL cars
-        fetch('/api/admin/transactions')
+        fetch('/api/admin/users', { headers }),
+        fetch('/api/admin/cars', { headers }),
+        fetch('/api/admin/transactions', { headers })
       ]);
 
       if (userRes.ok) {

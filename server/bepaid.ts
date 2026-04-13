@@ -17,7 +17,7 @@ export class BePaidAPI {
   /**
    * Creates a checkout session specifically for ERIP
    */
-  static async createEripCheckout(amount: number, userId: string, description: string = 'Пополнение счета Squadra') {
+  static async createEripCheckout(amount: number, userId: string, description: string = 'Пополнение счета Squadra', payloadId: string = '') {
     const url = 'https://checkout.bepaid.by/checkouts';
     
     // bePaid expects amount in smallest units (kopeks)
@@ -30,7 +30,7 @@ export class BePaidAPI {
           amount: amountInKopeks,
           currency: 'BYN',
           description: description,
-          tracking_id: `erip_${userId}_${Date.now()}`
+          tracking_id: `erip_${userId}_${payloadId}_${Date.now()}`
         },
         settings: {
           success_url: `${process.env.SQUADRA_URL}/finances?status=success`,
@@ -81,7 +81,7 @@ export class BePaidAPI {
   /**
    * Creates a checkout session for Credit Card
    */
-  static async createCardCheckout(amount: number, userId: string, description: string = 'Пополнение счета Squadra') {
+  static async createCardCheckout(amount: number, userId: string, description: string = 'Пополнение счета Squadra', payloadId: string = '') {
     const url = 'https://checkout.bepaid.by/checkouts';
     const amountInKopeks = Math.round(amount * 100);
 
@@ -92,7 +92,7 @@ export class BePaidAPI {
           amount: amountInKopeks,
           currency: 'BYN',
           description: description,
-          tracking_id: `cc_${userId}_${Date.now()}`
+          tracking_id: `cc_${userId}_${payloadId}_${Date.now()}`
         },
         settings: {
           success_url: `${process.env.SQUADRA_URL}/finances?status=success`,

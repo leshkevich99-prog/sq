@@ -734,7 +734,8 @@ async function startServer() {
       const checkout = await BePaidAPI.createCardCheckout(
         numAmount,
         userId,
-        description || 'Пополнение депозита Squadra'
+        description || 'Пополнение депозита Squadra',
+        payloadId
       );
 
       res.json({ payment_url: checkout.redirect_url, isNative: false });
@@ -802,7 +803,8 @@ async function startServer() {
       const checkout = await BePaidAPI.createEripCheckout(
         Number(amount),
         userId,
-        description || 'Пополнение депозита Squadra'
+        description || 'Пополнение депозита Squadra',
+        payloadId
       );
 
       const eripData = checkout.payment_method?.erip || {};
@@ -860,9 +862,10 @@ async function startServer() {
         const trackingId = transaction.tracking_id || '';
         const parts = trackingId.split('_');
         const userId = parts[1];
+        const payloadId = parts[2];
 
         if (userId) {
-          console.log(`[BEPAID_WEBHOOK] Success! Updating transaction for user ${userId}`);
+          console.log(`[BEPAID_WEBHOOK] Success! User: ${userId}, Payload: ${payloadId}`);
           
           const methodType = transaction.payment_method_type === 'erip' ? 'ЕРИП' : 'bePaid (Card)';
           const amount = transaction.amount / 100;

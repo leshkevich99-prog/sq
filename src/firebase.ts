@@ -247,7 +247,10 @@ const mapCarsData = (data: any[]): Car[] => {
 
 export const fetchCars = async (): Promise<Car[]> => {
   try {
-    const response = await fetch('/api/cars');
+    const token = localStorage.getItem('auth_token');
+    const response = await fetch('/api/cars', {
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+    });
     if (response.ok) {
       const data = await response.json();
       return mapCarsData(data);
@@ -261,7 +264,10 @@ export const fetchCars = async (): Promise<Car[]> => {
 export const saveCarSecure = async (car: Car, password: string) => {
   const response = await fetch('/api/admin-cars', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+    },
     body: JSON.stringify({ action: 'save', password, car }),
   });
 
@@ -283,7 +289,10 @@ export const saveCarSecure = async (car: Car, password: string) => {
 export const deleteCarSecure = async (id: string, password: string) => {
   const response = await fetch('/api/admin-cars', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+    },
     body: JSON.stringify({ action: 'delete', password, id }),
   });
 
@@ -335,7 +344,10 @@ export const uploadCarImages = async (files: FileList): Promise<CarImage[]> => {
     const filename = `${Date.now()}-${file.name.replace(/\s+/g, '-')}`;
     const response = await fetch('/api/upload-images', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+      },
       body: JSON.stringify({ image: base64, filename }),
     });
     if (!response.ok) {
@@ -359,7 +371,10 @@ export const uploadCarImages = async (files: FileList): Promise<CarImage[]> => {
 export const deleteImageFromServer = async (imageId: string, password: string) => {
   const response = await fetch('/api/delete-image', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+    },
     body: JSON.stringify({ imageId, password }),
   });
   if (!response.ok) {

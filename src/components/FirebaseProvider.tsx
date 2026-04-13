@@ -47,7 +47,10 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const fetchMe = async () => {
     try {
-      const response = await fetch('/api/auth/me');
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch('/api/auth/me', {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      });
       if (response.ok) {
         const { user: userData, firebaseCustomToken, token } = await response.json();
         
