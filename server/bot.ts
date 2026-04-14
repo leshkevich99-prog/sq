@@ -163,8 +163,8 @@ export async function handleSuccessfulPayment(chatId: number, payment: any) {
       description: `Пополнение через Telegram (${type === 'subscription' ? 'Тариф' : (type === 'service_order' ? 'Услуга' : 'Депозит')})`,
       status: 'completed',
       createdAt: new Date().toISOString(),
-      providerPaymentId,
-      telegramPaymentId: payment.telegram_payment_charge_id
+      providerPaymentId: providerPaymentId || '',
+      telegramPaymentId: payment.telegram_payment_charge_id || ''
     });
     console.log(`[Payment] Deposit record ${txId} created for user ${userId}`);
 
@@ -230,7 +230,11 @@ export async function handleSuccessfulPayment(chatId: number, payment: any) {
         const admins = await firestore.collection('users').all([{ type: 'where', field: 'role', op: '==', value: 'admin' }]);
         for (const admin of admins) {
           if (admin.telegramId) {
-            activeBot?.sendMessage(admin.telegramId, `💰 <b>Новая оплата!</b>\nКлиент: ${user?.firstName || '---'}\nСумма: ${amount.toFixed(2)} BYN`);
+            try {
+              await activeBot?.sendMessage(admin.telegramId, `💰 <b>Новая оплата!</b>\nКлиент: ${user?.firstName || '---'}\nСумма: ${amount.toFixed(2)} BYN`, { parse_mode: 'HTML' });
+            } catch (msgErr) {
+              console.warn(`[Payment] Could not notify admin ${admin.id}:`, msgErr);
+            }
           }
         }
       } catch (err) {

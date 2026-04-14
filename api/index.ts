@@ -134,11 +134,17 @@ async function startServer() {
     res.json({
       bot_id_env: botId,
       token_length: botToken.length,
-      token_prefix: botToken.substring(0, 10) + '...',
       telegram_api_status: tgInfo,
-      node_version: process.version,
-      timestamp: new Date().toISOString()
     });
+  });
+
+  app.get('/api/debug-txs', async (req, res) => {
+    try {
+      const txs = await firestore.collection('transactions').all();
+      res.json(txs);
+    } catch (e: any) {
+      res.json({ error: e.message });
+    }
   });
 
   // ==========================================

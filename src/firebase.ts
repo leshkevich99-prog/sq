@@ -90,7 +90,8 @@ const requiredEnvVars = [
   'VITE_FIREBASE_PROJECT_ID',
   'VITE_FIREBASE_STORAGE_BUCKET',
   'VITE_FIREBASE_MESSAGING_SENDER_ID',
-  'VITE_FIREBASE_APP_ID'
+  'VITE_FIREBASE_APP_ID',
+  'VITE_FIREBASE_DATABASE_ID'
 ];
 
 const missingVars = requiredEnvVars.filter(key => !import.meta.env[key]);
@@ -118,7 +119,8 @@ console.log("[Firebase] Starting initialization...");
 console.log("[Firebase] Config check:", {
   apiKey: firebaseConfig.apiKey ? "present" : "MISSING",
   projectId: firebaseConfig.projectId ? "present" : "MISSING",
-  appId: firebaseConfig.appId ? "present" : "MISSING"
+  appId: firebaseConfig.appId ? "present" : "MISSING",
+  databaseId: import.meta.env.VITE_FIREBASE_DATABASE_ID || "MISSING (Will use default)"
 });
 
 try {
@@ -138,6 +140,7 @@ export { app, db, auth, storage };
 
 // ─── Диагностика (видима в консоли разработчика) ─────────────────────────────
 if (typeof window !== 'undefined') {
+  (window as any)._firebaseDbId = import.meta.env.VITE_FIREBASE_DATABASE_ID || '(default)';
   (window as any).__FIREBASE_DEBUG__ = {
     projectId: firebaseConfig.projectId,
     databaseId: (db as any)._databaseId?.database || '(default)',
