@@ -133,7 +133,8 @@ export async function handleSuccessfulPayment(chatId: number, payment: any) {
       return;
     }
 
-    const userId = rawPayload.u || rawPayload.userId;
+    // MANDATORY STRING CONVERSION FOR IDs
+    let userId = (rawPayload.u || rawPayload.userId)?.toString();
     const type = rawPayload.t || rawPayload.type || 'deposit';
     const amount = Number(rawPayload.a || rawPayload.amount || (payment.total_amount / 100));
     const providerPaymentId = payment.provider_payment_charge_id;
@@ -141,6 +142,16 @@ export async function handleSuccessfulPayment(chatId: number, payment: any) {
     if (!userId) {
       console.error('[Payment] CRITICAL: userId missing in payload');
       return;
+    }
+
+    // Double-check if we need to redirect this to a real Document (migration support)
+    const userDoc = await firestore.collection('users').get(userId);
+    if (!userDoc) {
+      const byTg = await firestore.collection('users').all([{ type: 'where', field: 'telegramId', op: '==', value: userId }]);
+      if (byTg.length > 0) {
+        userId = byTg[0].id; // Redirect to actual doc ID
+        console.log(`[Payment] Migrated payment to user ID: ${userId}`);
+      }
     }
 
     // 1. PRIMARY: Record the deposit replenishment (Balance increases)
@@ -162,11 +173,11 @@ export async function handleSuccessfulPayment(chatId: number, payment: any) {
       const tariff = rawPayload.tariff || 'telemetry';
       const tariffName = rawPayload.tn || rawPayload.tariffName || tariff.toUpperCase();
       
-      await firestore.collection('users').update(userId, {
+      await firestore.collection('users').set(userId, {
         subscription: tariffName,
         tariff: tariff,
         updatedAt: new Date().toISOString()
-      });
+      }, { merge: true });
 
       // Deduction for the subscription cost
       await firestore.collection('transactions').set(uuidv4(), {
@@ -177,9 +188,10 @@ export async function handleSuccessfulPayment(chatId: number, payment: any) {
         status: 'completed',
         createdAt: new Date().toISOString()
       });
-    } else if (type === 'service_order' && rawPayload.po) {
+    } else if (type === 'service_order' && (rawPayload.po || rawPayload.pendingOrderId)) {
       try {
-        const orderData = await firestore.collection('pending_orders').get(rawPayload.po);
+        const poId = rawPayload.po || rawPayload.pendingOrderId;
+        const orderData = await firestore.collection('pending_orders').get(poId);
         if (orderData) {
           const requestId = uuidv4();
           await firestore.collection('requests').set(requestId, {
@@ -196,7 +208,7 @@ export async function handleSuccessfulPayment(chatId: number, payment: any) {
             status: 'completed',
             createdAt: new Date().toISOString()
           });
-          await firestore.collection('pending_orders').delete(rawPayload.po);
+          await firestore.collection('pending_orders').delete(poId);
         }
       } catch (e) {
         console.error('[Payment] Service order processing failed:', e);

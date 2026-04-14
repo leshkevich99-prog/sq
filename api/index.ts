@@ -861,7 +861,7 @@ async function startServer() {
       if (transaction.status === 'successful') {
         const trackingId = transaction.tracking_id || '';
         const parts = trackingId.split('_');
-        const userId = parts[1];
+        const userId = parts[1]?.toString();
         const payloadId = parts[2];
 
         if (userId) {

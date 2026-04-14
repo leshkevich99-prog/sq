@@ -79,7 +79,7 @@ export default function Finances() {
 
     const q = query(
       collection(db, 'transactions'), 
-      where('userId', '==', user.uid)
+      where('userId', '==', String(user.uid))
     );
     
     const unsubscribe = onSnapshot(q, (snapshot) => {
