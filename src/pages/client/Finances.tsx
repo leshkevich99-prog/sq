@@ -43,8 +43,6 @@ export default function Finances() {
   const [email, setEmail] = useState('');
   const [eripInfo, setEripInfo] = useState<{ erip_id: string; instruction: string; account_number: string } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const retryTimeoutRef = useRef<number | null>(null);
-  const [retryCount, setRetryCount] = useState(0);
 
 
   // Helper to format date robustly
@@ -111,18 +109,10 @@ export default function Finances() {
     }, (error) => {
       setLoading(false);
       handleFirestoreError(error, OperationType.LIST, 'transactions');
-      // Автоперезапуск: инкрементируем счетчик через 3 сек, что триггерит useEffect заново
-      retryTimeoutRef.current = window.setTimeout(() => {
-        setRetryCount(c => c + 1);
-      }, 3000);
     });
 
-    return () => {
-      unsubscribe();
-      if (retryTimeoutRef.current) clearTimeout(retryTimeoutRef.current);
-    };
-  }, [user, retryCount]);
-
+    return () => unsubscribe();
+  }, [user]);
 
   const handleTopUp = async () => {
     if (!user || !topUpAmount || isNaN(Number(topUpAmount)) || Number(topUpAmount) <= 0) return;
