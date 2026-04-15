@@ -13,7 +13,7 @@ const TARIFF_PRICES: Record<string, number> = {
 };
 
 export default function Tariffs() {
-  const { user } = useFirebase();
+  const { user, refreshAuth } = useFirebase();
   const [purchasing, setPurchasing] = useState<string | null>(null);
   const [balance, setBalance] = useState(0);
 
@@ -114,6 +114,8 @@ export default function Tariffs() {
 
         toast.success(`Тариф ${tariffName} успешно активирован!`, { id: toastId });
         WebApp.HapticFeedback.notificationOccurred('success');
+        // Обновляем данные пользователя через 2 сек - даем серверу время записать изменения
+        setTimeout(() => refreshAuth(), 2000);
       } catch (error) {
         console.error('Tariff update error:', error);
         toast.error('Ошибка при обновлении тарифа', { id: toastId });
@@ -158,6 +160,8 @@ export default function Tariffs() {
             toast.success(`Тариф ${tariffName} успешно оплачен!`, { id: toastId });
             WebApp.HapticFeedback.notificationOccurred('success');
             setPurchasing(null);
+            // Обновляем данные пользователя через 3 сек - даем боту время обработать платеж
+            setTimeout(() => refreshAuth(), 3000);
           } else if (status === 'cancelled') {
             toast.error('Оплата отменена', { id: toastId });
           } else if (status === 'failed') {

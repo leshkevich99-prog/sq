@@ -26,7 +26,7 @@ interface Transaction {
 }
 
 export default function Finances() {
-  const { user } = useFirebase();
+  const { user, refreshAuth } = useFirebase();
   const isKeyboardVisible = useKeyboard();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -43,6 +43,9 @@ export default function Finances() {
   const [email, setEmail] = useState('');
   const [eripInfo, setEripInfo] = useState<{ erip_id: string; instruction: string; account_number: string } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const retryTimeoutRef = useRef<number | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
+
 
   // Helper to format date robustly
   const formatDate = (dateValue: any) => {
@@ -108,10 +111,18 @@ export default function Finances() {
     }, (error) => {
       setLoading(false);
       handleFirestoreError(error, OperationType.LIST, 'transactions');
+      // Автоперезапуск: инкрементируем счетчик через 3 сек, что триггерит useEffect заново
+      retryTimeoutRef.current = window.setTimeout(() => {
+        setRetryCount(c => c + 1);
+      }, 3000);
     });
 
-    return () => unsubscribe();
-  }, [user]);
+    return () => {
+      unsubscribe();
+      if (retryTimeoutRef.current) clearTimeout(retryTimeoutRef.current);
+    };
+  }, [user, retryCount]);
+
 
   const handleTopUp = async () => {
     if (!user || !topUpAmount || isNaN(Number(topUpAmount)) || Number(topUpAmount) <= 0) return;
@@ -148,6 +159,8 @@ export default function Finances() {
             WebApp.HapticFeedback.notificationOccurred('success');
             setTopUpModalOpen(false);
             setTopUpAmount('');
+            // Даем боту 3 сек на обработку платежа, затем обновляем данные
+            setTimeout(() => refreshAuth(), 3000);
           } else {
             toast.dismiss(toastId);
           }
