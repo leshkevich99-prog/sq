@@ -832,7 +832,7 @@ async function startServer() {
 
   app.post('/api/payments/erip/create', authenticateToken, async (req: AuthRequest, res) => {
     try {
-      const { amount, description } = req.body;
+      const { amount, description, type, pendingOrderId } = req.body;
       const userId = req.user?.id;
 
       if (!userId) return res.status(401).json({ error: 'Unauthorized' });
@@ -840,7 +840,13 @@ async function startServer() {
         return res.status(400).json({ error: 'Invalid or missing amount' });
       }
 
-      console.log(`[ERIP] Creating bePaid checkout for user ${userId}, amount ${amount}`);
+      // Store payload in Firestore for webhook callback
+      const payloadId = uuidv4();
+      const payloadObj: any = { u: userId, t: type || 'deposit', a: Number(amount) };
+      if (pendingOrderId) payloadObj.po = pendingOrderId;
+      await firestore.collection('payment_payloads').set(payloadId, { ...payloadObj, createdAt: new Date().toISOString() });
+
+      console.log(`[ERIP] Creating bePaid checkout for user ${userId}, amount ${amount}, type ${type}`);
 
       const checkout = await BePaidAPI.createEripCheckout(
         Number(amount),
@@ -853,16 +859,19 @@ async function startServer() {
       const eripId = eripData.request_id || checkout.token.substring(0, 8).toUpperCase();
       const instruction = eripData.instruction || 'Платежи -> Авто-мото -> Squadra -> Оплата по коду';
 
-      // 1. Create PENDING transaction in Firestore
+      // Create PENDING transaction in Firestore
       const txId = uuidv4();
       await firestore.collection('transactions').set(txId, {
         userId,
         type: 'deposit',
         amount: Number(amount),
-        description: `ЕРИП: Ожидание оплаты`,
+        description: `ЕРИП: Ожидание оплаты${type === 'test_drive' ? ' (Тест-драйв)' : ''}`,
         status: 'pending',
         createdAt: new Date().toISOString(),
         paymentMethod: 'erip',
+        orderType: type || 'deposit',
+        pendingOrderId: pendingOrderId || null,
+        payloadId: payloadId,
         eripId: eripId,
         instruction: instruction,
         accountNumber: eripData.account_number || userId.substring(0, 8).toUpperCase(),
@@ -939,6 +948,20 @@ async function startServer() {
                     await firestore.collection('requests').set(uuidv4(), { ...o, status: 'pending', actualCost: amount, createdAt: new Date().toISOString() });
                     await firestore.collection('transactions').set(uuidv4(), { userId, type: 'deposit_deduction', amount, description: `Списание за услугу: ${o.serviceType}`, status: 'completed', createdAt: new Date().toISOString() });
                     await firestore.collection('pending_orders').delete(poId);
+                  }
+                } else if (type === 'test_drive' && (p.po || p.pendingOrderId)) {
+                  const poId = p.po || p.pendingOrderId;
+                  const o = await firestore.collection('pending_orders').get(poId);
+                  if (o) {
+                    const requestId = uuidv4();
+                    await firestore.collection('requests').set(requestId, { ...o, id: requestId, type: 'test_drive', title: `Тест-драйв: ${o.carModel || ''}`, description: `Адрес: ${o.address || ''}. Дата: ${o.date || ''} ${o.time || ''}`, status: 'pending', actualCost: amount, paid: true, paymentMethod: 'erip', createdAt: new Date().toISOString() });
+                    await firestore.collection('transactions').set(uuidv4(), { userId, type: 'deposit_deduction', amount, description: `Списание за тест-драйв: ${o.carModel || ''}`, status: 'completed', requestId, createdAt: new Date().toISOString() });
+                    await firestore.collection('pending_orders').delete(poId);
+                    // Notify admins
+                    const u = await firestore.collection('users').get(userId);
+                    const notifyMsg = `🏎️ <b>Новый тест-драйв!</b>\n\nКлиент: ${u?.firstName || '—'} (@${u?.username || '—'})\nАвто: ${o.carModel || '—'}\nДата: ${o.date || '—'} ${o.time || '—'}\nАдрес: ${o.address || '—'}\nОплата: ЕРИП ${amount.toFixed(2)} BYN`;
+                    const admins = await firestore.collection('users').all([{ type: 'where', field: 'role', op: '==', value: 'admin' }]);
+                    for (const admin of admins) { if (admin.telegramId) { try { await sendNotification(admin.telegramId, notifyMsg, { parse_mode: 'HTML' }); } catch (e) { /* ignore */ } } }
                   }
                 }
               }
