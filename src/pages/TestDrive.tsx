@@ -505,7 +505,7 @@ export default function TestDrive() {
               </div>
             </div>
 
-            <div className="px-6 pb-10">
+            <div className="px-6 pb-safe overflow-y-auto flex-1">
               {/* Метод выбора */}
               <div className="flex gap-2 p-1 bg-black/40 rounded-xl mb-6 border border-zinc-800/50">
                 {(['card', 'erip', 'b2b'] as const).map((m) => (
