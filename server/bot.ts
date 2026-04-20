@@ -213,6 +213,60 @@ export async function handleSuccessfulPayment(chatId: number, payment: any) {
       } catch (e) {
         console.error('[Payment] Service order processing failed:', e);
       }
+    } else if (type === 'test_drive' && (rawPayload.po || rawPayload.pendingOrderId)) {
+      try {
+        const poId = rawPayload.po || rawPayload.pendingOrderId;
+        const orderData = await firestore.collection('pending_orders').get(poId);
+        if (orderData) {
+          const requestId = uuidv4();
+          // Создаём заявку на тест-драйв
+          await firestore.collection('requests').set(requestId, {
+            ...orderData,
+            id: requestId,
+            type: 'test_drive',
+            title: `Тест-драйв: ${orderData.carModel || ''}`,
+            description: `Адрес: ${orderData.address || ''}. Дата: ${orderData.date || ''} ${orderData.time || ''}`,
+            status: 'pending',
+            actualCost: amount,
+            paid: true,
+            paymentMethod: 'telegram',
+            telegramPaymentId: payment.telegram_payment_charge_id || '',
+            providerPaymentId: providerPaymentId || '',
+            createdAt: new Date().toISOString()
+          });
+          // Транзакция - списание
+          await firestore.collection('transactions').set(uuidv4(), {
+            userId,
+            type: 'deposit_deduction',
+            amount,
+            description: `Списание за тест-драйв: ${orderData.carModel || ''}`,
+            status: 'completed',
+            requestId,
+            createdAt: new Date().toISOString()
+          });
+          // Удаляем pending order
+          await firestore.collection('pending_orders').delete(poId);
+          console.log(`[Payment] Test drive request ${requestId} created for user ${userId}`);
+
+          // Уведомляем администраторов
+          const admins = await firestore.collection('users').all([{ type: 'where', field: 'role', op: '==', value: 'admin' }]);
+          const user = await firestore.collection('users').get(userId);
+          const notifyMsg = `🏎️ <b>Новый тест-драйв!</b>\n\nКлиент: ${user?.firstName || '—'} (@${user?.username || '—'})\nАвто: ${orderData.carModel || '—'}\nДата: ${orderData.date || '—'} ${orderData.time || '—'}\nАдрес: ${orderData.address || '—'}\nВозврат: ${orderData.returnAddress || '—'}\nТелефон: ${orderData.phone || '—'}\nОплачено: ${amount.toFixed(2)} BYN`;
+          for (const admin of admins) {
+            if (admin.telegramId) {
+              try {
+                await activeBot?.sendMessage(admin.telegramId, notifyMsg, { parse_mode: 'HTML' });
+              } catch (err) {
+                console.warn(`[Payment] Could not notify admin ${admin.id}:`, err);
+              }
+            }
+          }
+        } else {
+          console.error(`[Payment] CRITICAL: pending_order ${poId} not found for test_drive payment!`);
+        }
+      } catch (e) {
+        console.error('[Payment] Test drive processing failed:', e);
+      }
     }
 
     // 3. CONFIRM: Send success message to user

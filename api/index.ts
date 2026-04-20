@@ -663,6 +663,42 @@ async function startServer() {
     res.json(tx);
   });
 
+  // Pending Orders (temporary storage before payment confirmation)
+  app.post('/api/pending_orders', authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      const id = uuidv4();
+      const data = req.body;
+      const order = await firestore.collection('pending_orders').set(id, {
+        ...data,
+        userId: data.userId || req.user?.id,
+        createdAt: data.createdAt || new Date().toISOString()
+      });
+      res.json({ id, ...order });
+    } catch (e: any) {
+      console.error('[PENDING_ORDERS] Create error:', e);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.get('/api/pending_orders/:id', authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      const order = await firestore.collection('pending_orders').get(req.params.id);
+      if (!order) return res.status(404).json({ error: 'Not found' });
+      res.json(order);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.delete('/api/pending_orders/:id', authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      await firestore.collection('pending_orders').delete(req.params.id);
+      res.json({ success: true });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   // Messages
   app.get('/api/messages', authenticateToken, async (req: AuthRequest, res) => {
     const { requestId } = req.query;
