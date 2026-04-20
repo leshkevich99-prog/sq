@@ -5,10 +5,12 @@ import { ArrowLeft, Car, Calendar, Clock, MapPin, Check, CreditCard, HelpCircle,
 import toast from 'react-hot-toast';
 import WebApp from '@twa-dev/sdk';
 import { useFirebase } from '../components/FirebaseProvider';
+import { useKeyboard } from '../hooks/useKeyboard';
 
 export default function TestDrive() {
   const navigate = useNavigate();
   const { user } = useFirebase();
+  const isKeyboardVisible = useKeyboard();
   const [name, setName] = useState(user?.firstName || '');
   const [phone, setPhone] = useState(user?.phone || '');
   const [carModel, setCarModel] = useState('');
@@ -427,25 +429,25 @@ export default function TestDrive() {
           <div className="grid grid-cols-2 gap-3 w-full">
             <div className="min-w-0 space-y-2">
               <label className="block text-xs text-zinc-500 uppercase tracking-wider ml-1">Дата</label>
-              <div className="relative">
+              <div className="relative w-full">
                 <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none" size={14} />
                 <input
                   type="date"
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
-                  className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-3.5 pl-9 pr-2 text-sm focus:outline-none focus:border-amber-500 text-white [color-scheme:dark]"
+                  className="w-full min-w-0 auto-cols-min bg-zinc-900 border border-zinc-800 rounded-xl py-3.5 pl-9 pr-2 text-sm focus:outline-none focus:border-amber-500 text-white [color-scheme:dark]"
                 />
               </div>
             </div>
             <div className="min-w-0 space-y-2">
               <label className="block text-xs text-zinc-500 uppercase tracking-wider ml-1">Время</label>
-              <div className="relative">
+              <div className="relative w-full">
                 <Clock className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none" size={14} />
                 <input
                   type="time"
                   value={time}
                   onChange={(e) => setTime(e.target.value)}
-                  className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-3.5 pl-9 pr-2 text-sm focus:outline-none focus:border-amber-500 text-white [color-scheme:dark]"
+                  className="w-full min-w-0 bg-zinc-900 border border-zinc-800 rounded-xl py-3.5 pl-9 pr-2 text-sm focus:outline-none focus:border-amber-500 text-white [color-scheme:dark]"
                 />
               </div>
             </div>
@@ -457,32 +459,36 @@ export default function TestDrive() {
               <span className="text-lg font-mono font-bold text-white flex items-center gap-1">500.00 <BynIcon size="0.8em" /></span>
             </div>
 
-            <label className="flex items-start gap-3 p-4 bg-red-500/10 border border-red-500/20 rounded-xl cursor-pointer">
-              <div className={`mt-0.5 w-5 h-5 rounded border flex items-center justify-center shrink-0 transition-colors ${safetyAccepted ? 'bg-red-500 border-red-500' : 'border-red-500/50'}`}>
-                {safetyAccepted && <Check size={14} className="text-white" />}
-              </div>
-              <p className="text-xs text-red-400 font-medium leading-relaxed">
-                Я подтверждаю, что ознакомлен с правилами: совместные поездки пилотов с владельцами запрещены регламентом безопасности.
-              </p>
-              <input
-                type="checkbox"
-                className="hidden"
-                checked={safetyAccepted}
-                onChange={(e) => {
-                  setSafetyAccepted(e.target.checked);
-                  WebApp.HapticFeedback.impactOccurred('medium');
-                }}
-              />
-            </label>
+            {!isKeyboardVisible && (
+              <div className="animate-in fade-in slide-in-from-bottom-4 duration-300 space-y-6">
+                <label className="flex items-start gap-3 p-4 bg-red-500/10 border border-red-500/20 rounded-xl cursor-pointer">
+                  <div className={`mt-0.5 w-5 h-5 rounded border flex items-center justify-center shrink-0 transition-colors ${safetyAccepted ? 'bg-red-500 border-red-500' : 'border-red-500/50'}`}>
+                    {safetyAccepted && <Check size={14} className="text-white" />}
+                  </div>
+                  <p className="text-xs text-red-400 font-medium leading-relaxed">
+                    Я подтверждаю, что ознакомлен с правилами: совместные поездки пилотов с владельцами запрещены регламентом безопасности.
+                  </p>
+                  <input
+                    type="checkbox"
+                    className="hidden"
+                    checked={safetyAccepted}
+                    onChange={(e) => {
+                      setSafetyAccepted(e.target.checked);
+                      WebApp.HapticFeedback.impactOccurred('medium');
+                    }}
+                  />
+                </label>
 
-            <button
-              type="submit"
-              disabled={submitting || !safetyAccepted}
-              onClick={() => WebApp.HapticFeedback.impactOccurred('medium')}
-              className="w-full py-4 bg-amber-500 text-black rounded-xl font-bold uppercase tracking-widest text-sm shadow-lg shadow-amber-500/20 disabled:opacity-50 active:scale-[0.98] transition-transform"
-            >
-              {submitting ? 'Подготовка...' : safetyAccepted ? 'Перейти к оплате' : 'Примите регламент'}
-            </button>
+                <button
+                  type="submit"
+                  disabled={submitting || !safetyAccepted}
+                  onClick={() => WebApp.HapticFeedback.impactOccurred('medium')}
+                  className="w-full py-4 bg-amber-500 text-black rounded-xl font-bold uppercase tracking-widest text-sm shadow-lg shadow-amber-500/20 disabled:opacity-50 active:scale-[0.98] transition-transform"
+                >
+                  {submitting ? 'Подготовка...' : safetyAccepted ? 'Перейти к оплате' : 'Примите регламент'}
+                </button>
+              </div>
+            )}
           </div>
         </form>
       )}
