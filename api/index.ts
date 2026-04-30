@@ -1272,9 +1272,8 @@ async function startServer() {
 
   // ─── CRON: Ежедневная проверка подписок ─────────────────────────────────────
   app.get('/api/cron/subscriptions', async (req, res) => {
-    // Vercel Cron вызывает GET запросом с заголовком Authorization
-    const authHeader = req.headers['authorization'];
-    if (authHeader !== `Bearer ${process.env.CRON_SECRET}` && process.env.NODE_ENV === 'production') {
+    // Используем простой query-параметр, чтобы не настраивать переменные окружения в Vercel
+    if (req.query.secret !== 'squadra_cron_777' && process.env.NODE_ENV === 'production') {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 

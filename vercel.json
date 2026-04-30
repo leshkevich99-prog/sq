@@ -15,7 +15,7 @@
   ],
   "crons": [
     {
-      "path": "/api/cron/subscriptions",
+      "path": "/api/cron/subscriptions?secret=squadra_cron_777",
       "schedule": "0 9 * * *"
     }
   ]
