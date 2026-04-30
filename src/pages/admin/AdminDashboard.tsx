@@ -250,6 +250,32 @@ export default function AdminDashboard() {
         });
       }
 
+      // 5. Notify client (Telegram) - чтобы пуш приходил вне приложения
+      const clientUser = users[reqData.userId];
+      if (clientUser?.telegramId) {
+        const clientMsg = `✅ <b>Пилот назначен!</b>\n\n` +
+                          `Ваше поручение #${requestNumber} принято в работу.\n` +
+                          `<b>Пилот:</b> ${selectedPilotForAssign.firstName || ''}\n` +
+                          `<b>Услуга:</b> ${serviceName}\n\n` +
+                          `<i>Следите за статусом в приложении.</i>`;
+
+        await fetch('/api/notifications/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            telegramId: clientUser.telegramId,
+            message: clientMsg,
+            options: {
+              reply_markup: {
+                inline_keyboard: [
+                  [{ text: '📋 Открыть поручение', url: `https://t.me/squadraby_bot/app?startapp=task_${selectedRequestId}` }]
+                ]
+              }
+            }
+          })
+        }).catch(() => {}); // игнорируем ошибки уведомления - не критично
+      }
+
       toast.success('Пилот успешно назначен', { id: toastId });
       setAssignModalOpen(false);
       setSelectedRequestId(null);
