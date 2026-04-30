@@ -76,7 +76,8 @@ const SERVICE_LABELS: Record<string, string> = {
   'parking': 'Night Drop',
   'bureaucracy': 'Бюрократия',
   'wash': 'Мойка',
-  'service': 'СТО / ТО'
+  'service': 'СТО / ТО',
+  'test_drive': 'Тест-драйв'
 };
 
 export default function TaskDetails() {
@@ -643,7 +644,13 @@ export default function TaskDetails() {
             <div>
               <div className="text-xs text-zinc-500 uppercase tracking-widest">Автомобиль</div>
               <div className="font-bold">
-                {car ? `${car.make} ${car.model} (${car.plate})` : `ID: ${request.carId}`}
+                {car
+                  ? `${car.make} ${car.model} (${car.plate})`
+                  : (request as any).carModel
+                    ? (request as any).carModel
+                    : request.carId
+                      ? `ID: ${request.carId}`
+                      : 'Не указан'}
               </div>
             </div>
           </div>
@@ -655,11 +662,10 @@ export default function TaskDetails() {
             <div>
               <div className="text-xs text-zinc-500 uppercase tracking-widest">Услуга</div>
               <div className="font-bold uppercase tracking-wide">
-                {request.serviceType === 'logistics' ? 'Логистика' : 
-                 request.serviceType === 'valet' ? 'Валет' : 
-                 request.serviceType === 'parking' ? 'Паркинг' : 
-                 request.serviceType === 'bureaucracy' ? 'Бюрократия' : 
-                 request.serviceType === 'wash' ? `Мойка (${request.washType})` : 'СТО / ТО'}
+                {SERVICE_LABELS[request.serviceType] ||
+                 (request.serviceType === 'wash'
+                   ? `Мойка (${request.washType})`
+                   : request.serviceType || 'СТО / ТО')}
               </div>
             </div>
           </div>
@@ -679,16 +685,25 @@ export default function TaskDetails() {
               <div>
                 <div className="text-[10px] text-zinc-500 uppercase tracking-widest mb-1">Дата</div>
                 <div className="text-sm font-medium">
-                  {request.orderDate === 'today' ? 'Сегодня' : 
-                   request.orderDate === 'tomorrow' ? 'Завтра' : 
-                   request.orderDate?.includes('-') ? new Date(request.orderDate).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' }) : 
-                   request.orderDate}
+                  {(() => {
+                    const d = request.orderDate || (request as any).date;
+                    if (!d) return '—';
+                    if (d === 'today') return 'Сегодня';
+                    if (d === 'tomorrow') return 'Завтра';
+                    if (d.includes('-')) return new Date(d).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
+                    return d;
+                  })()}
                 </div>
               </div>
               <div>
                 <div className="text-[10px] text-zinc-500 uppercase tracking-widest mb-1">Время</div>
                 <div className="text-sm font-medium">
-                  {request.orderTime === 'asap' ? 'Как можно скорее' : request.orderTime}
+                  {(() => {
+                    const t = request.orderTime || (request as any).time;
+                    if (!t) return '—';
+                    if (t === 'asap') return 'Как можно скорее';
+                    return t;
+                  })()}
                 </div>
               </div>
             </div>

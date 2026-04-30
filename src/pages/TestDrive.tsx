@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { BynIcon } from '../components/BynIcon';
 import { ArrowLeft, Car, Calendar, Clock, MapPin, Check, CreditCard, HelpCircle, Search, FileText, X } from 'lucide-react';
@@ -426,28 +427,26 @@ export default function TestDrive() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 w-full">
+          <div className="flex flex-col min-[360px]:grid min-[360px]:grid-cols-2 gap-3 w-full">
             <div className="min-w-0 space-y-2">
               <label className="block text-xs text-zinc-500 uppercase tracking-wider ml-1">Дата</label>
               <div className="relative w-full">
-                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none" size={14} />
                 <input
                   type="date"
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
-                  className="w-full min-w-0 auto-cols-min bg-zinc-900 border border-zinc-800 rounded-xl py-3.5 pl-9 pr-2 text-sm focus:outline-none focus:border-amber-500 text-white [color-scheme:dark]"
+                  className="w-full min-w-0 bg-zinc-900 border border-zinc-800 rounded-xl py-3.5 px-4 text-sm focus:outline-none focus:border-amber-500 text-white box-border appearance-none [color-scheme:dark]"
                 />
               </div>
             </div>
             <div className="min-w-0 space-y-2">
               <label className="block text-xs text-zinc-500 uppercase tracking-wider ml-1">Время</label>
               <div className="relative w-full">
-                <Clock className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none" size={14} />
                 <input
                   type="time"
                   value={time}
                   onChange={(e) => setTime(e.target.value)}
-                  className="w-full min-w-0 bg-zinc-900 border border-zinc-800 rounded-xl py-3.5 pl-9 pr-2 text-sm focus:outline-none focus:border-amber-500 text-white [color-scheme:dark]"
+                  className="w-full min-w-0 bg-zinc-900 border border-zinc-800 rounded-xl py-3.5 px-4 text-sm focus:outline-none focus:border-amber-500 text-white box-border appearance-none [color-scheme:dark]"
                 />
               </div>
             </div>
@@ -493,9 +492,9 @@ export default function TestDrive() {
         </form>
       )}
 
-      {/* Payment Method Modal */}
-      {paymentModalOpen && (
-        <div className="fixed inset-0 z-[400] bg-black/80 backdrop-blur-sm flex flex-col justify-end animate-in fade-in duration-200">
+      {/* Payment Method Modal via Portal */}
+      {paymentModalOpen && document.body && createPortal(
+        <div className="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-sm flex flex-col justify-end animate-in fade-in duration-200">
           <div className="absolute inset-0" onClick={() => setPaymentModalOpen(false)} />
           <div className="relative bg-zinc-900 rounded-t-[32px] w-full animate-in slide-in-from-bottom duration-300 border-t border-zinc-800 max-h-[95vh] flex flex-col">
             <div className="p-6 pb-2 shrink-0">
@@ -511,7 +510,7 @@ export default function TestDrive() {
               </div>
             </div>
 
-            <div className="px-6 pb-12 overflow-y-auto flex-1">
+            <div className="px-6 pb-28 overflow-y-auto flex-1">
               {/* Метод выбора */}
               <div className="flex gap-2 p-1 bg-black/40 rounded-xl mb-6 border border-zinc-800/50">
                 {(['card', 'erip', 'b2b'] as const).map((m) => (
@@ -663,10 +662,12 @@ export default function TestDrive() {
                   </p>
                 </div>
               )}
+              {/* Safe area for keyboard in Modal (B2B Form, etc) */}
+              {isKeyboardVisible && <div className="h-64" />}
             </div>
           </div>
         </div>
-      )}
+      , document.body)}
     </div>
   );
 }

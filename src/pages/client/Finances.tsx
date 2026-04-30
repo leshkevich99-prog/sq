@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Wallet, ArrowUpRight, ArrowDownRight, CreditCard, X, Check, HelpCircle, Search, FileText } from 'lucide-react';
 import { BynIcon } from '../../components/BynIcon';
 import WebApp from '@twa-dev/sdk';
@@ -458,22 +459,25 @@ export default function Finances() {
         formatDate={formatDate}
       />
 
-      {/* Top Up Modal */}
-      {topUpModalOpen && (
-        <div className="fixed inset-0 z-[400] bg-black/80 backdrop-blur-sm flex flex-col justify-end animate-in fade-in duration-200">
+      {/* Top Up Modal via Portal */}
+      {topUpModalOpen && document.body && createPortal(
+        <div className="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-sm flex flex-col justify-end animate-in fade-in duration-200">
           <div className="absolute inset-0" onClick={() => setTopUpModalOpen(false)} />
           <div className="relative bg-zinc-900 rounded-t-[32px] w-full animate-in slide-in-from-bottom duration-300 border-t border-zinc-800 max-h-[95vh] flex flex-col">
             <div className="p-6 pb-2 shrink-0">
               <div className="w-12 h-1.5 bg-zinc-800 rounded-full mx-auto mb-6" />
-              <div className="flex items-center justify-between">
-                <h3 className="text-xl font-bold uppercase tracking-tighter">Пополнение депозита</h3>
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <h3 className="text-xl font-bold uppercase tracking-tighter">Пополнение депозита</h3>
+                  <p className="text-xs text-zinc-500 mt-0.5">Выберите способ пополнения</p>
+                </div>
                 <button onClick={() => setTopUpModalOpen(false)} className="text-zinc-500 hover:text-white transition-colors p-2">
                   <X size={24} />
                 </button>
               </div>
             </div>
 
-            <div className="px-6 pb-12 overflow-y-auto flex-1">
+            <div className="px-6 pb-28 overflow-y-auto flex-1">
               {/* Payment Method Selector */}
               <div className="flex gap-2 p-1 bg-black/40 rounded-xl mb-6 border border-zinc-800/50">
                 <PaymentMethodBtn 
@@ -695,7 +699,7 @@ export default function Finances() {
             </div>
           </div>
         </div>
-      )}
+      , document.body)}
     </div>
   );
 }

@@ -224,8 +224,14 @@ export async function handleSuccessfulPayment(chatId: number, payment: any) {
             ...orderData,
             id: requestId,
             type: 'test_drive',
+            serviceType: 'test_drive',
             title: `Тест-драйв: ${orderData.carModel || ''}`,
             description: `Адрес: ${orderData.address || ''}. Дата: ${orderData.date || ''} ${orderData.time || ''}`,
+            // Маппинг полей для корректного отображения в TaskDetails
+            pickupAddress: orderData.address || '',
+            orderDate: orderData.date || '',
+            orderTime: orderData.time || '',
+            carId: null,
             status: 'pending',
             actualCost: amount,
             paid: true,
@@ -262,7 +268,21 @@ export async function handleSuccessfulPayment(chatId: number, payment: any) {
             }
           }
         } else {
-          console.error(`[Payment] CRITICAL: pending_order ${poId} not found for test_drive payment!`);
+          // КРИТИЧНО: pending_order не найден, но деньги уже зачислены — уведомляем админов
+          console.error(`[Payment] CRITICAL: pending_order ${poId} not found for test_drive payment! Deposit was credited but no request was created.`);
+          const admins = await firestore.collection('users').all([{ type: 'where', field: 'role', op: '==', value: 'admin' }]);
+          const user = await firestore.collection('users').get(userId);
+          for (const admin of admins) {
+            if (admin.telegramId) {
+              try {
+                await activeBot?.sendMessage(
+                  admin.telegramId,
+                  `⚠️ <b>ОШИБКА: Тест-драйв не создан!</b>\n\nКлиент: ${user?.firstName || '—'} (@${user?.username || '—'})\nСумма ${amount.toFixed(2)} BYN зачислена на депозит, но pending_order ${poId} не найден.\n\n<i>Создайте поручение вручную!</i>`,
+                  { parse_mode: 'HTML' }
+                );
+              } catch (err) { /* ignore */ }
+            }
+          }
         }
       } catch (e) {
         console.error('[Payment] Test drive processing failed:', e);

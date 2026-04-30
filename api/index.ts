@@ -954,7 +954,23 @@ async function startServer() {
                   const o = await firestore.collection('pending_orders').get(poId);
                   if (o) {
                     const requestId = uuidv4();
-                    await firestore.collection('requests').set(requestId, { ...o, id: requestId, type: 'test_drive', title: `Тест-драйв: ${o.carModel || ''}`, description: `Адрес: ${o.address || ''}. Дата: ${o.date || ''} ${o.time || ''}`, status: 'pending', actualCost: amount, paid: true, paymentMethod: 'erip', createdAt: new Date().toISOString() });
+                    await firestore.collection('requests').set(requestId, {
+                      ...o,
+                      id: requestId,
+                      type: 'test_drive',
+                      serviceType: 'test_drive',
+                      title: `Тест-драйв: ${o.carModel || ''}`,
+                      description: `Адрес: ${o.address || ''}. Дата: ${o.date || ''} ${o.time || ''}`,
+                      pickupAddress: o.address || '',
+                      orderDate: o.date || '',
+                      orderTime: o.time || '',
+                      carId: null,
+                      status: 'pending',
+                      actualCost: amount,
+                      paid: true,
+                      paymentMethod: 'erip',
+                      createdAt: new Date().toISOString()
+                    });
                     await firestore.collection('transactions').set(uuidv4(), { userId, type: 'deposit_deduction', amount, description: `Списание за тест-драйв: ${o.carModel || ''}`, status: 'completed', requestId, createdAt: new Date().toISOString() });
                     await firestore.collection('pending_orders').delete(poId);
                     // Notify admins

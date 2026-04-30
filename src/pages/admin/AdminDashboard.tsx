@@ -76,7 +76,8 @@ const SERVICE_LABELS: Record<string, string> = {
   'parking': 'Night Drop',
   'bureaucracy': 'Бюрократия',
   'wash': 'Мойка',
-  'service': 'СТО / ТО'
+  'service': 'СТО / ТО',
+  'test_drive': 'Тест-драйв'
 };
 
 export default function AdminDashboard() {
@@ -638,11 +639,7 @@ export default function AdminDashboard() {
                     </td>
                     <td className="px-6 py-4">
                       <span className="text-[10px] font-bold uppercase tracking-wider bg-zinc-800 px-2 py-1 rounded">
-                        {req.serviceType === 'logistics' ? 'Логистика' : 
-                         req.serviceType === 'valet' ? 'Валет' : 
-                         req.serviceType === 'parking' ? 'Паркинг' : 
-                         req.serviceType === 'bureaucracy' ? 'Бюрократия' : 
-                         req.serviceType === 'wash' ? 'Мойка' : 'СТО / ТО'}
+                        {SERVICE_LABELS[req.serviceType] || req.serviceType || 'СТО / ТО'}
                       </span>
                     </td>
                     <td className="px-6 py-4">
@@ -856,7 +853,8 @@ function TaskCard({ req, user, car, pilot, onAssign }: { req: RequestData; user?
     'parking': 'Паркинг',
     'bureaucracy': 'Бюрократия',
     'wash': 'Мойка',
-    'service': 'СТО / ТО'
+    'service': 'СТО / ТО',
+    'test_drive': 'Тест-драйв'
   };
 
   return (
@@ -884,7 +882,13 @@ function TaskCard({ req, user, car, pilot, onAssign }: { req: RequestData; user?
 
         <div className="flex items-center gap-2 text-zinc-400 text-[11px] mb-4 bg-black/40 p-2 rounded-xl border border-zinc-800/50">
           <CarIcon size={14} className="text-zinc-600 flex-shrink-0" />
-          <span className="truncate font-medium">{car ? `${car.make} ${car.model}` : 'Автомобиль'}</span>
+          <span className="truncate font-medium">
+            {car
+              ? `${car.make} ${car.model}`
+              : (req as any).carModel
+                ? (req as any).carModel
+                : 'Автомобиль'}
+          </span>
         </div>
         
         {pilot ? (
