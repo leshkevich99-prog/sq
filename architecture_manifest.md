@@ -75,6 +75,13 @@ _Последнее обновление: 2026-04-30_
 - **Keyboard Handling**: `useKeyboard.ts` hook manages UI layout when keyboard is visible. Inputs use `enterKeyHint="done"` for better mobile UX.
 - **Safe Area**: всегда использовать `pt-safe`, `pb-safe` и `pb-[max(env(safe-area-inset-bottom),1rem)]` в sticky/fixed элементах.
 
+### 9. Subscription Lifecycle
+- **Активация**: При покупке (баланс, Telegram Invoice или bePaid webhook) пользователю проставляется `subscriptionStartedAt` (now) и `subscriptionExpiresAt` (now + 30 дней).
+- **CRON Job**: `/api/cron/subscriptions?secret=squadra_cron_777` дёргается каждый день в 09:00 UTC (настроено в `vercel.json`).
+  - **Expiry (<= now)**: Подписка деактивируется (tariff = null), отправляется push в Telegram + In-app уведомление.
+  - **Reminder (<= 3 дня)**: За 3 дня до конца клиенту приходит пуш "Продлите подписку" со ссылкой в Mini App.
+- **UI**: В `Tariffs.tsx` отображается счётчик "Истекает через X дн." или "Действует до DD.MM.YYYY".
+
 ## Known Issues (Resolved)
 | # | Баг | Решение | Коммит |
 |---|---|---|---|
@@ -83,3 +90,4 @@ _Последнее обновление: 2026-04-30_
 | 3 | Тип "СТО/ТО" для тест-драйва | `serviceType: 'test_drive'` + SERVICE_LABELS | d66458b |
 | 4 | Даты/время не отображались | `orderDate || date`, `orderTime || time` | d66458b |
 | 5 | Нет Telegram-пуша клиенту при назначении пилота | Добавлен fetch `/api/notifications/send` | b6f49bf |
+| 6 | Подписка не имела срока действия | Добавлен CRON (ежедневно), expiresAt (+30 дн), reminders, UI | 2b8485c |
