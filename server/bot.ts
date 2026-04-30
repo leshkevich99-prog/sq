@@ -176,6 +176,8 @@ export async function handleSuccessfulPayment(chatId: number, payment: any) {
       await firestore.collection('users').set(userId, {
         subscription: tariffName,
         tariff: tariff,
+        subscriptionStartedAt: new Date().toISOString(),
+        subscriptionExpiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
         updatedAt: new Date().toISOString()
       }, { merge: true });
 

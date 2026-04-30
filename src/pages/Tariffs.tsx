@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BynIcon } from '../components/BynIcon';
-import { Check } from 'lucide-react';
+import { Check, Calendar, Clock } from 'lucide-react';
 import { useFirebase } from '../components/FirebaseProvider';
 import { db, handleFirestoreError, OperationType, doc, updateDoc, addDoc, collection, query, where, onSnapshot } from '../firebase';
 import toast from 'react-hot-toast';
@@ -98,6 +98,7 @@ export default function Tariffs() {
         }
 
         // 2. Update user tariff via API
+        const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
         const updRes = await fetch('/api/users/profile', {
           method: 'PUT',
           headers: { 
@@ -106,6 +107,9 @@ export default function Tariffs() {
           },
           body: JSON.stringify({ 
             tariff: tariffName,
+            subscription: tariffName,
+            subscriptionStartedAt: new Date().toISOString(),
+            subscriptionExpiresAt: expiresAt,
             quotas: quotas
           })
         });
@@ -200,6 +204,7 @@ export default function Tariffs() {
           price={1400}
           isActive={user?.subscription === 'TELEMETRY'}
           isPurchasing={purchasing === 'TELEMETRY'}
+          expiresAt={user?.subscription === 'TELEMETRY' ? (user as any).subscriptionExpiresAt : undefined}
           onPurchase={() => handlePurchase('TELEMETRY', 1400, { logistics: 1, wash: 2 })}
           features={[
             "Бортовой журнал автомобиля",
@@ -213,6 +218,7 @@ export default function Tariffs() {
           price={2400}
           isActive={user?.subscription === 'PIT STOP'}
           isPurchasing={purchasing === 'PIT STOP'}
+          expiresAt={user?.subscription === 'PIT STOP' ? (user as any).subscriptionExpiresAt : undefined}
           onPurchase={() => handlePurchase('PIT STOP', 2400, { logistics: 2, wash: 4 })}
           features={[
             "Бортовой журнал автомобиля",
@@ -226,6 +232,7 @@ export default function Tariffs() {
           price={4000}
           isActive={user?.subscription === 'SQUADRA FAMILY'}
           isPurchasing={purchasing === 'SQUADRA FAMILY'}
+          expiresAt={user?.subscription === 'SQUADRA FAMILY' ? (user as any).subscriptionExpiresAt : undefined}
           onPurchase={() => handlePurchase('SQUADRA FAMILY', 4000, { logistics: 4, wash: 8 })}
           features={[
             "Бортовой журнал для двух авто",
@@ -245,6 +252,7 @@ function TariffCard({
   features, 
   isActive, 
   isPurchasing,
+  expiresAt,
   onPurchase 
 }: { 
   name: string; 
@@ -252,6 +260,7 @@ function TariffCard({
   features: string[]; 
   isActive?: boolean;
   isPurchasing?: boolean;
+  expiresAt?: string;
   onPurchase: () => void;
 }) {
   const handleClick = () => {
@@ -260,6 +269,14 @@ function TariffCard({
       onPurchase();
     }
   };
+
+  const daysLeft = expiresAt
+    ? Math.ceil((new Date(expiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+    : null;
+  const expiresFormatted = expiresAt
+    ? new Date(expiresAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })
+    : null;
+  const isExpiringSoon = daysLeft !== null && daysLeft <= 3;
 
   return (
     <div className={`rounded-2xl p-5 border ${isActive ? 'bg-zinc-900 border-zinc-700' : 'bg-black border-zinc-800'}`}>
@@ -270,10 +287,29 @@ function TariffCard({
         </div>
         {isActive && (
           <span className="text-[10px] uppercase tracking-wider px-2 py-1 bg-white text-black font-bold rounded">
-            Текущий
+            Активен
           </span>
         )}
       </div>
+
+      {/* Дата окончания для активного тарифа */}
+      {isActive && expiresFormatted && (
+        <div className={`flex items-center gap-2 mb-4 px-3 py-2 rounded-xl text-xs ${
+          isExpiringSoon
+            ? 'bg-amber-500/10 border border-amber-500/20 text-amber-400'
+            : 'bg-zinc-800/60 border border-zinc-700/50 text-zinc-400'
+        }`}>
+          {isExpiringSoon
+            ? <Clock size={12} className="shrink-0 text-amber-400" />
+            : <Calendar size={12} className="shrink-0" />}
+          <span>
+            {isExpiringSoon
+              ? `⚠️ Истекает через ${daysLeft} дн. — ${expiresFormatted}`
+              : `Действует до ${expiresFormatted} · ещё ${daysLeft} дн.`}
+          </span>
+        </div>
+      )}
+
       <ul className="space-y-3 mb-6">
         {features.map((feature, i) => (
           <li key={i} className="flex items-start gap-3 text-sm text-zinc-300">
@@ -291,7 +327,9 @@ function TariffCard({
             : 'bg-white text-black hover:bg-zinc-200 active:scale-[0.98] transition-transform disabled:opacity-50'
         }`}
       >
-        {isActive ? 'Активен' : isPurchasing ? 'Оплата...' : 'Выбрать тариф'}
+        {isActive
+          ? isExpiringSoon ? '🔄 Продлить' : 'Активен'
+          : isPurchasing ? 'Оплата...' : 'Выбрать тариф'}
       </button>
     </div>
   );

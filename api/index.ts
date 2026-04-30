@@ -939,7 +939,10 @@ async function startServer() {
                 if ((type || (p.tariff ? 'subscription' : '')) === 'subscription') {
                   const tariff = p.tariff || p.tariffName || 'telemetry';
                   const tName = p.tn || p.tariffName || tariff.toUpperCase();
-                  await firestore.collection('users').set(userId, { subscription: tName, tariff: tariff.toLowerCase(), updatedAt: new Date().toISOString() }, { merge: true });
+                  const now = new Date();
+                  const expiresAt = new Date(now);
+                  expiresAt.setDate(expiresAt.getDate() + 30);
+                  await firestore.collection('users').set(userId, { subscription: tName, tariff: tariff.toLowerCase(), subscriptionStartedAt: now.toISOString(), subscriptionExpiresAt: expiresAt.toISOString(), updatedAt: now.toISOString() }, { merge: true });
                   await firestore.collection('transactions').set(uuidv4(), { userId, type: 'deposit_deduction', amount, description: `Списание за тариф: ${tName}`, status: 'completed', createdAt: new Date().toISOString() });
                 } else if (type === 'service_order' && (p.po || p.pendingOrderId)) {
                   const poId = p.po || p.pendingOrderId;
@@ -1263,6 +1266,95 @@ async function startServer() {
       res.json(taskData);
     } catch (e: any) {
       console.error('[API] Create Request Error:', e);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // ─── CRON: Ежедневная проверка подписок ─────────────────────────────────────
+  app.get('/api/cron/subscriptions', async (req, res) => {
+    // Vercel Cron вызывает GET запросом с заголовком Authorization
+    const authHeader = req.headers['authorization'];
+    if (authHeader !== `Bearer ${process.env.CRON_SECRET}` && process.env.NODE_ENV === 'production') {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    try {
+      const now = new Date();
+      const in3Days = new Date(now);
+      in3Days.setDate(in3Days.getDate() + 3);
+
+      const allUsers = await firestore.collection('users').all();
+      let reminded = 0, deactivated = 0;
+
+      for (const user of allUsers) {
+        if (!user.subscription || !user.subscriptionExpiresAt) continue;
+
+        const expiresAt = new Date(user.subscriptionExpiresAt);
+
+        // 1. Истекла — деактивируем
+        if (expiresAt < now) {
+          await firestore.collection('users').set(user.id, {
+            subscription: null,
+            tariff: null,
+            subscriptionExpiresAt: null,
+            updatedAt: now.toISOString()
+          }, { merge: true });
+
+          // In-app уведомление
+          await firestore.collection('notifications').set(uuidv4(), {
+            userId: user.id,
+            title: 'Подписка истекла',
+            message: `Ваш тариф ${user.subscription} был деактивирован. Продлите подписку в разделе «Тарифы».`,
+            type: 'warning',
+            link: '/tariffs',
+            read: false,
+            createdAt: now.toISOString()
+          });
+
+          // Telegram уведомление
+          if (user.telegramId) {
+            await sendNotification(user.telegramId, `⚠️ <b>Подписка ${user.subscription} истекла!</b>\n\nПродлите подписку в приложении, чтобы не потерять доступ к услугам.`, { parse_mode: 'HTML' }).catch(() => {});
+          }
+          deactivated++;
+
+        // 2. Истекает через 3 дня — напоминаем
+        } else if (expiresAt <= in3Days) {
+          const daysLeft = Math.ceil((expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+
+          // In-app уведомление
+          await firestore.collection('notifications').set(uuidv4(), {
+            userId: user.id,
+            title: 'Скоро конец подписки',
+            message: `Ваш тариф ${user.subscription} истекает через ${daysLeft} дн. Продлите, чтобы не прерывать обслуживание.`,
+            type: 'info',
+            link: '/tariffs',
+            read: false,
+            createdAt: now.toISOString()
+          });
+
+          // Telegram уведомление
+          if (user.telegramId) {
+            await sendNotification(
+              user.telegramId,
+              `⏰ <b>Подписка ${user.subscription} заканчивается через ${daysLeft} дн.</b>\n\nПродлите тариф в приложении, чтобы не потерять доступ к поручениям и квотам.`,
+              {
+                parse_mode: 'HTML',
+                reply_markup: {
+                  inline_keyboard: [
+                    [{ text: '🔄 Продлить подписку', url: 'https://t.me/squadraby_bot/app?startapp=tariffs' }]
+                  ]
+                }
+              }
+            ).catch(() => {});
+          }
+          reminded++;
+        }
+      }
+
+      console.log(`[CRON] Subscriptions checked: ${deactivated} deactivated, ${reminded} reminded`);
+      res.json({ success: true, deactivated, reminded });
+    } catch (e: any) {
+      console.error('[CRON] Subscription check error:', e);
       res.status(500).json({ error: e.message });
     }
   });
